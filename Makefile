@@ -1,7 +1,7 @@
 # Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
 TOP=/home/users/mmonil/ORNL_seyong/mapmc
 ASPEN=${TOP}/aspen
-SRC=${TOP}/src
+SRC=${TOP}/model_parser
 #TOPDIR=/home/users/mmonil/ORNL_seyong/mapmc/aspen
 #TOPDIR=/home/users/mmonil/ORNL_seyong/aspen
 DEPMODE=gcc3
@@ -49,12 +49,14 @@ LIBS=-L$(ASPEN)/lib -laspen
 LIBDEP=$(ASPEN)/lib/libaspen.a
 
 TESTS=mapmc
+
 #TESTS=stream_access
 #TESTS=mapmc \
 #  stream_access
 
 
-OBJ=./src/$(TESTS:=.o)
+OBJ=./model_parser/main.o ./model_parser/traverser.o
+#OBJ=./model_parser/$(TESTS:=.o)
 
 all: $(TESTS)
 
@@ -67,8 +69,9 @@ stream_access: $(LIBDEP) ${SRC}/stream_access.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
 
 
-mapmc: $(LIBDEP) ./src/mapmc.o
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) ./src/$(@:=.o) -o $@ $(LIBS)
+mapmc: $(LIBDEP) ./model_parser/main.o ./model_parser/traverser.o
+	#$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) ./model_parser/$(@:=.o) -o $@ $(LIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(LIBS)
 
 
 
@@ -93,7 +96,7 @@ backupdefaulttarget: all
 	depmode=$(DEPMODE) $(ASPEN)/config/depcomp   \
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-#source='./src/$<' object='./src/$@' libtool=no depfile='./src/$*.d'  \
+#source='./model_parser/$<' object='./model_parser/$@' libtool=no depfile='./model_parser/$*.d'  \
 #depmode=$(DEPMODE) $(TOPDIR)/config/depcomp   \
 
 .C.o:
@@ -102,7 +105,7 @@ backupdefaulttarget: all
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
 #depmode=$(DEPMODE) $(TOPDIR)/config/depcomp   \
-#source='./src/$<' object='./src/$@' libtool=no depfile='./src/$*.d'  \
+#source='./model_parser/$<' object='./model_parser/$@' libtool=no depfile='./model_parser/$*.d'  \
 
 .cpp.o:
 	source='$<' object='$@' libtool=no depfile='./$*.d'  \
@@ -110,7 +113,7 @@ backupdefaulttarget: all
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
 #depmode=$(DEPMODE) $(TOPDIR)/config/depcomp   \
-#source='./src/$<' object='./src/$@' libtool=no depfile='./src/$*.d'  \
+#source='./model_parser/$<' object='./model_parser/$@' libtool=no depfile='./model_parser/$*.d'  \
 #
 # Dependency targets
 #
