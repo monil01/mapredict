@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 
             cout << "\n\n>> for socket type '"<<socket<<"' <<\n\n";
 
-            //double memory = predict_memory_streaming_access(app, mach, socket); 
+            double memory = traverser_obj->predictMemoryAccess(app, mach, socket); 
             //std::cout << " for Double data type : " << memory * 2 << "\n";
             //std::cout << " Total bytes accessed : " << memory << "\n";
             //std::cout << " for float data type : " << memory << "\n";

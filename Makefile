@@ -73,6 +73,8 @@ mapmc: $(LIBDEP) ./model_parser/main.o ./model_parser/traverser.o
 	#$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) ./model_parser/$(@:=.o) -o $@ $(LIBS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(LIBS)
 
+run:
+	./run_all.sh
 
 
 # In case someone messes up and inserts this file at the top of their

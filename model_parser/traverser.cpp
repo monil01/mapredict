@@ -451,7 +451,7 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
  */
 
 double  
-traverser::predictMemoryStreamingAccess(ASTAppModel *app, ASTMachModel *mach, std::string socket)
+traverser::predictMemoryAccess(ASTAppModel *app, ASTMachModel *mach, std::string socket)
 {
     double total_memory_access = 0;
 

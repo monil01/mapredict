@@ -32,6 +32,8 @@ private:
 
     //ASTAppModel *app = NULL;
     //ASTMachModel *mach = NULL;
+//TODo
+// All the private varialbe required to call the analytical model function
 
 
 public:
@@ -40,7 +42,7 @@ public:
 traverser(ASTAppModel *app, ASTMachModel *mach);
 ~traverser();
 
-double  predictMemoryStreamingAccess(ASTAppModel *app, 
+double  predictMemoryAccess(ASTAppModel *app, 
                                         ASTMachModel *mach, std::string socket);
 
 double  getApplicationParam(ASTAppModel *app, std::string param);
@@ -52,6 +54,7 @@ double getAnyMachineProperty(ASTMachModel *mach,
 			std::string component, std::string property);
 
 double analyticalStreamingAccess(double D, double E, double S, double CL);
+double callAnalyticalModel(double D, double E, double S, double CL);
 
 double
 recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket, 
