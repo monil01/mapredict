@@ -60,106 +60,6 @@ traverser::~traverser(){
  */
 
 
-/*double  
-traverser::analytical_random_access(double D, double E, double S, double CL)
-{
-    double memory_access = 0;
-    // converting the stride and data size to bytes
-    S = S * E;
-    D = D * E;
-
-    int cli = (int) CL;
-    int e = (int) E;
-
-    int mod = (e - 1) % cli;
-    double p = mod / CL;
-    //double p = find_mod((E - 1), CL) / CL;
-
-    // First Case E >= CL 
-    if (E >= CL)
-    {
-        if ( E < S) 
-        {
-	    double AE = ceil(E/CL) + p;
-            memory_access = floor(D/S) * AE;
-        }
-        else 
-        {
-	    memory_access = ceil(D/CL);
-        }
-
-    }
-    
-    // Second Case E < CL <= S
-    if (E < CL && CL <= S)
-    {
-        memory_access = floor(D/S) * (1 + p);
-        std::cout << memory_access << " " <<  S  << " " << D  << " " << p << std::endl;
-    }
-
-    // for the third case S < CL
-    if ( S < CL) 
-    {
-	memory_access = ceil(D/CL);
-    }
-
-    //std::cout << " memory access" << memory_access << "\n"; 
-
-    // memory access is multiplied by CL to convert it to bytes
-    return memory_access * CL;
-}
-
-
-double  
-analytical_stencil_access(double D, double E, double S, double CL)
-{
-    double memory_access = 0;
-    // converting the stride and data size to bytes
-    S = S * E;
-    D = D * E;
-
-    int cli = (int) CL;
-    int e = (int) E;
-
-    int mod = (e - 1) % cli;
-    double p = mod / CL;
-    //double p = find_mod((E - 1), CL) / CL;
-
-    // First Case E >= CL 
-    if (E >= CL)
-    {
-        if ( E < S) 
-        {
-	    double AE = ceil(E/CL) + p;
-            memory_access = floor(D/S) * AE;
-        }
-        else 
-        {
-	    memory_access = ceil(D/CL);
-        }
-
-    }
-    
-    // Second Case E < CL <= S
-    if (E < CL && CL <= S)
-    {
-        memory_access = floor(D/S) * (1 + p);
-        std::cout << memory_access << " " <<  S  << " " << D  << " " << p << std::endl;
-    }
-
-    // for the third case S < CL
-    if ( S < CL) 
-    {
-	memory_access = ceil(D/CL);
-    }
-
-    //std::cout << " memory access" << memory_access << "\n"; 
-
-    // memory access is multiplied by CL to convert it to bytes
-    return memory_access * CL;
-}*/
-
-
 
 double  
 traverser::analyticalStreamingAccess(double D, double E, double S, double CL)
@@ -211,6 +111,72 @@ traverser::analyticalStreamingAccess(double D, double E, double S, double CL)
 }
 
 
+double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::string socket){
+    double memory_access = 0;
+    int compiler;
+    int instruction_type;
+    size_t cache_line_size;
+    vector<ASTTrait*> traits;
+    //bool initialized;
+    bool prefetch_enabled;
+    bool multithreaded;
+    int64_t data_structure_size;
+    int element_size;
+    std::string property, component;
+
+    // getting compiler
+    property = "compiler";
+    component = "cache";
+
+    std::cout << " " << socket << " : " << component << " : " << property << " " << getAnyMachineProperty(mach, socket, component, property) << std::endl;
+    compiler = (int) getAnyMachineProperty(mach, socket, component, property);
+    std::cout << " " << socket << " : " << component << " : " << property << " " << compiler << std::endl;
+
+    if (req->GetResource().compare("loads")) instruction_type = instructions::LOAD;
+    if (req->GetResource().compare("stores")) instruction_type = instructions::STORE;
+    std::cout << " " << socket << " :  instruction " << instruction_type << std::endl;
+
+    // getting cacheline size
+    property = "cacheline";
+    component = "cache";
+
+    cache_line_size = (size_t) getAnyMachineProperty(mach, socket, component, property);
+    std::cout << " " << socket << " : " << component << " : " << property << " " << cache_line_size << std::endl; 
+    traits = req->GetTraits();
+ 
+    // getting prefetch 
+    property = "prefetch";
+    component = "cache";
+
+    prefetch_enabled = (bool) getAnyMachineProperty(mach, socket, component, property);
+    std::cout << " " << socket << " : " << component << " : " << property << " " << prefetch_enabled << std::endl; 
+    
+ 
+    // getting multithreaded 
+    property = "multithreaded";
+    component = "cache";
+
+    multithreaded = (bool) getAnyMachineProperty(mach, socket, component, property);
+    std::cout << " " << socket << " : " << component << " : " << property << " " << multithreaded << std::endl; 
+    
+    // getting element size
+    std::string param = "aspen_param_sizeof_";
+    element_size = (int) getApplicationParam(app, param);
+    std::cout << " " << socket << " : " << " element " << element_size << std::endl; 
+ 
+    // getting data size
+    ExpressionBuilder eb = req->GetQuantity()->Cloned();
+    double temp_total = eb.GetExpression()->Expanded(app->paramMap)->Evaluate();
+    data_structure_size = (int64_t) temp_total / element_size;
+    std::cout << " " << socket << " :  data size " << data_structure_size << std::endl; 
+
+
+
+    std::cout << std::endl;	
+    return memory_access;
+}
+
+
  
 double  
 traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket, 
@@ -255,6 +221,8 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
         const ASTRequiresStatement *req = dynamic_cast<const ASTRequiresStatement*>(s);
         if (req) // requires statement
         {
+			double memory_access_statement =  predictMemoryStatement(req, socket);
+             
             if (req->GetResource() == "loads") 
             {  
                 //Expression *expr = NULL;
@@ -690,8 +658,8 @@ traverser::getAnyMachineProperty(ASTMachModel *mach,
  		         //std::cout << property << std::endl;
                          if (newnewproperties[l]->GetName() == property)
                          {
-                             //cout << " Name = " << newnewproperties[l]->GetName() << endl;
-                             //cout << " Value = " << newnewproperties[l]->GetValue()->Evaluate() << endl;
+                             cout << " Name = " << newnewproperties[l]->GetName() << endl;
+                             cout << " Value = " << newnewproperties[l]->GetValue()->Evaluate() << endl;
                              property_value = newnewproperties[l]->GetValue()->Evaluate();
     			             return property_value; 
                          }

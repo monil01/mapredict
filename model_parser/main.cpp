@@ -63,8 +63,8 @@ int main(int argc, char **argv)
 
     if (mach)
     {
-        //cout << "----- Main Machine Model -----\n";
-        //mach->Print(cout);
+        cout << "----- Main Machine Model -----\n";
+        mach->Print(cout);
     }
     cerr << "\n";
 

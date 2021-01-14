@@ -16,6 +16,7 @@
 #include "model/ASTMachModel.h"
 #include "app/ASTRequiresStatement.h"
 #include "walkers/AspenTool.h"
+#include "types.h"
 
 
 
@@ -29,6 +30,7 @@ class traverser: public AspenTool{
 
 
 private:
+
 
     //ASTAppModel *app = NULL;
     //ASTMachModel *mach = NULL;
@@ -44,6 +46,8 @@ traverser(ASTAppModel *app, ASTMachModel *mach);
 
 double  predictMemoryAccess(ASTAppModel *app, 
                                         ASTMachModel *mach, std::string socket);
+
+double  predictMemoryStatement(const ASTRequiresStatement *req, std::string socket);
 
 double  getApplicationParam(ASTAppModel *app, std::string param);
 

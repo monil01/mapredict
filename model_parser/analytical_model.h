@@ -33,11 +33,12 @@ private:
     int _compiler;
     int _instruction_type;
     size_t _cache_line_size;
-    std::vector<std::string> _traits;
+    vector<ASTTrait*> _traits;
     bool _initialized;
     bool _prefetch_enabled; 
     bool _multithreaded; 
     int64_t _data_structure_size;
+    int _element_size;
     
 
 
@@ -47,11 +48,12 @@ analytical_model(int access_pattern,
     int compiler,
     int instruction_type,
     size_t cache_line_size,
-    std::vector<std::string> traits,
+    vector<ASTTrait*> traits;
     bool initialized,
     bool prefetch_enabled,
     bool multithreaded,
-    int64_t data_structure_size
+    int64_t data_structure_size,
+    int element_size
 );
 ~analytical_model();
 
