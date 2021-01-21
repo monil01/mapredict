@@ -47,7 +47,8 @@ traverser(ASTAppModel *app, ASTMachModel *mach);
 double  predictMemoryAccess(ASTAppModel *app, 
                                         ASTMachModel *mach, std::string socket);
 
-double  predictMemoryStatement(const ASTRequiresStatement *req, std::string socket);
+double  predictMemoryStatement(const ASTRequiresStatement *req, std::string socket, 
+    double inner_parallelism);
 
 double  getApplicationParam(ASTAppModel *app, std::string param);
 
@@ -69,7 +70,7 @@ recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket,
 
 double executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket,
     const ASTExecutionBlock *exec,
-    double outer_paralellism);
+    double outer_parallelism);
 
 ASTAppModel*  getAppModel() { return app;}
 ASTMachModel*  getMachineModel() {return mach;}

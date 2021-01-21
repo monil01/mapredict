@@ -17,6 +17,7 @@
 #include "app/ASTRequiresStatement.h"
 #include "walkers/AspenTool.h"
 #include "traverser.h"
+#include "analytical_model.h"
 
 
 
@@ -111,7 +112,8 @@ traverser::analyticalStreamingAccess(double D, double E, double S, double CL)
 }
 
 
-double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::string socket){
+double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::string socket,
+    double inner_parallelism){
     double memory_access = 0;
     int compiler;
     int instruction_type;
@@ -128,7 +130,7 @@ double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::s
     property = "compiler";
     component = "cache";
 
-    std::cout << " " << socket << " : " << component << " : " << property << " " << getAnyMachineProperty(mach, socket, component, property) << std::endl;
+    //std::cout << " " << socket << " : " << component << " : " << property << " " << getAnyMachineProperty(mach, socket, component, property) << std::endl;
     compiler = (int) getAnyMachineProperty(mach, socket, component, property);
     std::cout << " " << socket << " : " << component << " : " << property << " " << compiler << std::endl;
 
@@ -162,17 +164,20 @@ double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::s
     // getting element size
     std::string param = "aspen_param_sizeof_";
     element_size = (int) getApplicationParam(app, param);
-    std::cout << " " << socket << " : " << " element " << element_size << std::endl; 
+    std::cout << " " << socket << " : " << " element size " << element_size << std::endl; 
  
     // getting data size
     ExpressionBuilder eb = req->GetQuantity()->Cloned();
     double temp_total = eb.GetExpression()->Expanded(app->paramMap)->Evaluate();
-    data_structure_size = (int64_t) temp_total / element_size;
+    //multiplied by parallelism because of the for loop is counted as parallelism
+    data_structure_size = (int64_t) temp_total / element_size * inner_parallelism;
     std::cout << " " << socket << " :  data size " << data_structure_size << std::endl; 
-
-
-
     std::cout << std::endl;	
+
+    analytical_model * ana_model = new analytical_model(compiler, instruction_type, cache_line_size,
+        traits, prefetch_enabled, multithreaded, data_structure_size, element_size);
+
+    delete ana_model;
     return memory_access;
 }
 
@@ -181,34 +186,34 @@ double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::s
 double  
 traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket, 
     const ASTExecutionBlock *exec,
-    double outer_paralellism)
+    double outer_parallelism)
 {  
     double total_memory_access = 0;
 
-    double element_size = 0, stride = 0, total_length = 0;
-    double cacheline = 0;
-    std::string param = "aspen_param_sizeof_";
+    //double element_size = 0, stride = 0, total_length = 0;
+    //double cacheline = 0;
+    //std::string param = "aspen_param_sizeof_";
 
-    element_size = getApplicationParam(app, param);
+    //element_size = getApplicationParam(app, param);
     //std::cout << " " << param << " : " << element_size << std::endl;
 
     //std::string property = "cacheline";
-    std::string property = "cacheline";
-    std::string component = "cache";
+    //std::string property = "cacheline";
+    //std::string component = "cache";
     //std::string socket = "nvidia_k80";
     //socket = "intel_xeon_x5660";
 
-    cacheline = getAnyMachineProperty(mach, socket, component, property);
-    std::cout << " " << socket << " : " << component << " : " << property << " " << cacheline << std::endl; 
+    //cacheline = getAnyMachineProperty(mach, socket, component, property);
+    //std::cout << " " << socket << " : " << component << " : " << property << " " << cacheline << std::endl; 
 
     ExpressionBuilder eb;
     Expression* current_expression;
-    double paralellism = 1;
-    std::cout << " current multiplying factor : " << 
-        exec->GetParallelism()->Expanded(app->paramMap)->Evaluate() << "\n";
-    paralellism = exec->GetParallelism()->Expanded(app->paramMap)->Evaluate();
-    paralellism *= outer_paralellism;
-    std::cout << " multiplied factor : " << paralellism << "\n";
+    double inner_parallelism = 1;
+    //std::cout << " outer multiplying factor : " << 
+    //    exec->GetParallelism()->Expanded(app->paramMap)->Evaluate() << "\n";
+    inner_parallelism = exec->GetParallelism()->Expanded(app->paramMap)->Evaluate();
+    //parallelism *= outer_parallelism;
+    std::cout << " current factor : " << inner_parallelism << "\n";
     //std::string resource;
 	//resource = "loads"; stride = 0; total_length = 0;
     //std::cout << exec->GetResourceRequirementExpression(app,resource)->GetText();
@@ -221,7 +226,11 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
         const ASTRequiresStatement *req = dynamic_cast<const ASTRequiresStatement*>(s);
         if (req) // requires statement
         {
-			double memory_access_statement =  predictMemoryStatement(req, socket);
+            // not entertaining other types of instructions
+            if (req->GetResource() != "loads" && req->GetResource() != "stores" ) return 0;
+            // calling the analytical model
+			double memory_access_statement =  predictMemoryStatement(req, socket, inner_parallelism);
+            /*
              
             if (req->GetResource() == "loads") 
             {  
@@ -250,7 +259,7 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
 			    double memory_access = 
 				    analyticalStreamingAccess(total_length, element_size, stride,
 				    cacheline);
-                memory_access = memory_access * paralellism; 
+                memory_access = memory_access * parallelism; 
         		total_memory_access += memory_access;
 			    std::cout << " memory access : " << memory_access << "\n \n";
                           
@@ -283,11 +292,12 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
         		double memory_access = 
 				              analyticalStreamingAccess(total_length, element_size, stride,
 					          cacheline);
-                memory_access = memory_access * paralellism; 
+                memory_access = memory_access * parallelism; 
 			    total_memory_access += memory_access;
 			    std::cout << " memory access : " << memory_access << "\n \n";
                       
             } 
+            */
         }
     } 
 
@@ -358,7 +368,7 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
 
         for (unsigned int i=0; i < seq_statements->GetItems().size(); ++i)
         {
-            //double outer_paralellism = 1;
+            //double outer_parallelism = 1;
 
             const ASTControlStatement *s_new = seq_statements->GetItems()[i];
             total_memory_access += recursiveBlock(app, mach, socket, outer_parallelism, s_new);
@@ -375,7 +385,7 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
 
         for (unsigned int i=0; i < par_statements->GetItems().size(); ++i)
         {
-            //double outer_paralellism = 1;
+            //double outer_parallelism = 1;
 
             const ASTControlStatement *s_new = par_statements->GetItems()[i];
             total_memory_access += recursiveBlock(app, mach, socket, outer_parallelism, s_new);
@@ -658,8 +668,8 @@ traverser::getAnyMachineProperty(ASTMachModel *mach,
  		         //std::cout << property << std::endl;
                          if (newnewproperties[l]->GetName() == property)
                          {
-                             cout << " Name = " << newnewproperties[l]->GetName() << endl;
-                             cout << " Value = " << newnewproperties[l]->GetValue()->Evaluate() << endl;
+                             //cout << " Name = " << newnewproperties[l]->GetName() << endl;
+                             //cout << " Value = " << newnewproperties[l]->GetValue()->Evaluate() << endl;
                              property_value = newnewproperties[l]->GetValue()->Evaluate();
     			             return property_value; 
                          }

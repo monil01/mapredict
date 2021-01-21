@@ -25,33 +25,94 @@
 //using namespace std;
 //
 
+/*
+analytical_model(
+    int compiler,
+    int instruction_type,
+    size_t cache_line_size,
+    vector<ASTTrait*> traits,
+    bool prefetch_enabled,
+    bool multithreaded,
+    int64_t data_structure_size,
+    int element_size
+);
 
-analytical_model::analytical_model(int _access_pattern,
-    int _compiler,
-    int _instruction_type,
-    std::size_t _cache_line_size,
-    std::vector<std::string> _traits,
-    bool _initialized,
-    bool _prefetch_enabled,
-    bool _multithreaded,
-    std::int64_t _data_structure_size
-):( _access_pattern = access_patern,
-    _compiler = compiler,
-    _instruction_type = instruction_type,
-    _cache_line_size = cache_line_size,
-    _traits = traits,
-    _initialized = initialized,
-    _prefetch_enabled = prefetch_enabled,
-    _multithreaded = multithreaded,
-    _data_structure_size = data_structure_size
-){ 
+*/
+
+
+analytical_model::analytical_model(
+    int compiler,
+    int instruction_type,
+    std::size_t cache_line_size,
+    vector<ASTTrait*> traits,
+    bool prefetch_enabled,
+    bool multithreaded,
+    std::int64_t data_structure_size,
+    int element_size
+) 
+{ 
+    _compiler = compiler;
+    _instruction_type = instruction_type;
+    _cache_line_size = cache_line_size;
+    _traits = traits;
+    _prefetch_enabled = prefetch_enabled;
+    _multithreaded = multithreaded;
+    _data_structure_size = data_structure_size;
+    _element_size = element_size;
+    std::cout << " ana model trait size " <<  traits.size() << std::endl;
+
+    _access_pattern = findPattern(_traits);
+    _initialized = findInitialized(_traits);
+    std::cout << " access pattern " <<  _access_pattern << " init " << _initialized << std::endl;
 
 }
 
-~analytical_model::analytical_model(){
+analytical_model::~analytical_model(){
 }
 
-double  analytical_model::predictMemoryAccess(int pattern){
+bool analytical_model::findInitialized(vector<ASTTrait*> traits){
+    bool init = true;
+    std::cout << " size " <<  traits.size() << std::endl;
+    if (traits.size() < 1) return init;
+    for (int k = 0; k < traits.size(); k++){
+        std::string ttrait = traits[k]->GetName();
+        if (ttrait == "initialized"){
+            //std::cout << "traits Name " << ttrait;
+            std::cout << " traits value " << 
+                traits[k]->GetValue()->Evaluate() << std::endl;
+            init = (bool) traits[k]->GetValue()->Evaluate();
+            //stride = stride * element_size;
+        }
+    }
+    return init;
+}
+
+int analytical_model::findPattern(vector<ASTTrait*> traits){
+    int pattern = access_patterns::STREAM;
+    std::cout << " size " <<  traits.size() << std::endl;
+    if (traits.size() < 1) return pattern;
+    for (int k = 0; k < traits.size(); k++){
+        std::string ttrait = traits[k]->GetName();
+        if (ttrait == "pattern"){
+            //std::cout << "traits Name " << ttrait;
+            std::cout << " traits value " << 
+                traits[k]->GetValue()->GetText() << std::endl;
+            std::string temp_pattern = traits[k]->GetValue()->GetText();
+            //std::string temp_pattern = traits[k]->GetValue()->Evaluate();
+            if ( temp_pattern.compare("stream")) pattern = access_patterns::STREAM;
+            if ( temp_pattern.compare("stride")) pattern = access_patterns::STRIDE;
+            if ( temp_pattern.compare("stencil")) pattern = access_patterns::STENCIL;
+            if ( temp_pattern.compare("random")) pattern = access_patterns::RANDOM;
+            //stride = stride * element_size;
+        }
+    }
+    return pattern;
+}
+
+int findPattern(vector<ASTTrait*> traits);
+
+
+double  analytical_model::predictMemoryAccess(){
 
 }
 double  analytical_model::streamAccess(int pattern) {

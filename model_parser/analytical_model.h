@@ -44,12 +44,11 @@ private:
 
 public:
 
-analytical_model(int access_pattern,
+analytical_model(
     int compiler,
     int instruction_type,
     size_t cache_line_size,
-    vector<ASTTrait*> traits;
-    bool initialized,
+    vector<ASTTrait*> traits,
     bool prefetch_enabled,
     bool multithreaded,
     int64_t data_structure_size,
@@ -57,11 +56,13 @@ analytical_model(int access_pattern,
 );
 ~analytical_model();
 
-double  predictMemoryAccess(int pattern);
+double  predictMemoryAccess();
 double  streamAccess(int pattern);
 double  randomAccess(int pattern);
 double  strideAccess(int pattern);
 double  stencilAccess(int pattern);
+bool findInitialized(vector<ASTTrait*> traits);
+int findPattern(vector<ASTTrait*> traits);
 
 };
 
