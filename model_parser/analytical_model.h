@@ -32,13 +32,14 @@ private:
     int _access_pattern;
     int _compiler;
     int _instruction_type;
-    size_t _cache_line_size;
+    int _cache_line_size;
     vector<ASTTrait*> _traits;
     bool _initialized;
     bool _prefetch_enabled; 
     bool _multithreaded; 
     int64_t _data_structure_size;
     int _element_size;
+    int _page_size;
     
 
 
@@ -47,7 +48,7 @@ public:
 analytical_model(
     int compiler,
     int instruction_type,
-    size_t cache_line_size,
+    int cache_line_size,
     vector<ASTTrait*> traits,
     bool prefetch_enabled,
     bool multithreaded,
@@ -56,11 +57,11 @@ analytical_model(
 );
 ~analytical_model();
 
-double  predictMemoryAccess();
-double  streamAccess(int pattern);
-double  randomAccess(int pattern);
-double  strideAccess(int pattern);
-double  stencilAccess(int pattern);
+std::int64_t  predictMemoryAccess();
+std::int64_t  streamAccess();
+std::int64_t  randomAccess();
+std::int64_t  strideAccess();
+std::int64_t  stencilAccess();
 bool findInitialized(vector<ASTTrait*> traits);
 int findPattern(vector<ASTTrait*> traits);
 

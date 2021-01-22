@@ -19,6 +19,9 @@
 #include "traverser.h"
 
 
+//global debug to print values
+bool DEBUG_MAPMC = true;
+//bool DEBUG_MAPMC = false;
 
 #define Finegrained_RSC_Print
 
@@ -42,13 +45,13 @@ int main(int argc, char **argv)
     }
     else
     {
-        cerr << "Usage: "<<argv[0]<<" [model.aspen] [machine.amm]" << endl;
+        std::cerr << "Usage: "<<argv[0]<<" [model.aspen] [machine.amm]" << endl;
         return 1;
     }
 
     if (!success)
     {
-        cerr << "Errors encountered during parsing.  Aborting.\n";
+        std::cerr << "Errors encountered during parsing.  Aborting.\n";
         return -1;
     }
 
@@ -56,21 +59,21 @@ int main(int argc, char **argv)
     
     if (app)
     {
-        //cout << "----- Main Application Model -----\n";
-        app->Print(cout);
+        if(DEBUG_MAPMC == true) std::cout << "----- Main Application Model -----\n";
+        if(DEBUG_MAPMC == true) app->Print(cout);
     }
-    cerr << "\n";
+    std::cerr << "\n";
 
     if (mach)
     {
-        cout << "----- Main Machine Model -----\n";
-        mach->Print(cout);
+        if(DEBUG_MAPMC == true) std::cout << "----- Main Machine Model -----\n";
+        if(DEBUG_MAPMC == true)mach->Print(cout);
     }
     cerr << "\n";
 
     traverser* traverser_obj = new traverser(app, mach);
 
-    cout << "\n-----------------------------------------------------\n\n";
+    if(DEBUG_MAPMC == true) std::cout << "\n-----------------------------------------------------\n\n";
     
 
     if (mach)
@@ -86,9 +89,10 @@ int main(int argc, char **argv)
             cout << "\n\n>> for socket type '"<<socket<<"' <<\n\n";
 
             double memory = traverser_obj->predictMemoryAccess(app, mach, socket); 
-            //std::cout << " for Double data type : " << memory * 2 << "\n";
-            //std::cout << " Total bytes accessed : " << memory << "\n";
-            //std::cout << " for float data type : " << memory << "\n";
+            std::cout << " Total Memory access : " << memory << "\n";
+            //if(DEBUG_MAPMC == true) std::cout << " for Double data type : " << memory * 2 << "\n";
+            //if(DEBUG_MAPMC == true) std::cout << " Total bytes accessed : " << memory << "\n";
+            //if(DEBUG_MAPMC == true) std::cout << " for float data type : " << memory << "\n";
           }
           catch (const AspenException &exc)
           {
@@ -119,7 +123,7 @@ int main(int argc, char **argv)
     std::string param = "aspen_param_sizeof_float";
 
     element_size = get_application_param(app, param);
-    std::cout << " " << param << " : " << element_size << std::endl;
+    if(DEBUG_MAPMC == true) std::cout << " " << param << " : " << element_size << std::endl;
 
     for (unsigned int i=0; i<1; ++i)
     //for (unsigned int i=0; i<app->GetKernels().size(); ++i)
@@ -127,12 +131,12 @@ int main(int argc, char **argv)
        try
        {
            //string flops = app->GetResourceRequirementExpressionText("flops",    false, false);
-           std::cout << app->GetResourceRequirementExpression("loads")->GetText() << std::endl;
+           if(DEBUG_MAPMC == true) std::cout << app->GetResourceRequirementExpression("loads")->GetText() << std::endl;
 
            ASTKernel *k = app->GetKernels()[i];
            cout << "\n\n>> Kernel "<<k->GetName()<<endl<<endl;
            const ASTControlSequentialStatement *statements = k->GetStatements();
-           std::cout << "size " << statements->GetItems().size() << std::endl;
+           if(DEBUG_MAPMC == true) std::cout << "size " << statements->GetItems().size() << std::endl;
            //const ASTExecutionBlock *exec = dynamic_cast<const ASTExecutionBlock*>(s);
            //const ASTControlStatement *ctrl = dynamic_cast<const ASTControlStatement*>(s);
            for (unsigned int i=0; i < statements->GetItems().size(); ++i)
@@ -149,7 +153,7 @@ int main(int argc, char **argv)
                   //eb += exec->GetResourceRequirementExpression(app,resource);
                   std::string resource;
 		  resource = "loads"; stride = 0; total_length = 0;
-                  //std::cout << exec->GetResourceRequirementExpression(app,resource)->GetText();
+                  //if(DEBUG_MAPMC == true) std::cout << exec->GetResourceRequirementExpression(app,resource)->GetText();
                   const vector<ASTExecutionStatement*> statements_exec = exec->GetStatements();
                   for (unsigned int i=0; i<statements_exec.size(); ++i)
                   {
@@ -167,8 +171,8 @@ int main(int argc, char **argv)
 	                        string ttrait = traits[i]->GetName();
                                 if (ttrait == "stride") {
 
-                                   std::cout << "traits Name " << ttrait;
-                                   std::cout << " traits value " << traits[i]->GetValue()->Evaluate() << std::endl;
+                                   if(DEBUG_MAPMC == true) std::cout << "traits Name " << ttrait;
+                                   if(DEBUG_MAPMC == true) std::cout << " traits value " << traits[i]->GetValue()->Evaluate() << std::endl;
 				   stride = traits[i]->GetValue()->Evaluate();
 
                                 }
@@ -177,11 +181,11 @@ int main(int argc, char **argv)
                           
 			  //eb + = ;
                           
-                          std::cout << "loads " << eb.GetExpression()->GetText() << std::endl;
+                          if(DEBUG_MAPMC == true) std::cout << "loads " << eb.GetExpression()->GetText() << std::endl;
 			  double temp_total = eb.GetExpression()->Expanded(app->paramMap)->Evaluate();
-                          //std::cout << "loads " << eb.GetExpression()->Expanded(app->paramMap)->Evaluate() << std::endl;
+                          //if(DEBUG_MAPMC == true) std::cout << "loads " << eb.GetExpression()->Expanded(app->paramMap)->Evaluate() << std::endl;
                           total_length = temp_total / element_size;
-                          std::cout << "total length " << total_length << " element size " << element_size << " stride " << stride << std::endl;
+                          if(DEBUG_MAPMC == true) std::cout << "total length " << total_length << " element size " << element_size << " stride " << stride << std::endl;
                           
 
                        }
@@ -195,18 +199,18 @@ int main(int argc, char **argv)
 	                        string ttrait = traits[i]->GetName();
                                 if (ttrait == "stride") {
 
-                                   std::cout << "traits Name " << ttrait;
-                                   std::cout << " traits value " << traits[i]->GetValue()->Evaluate() << std::endl;
+                                   if(DEBUG_MAPMC == true) std::cout << "traits Name " << ttrait;
+                                   if(DEBUG_MAPMC == true) std::cout << " traits value " << traits[i]->GetValue()->Evaluate() << std::endl;
 				   stride = traits[i]->GetValue()->Evaluate();
                                 }
 			  }
                           
 
-                          std::cout << "stores " << eb.GetExpression()->GetText() << std::endl;
+                          if(DEBUG_MAPMC == true) std::cout << "stores " << eb.GetExpression()->GetText() << std::endl;
         		  double temp_total = eb.GetExpression()->Expanded(app->paramMap)->Evaluate();
-                          //std::cout << "stores " << eb.GetExpression()->Expanded(app->paramMap)->Evaluate() << std::endl;
+                          //if(DEBUG_MAPMC == true) std::cout << "stores " << eb.GetExpression()->Expanded(app->paramMap)->Evaluate() << std::endl;
                           total_length = temp_total / element_size;
-                          std::cout << "total length " << total_length << " element size " << element_size << " stride " << stride << std::endl;
+                          if(DEBUG_MAPMC == true) std::cout << "total length " << total_length << " element size " << element_size << " stride " << stride << std::endl;
 
                        }
                      }
@@ -233,7 +237,7 @@ int main(int argc, char **argv)
     std::string socket = "SimpleCPU";
     //std::string socket = "nvidia_k80";
     cacheline = get_any_machine_property(mach, socket, component, property);
-    std::cout << socket << " : " << component << " : " << property << " " << cacheline << std::endl; 
+    if(DEBUG_MAPMC == true) std::cout << socket << " : " << component << " : " << property << " " << cacheline << std::endl; 
 
 */
 
@@ -628,7 +632,7 @@ GetExpression(ASTAppModel *app,
 {
     if (statements.empty())
         return new Real(0);
-    //std::cout << " this from the time expression" << std::endl;
+    //if(DEBUG_MAPMC == true) std::cout << " this from the time expression" << std::endl;
 
     MappingRestriction restr("socket", sockettype);
 

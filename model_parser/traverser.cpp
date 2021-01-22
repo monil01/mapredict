@@ -16,6 +16,7 @@
 #include "model/ASTMachModel.h"
 #include "app/ASTRequiresStatement.h"
 #include "walkers/AspenTool.h"
+#include "types.h"
 #include "traverser.h"
 #include "analytical_model.h"
 
@@ -96,7 +97,7 @@ traverser::analyticalStreamingAccess(double D, double E, double S, double CL)
     if (E < CL && CL <= S)
     {
         memory_access = floor(D/S) * (1 + p);
-        std::cout << memory_access << " " <<  S  << " " << D  << " " << p << std::endl;
+        if(DEBUG_MAPMC == true) std::cout << memory_access << " " <<  S  << " " << D  << " " << p << std::endl;
     }
 
     // for the third case S < CL
@@ -105,7 +106,7 @@ traverser::analyticalStreamingAccess(double D, double E, double S, double CL)
 	memory_access = ceil(D/CL);
     }
 
-    //std::cout << " memory access" << memory_access << "\n"; 
+    //if(DEBUG_MAPMC == true) std::cout << " memory access" << memory_access << "\n"; 
 
     // memory access is multiplied by CL to convert it to bytes
     return memory_access * CL;
@@ -117,7 +118,7 @@ double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::s
     double memory_access = 0;
     int compiler;
     int instruction_type;
-    size_t cache_line_size;
+    int cache_line_size;
     vector<ASTTrait*> traits;
     //bool initialized;
     bool prefetch_enabled;
@@ -130,20 +131,20 @@ double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::s
     property = "compiler";
     component = "cache";
 
-    //std::cout << " " << socket << " : " << component << " : " << property << " " << getAnyMachineProperty(mach, socket, component, property) << std::endl;
+    //if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << component << " : " << property << " " << getAnyMachineProperty(mach, socket, component, property) << std::endl;
     compiler = (int) getAnyMachineProperty(mach, socket, component, property);
-    std::cout << " " << socket << " : " << component << " : " << property << " " << compiler << std::endl;
-
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << component << " : " << property << " " << compiler << std::endl;
+sdfsfafasd
     if (req->GetResource().compare("loads")) instruction_type = instructions::LOAD;
     if (req->GetResource().compare("stores")) instruction_type = instructions::STORE;
-    std::cout << " " << socket << " :  instruction " << instruction_type << std::endl;
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " :  instruction " << instruction_type << std::endl;
 
     // getting cacheline size
     property = "cacheline";
     component = "cache";
 
-    cache_line_size = (size_t) getAnyMachineProperty(mach, socket, component, property);
-    std::cout << " " << socket << " : " << component << " : " << property << " " << cache_line_size << std::endl; 
+    cache_line_size = (int) getAnyMachineProperty(mach, socket, component, property);
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << component << " : " << property << " " << cache_line_size << std::endl; 
     traits = req->GetTraits();
  
     // getting prefetch 
@@ -151,7 +152,7 @@ double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::s
     component = "cache";
 
     prefetch_enabled = (bool) getAnyMachineProperty(mach, socket, component, property);
-    std::cout << " " << socket << " : " << component << " : " << property << " " << prefetch_enabled << std::endl; 
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << component << " : " << property << " " << prefetch_enabled << std::endl; 
     
  
     // getting multithreaded 
@@ -159,23 +160,25 @@ double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::s
     component = "cache";
 
     multithreaded = (bool) getAnyMachineProperty(mach, socket, component, property);
-    std::cout << " " << socket << " : " << component << " : " << property << " " << multithreaded << std::endl; 
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << component << " : " << property << " " << multithreaded << std::endl; 
     
     // getting element size
     std::string param = "aspen_param_sizeof_";
     element_size = (int) getApplicationParam(app, param);
-    std::cout << " " << socket << " : " << " element size " << element_size << std::endl; 
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << " element size " << element_size << std::endl; 
  
     // getting data size
     ExpressionBuilder eb = req->GetQuantity()->Cloned();
     double temp_total = eb.GetExpression()->Expanded(app->paramMap)->Evaluate();
     //multiplied by parallelism because of the for loop is counted as parallelism
     data_structure_size = (int64_t) temp_total / element_size * inner_parallelism;
-    std::cout << " " << socket << " :  data size " << data_structure_size << std::endl; 
-    std::cout << std::endl;	
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " :  data size " << data_structure_size << std::endl; 
+    if(DEBUG_MAPMC == true) std::cout << std::endl;	
 
     analytical_model * ana_model = new analytical_model(compiler, instruction_type, cache_line_size,
         traits, prefetch_enabled, multithreaded, data_structure_size, element_size);
+    memory_access = (double) ana_model->predictMemoryAccess(); 
+    if(DEBUG_MAPMC == true) std::cout << " memory access : " << memory_access << "\n";
 
     delete ana_model;
     return memory_access;
@@ -195,7 +198,7 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
     //std::string param = "aspen_param_sizeof_";
 
     //element_size = getApplicationParam(app, param);
-    //std::cout << " " << param << " : " << element_size << std::endl;
+    //if(DEBUG_MAPMC == true) std::cout << " " << param << " : " << element_size << std::endl;
 
     //std::string property = "cacheline";
     //std::string property = "cacheline";
@@ -204,19 +207,19 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
     //socket = "intel_xeon_x5660";
 
     //cacheline = getAnyMachineProperty(mach, socket, component, property);
-    //std::cout << " " << socket << " : " << component << " : " << property << " " << cacheline << std::endl; 
+    //if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << component << " : " << property << " " << cacheline << std::endl; 
 
     ExpressionBuilder eb;
     Expression* current_expression;
     double inner_parallelism = 1;
-    //std::cout << " outer multiplying factor : " << 
+    //if(DEBUG_MAPMC == true) std::cout << " outer multiplying factor : " << 
     //    exec->GetParallelism()->Expanded(app->paramMap)->Evaluate() << "\n";
     inner_parallelism = exec->GetParallelism()->Expanded(app->paramMap)->Evaluate();
     //parallelism *= outer_parallelism;
-    std::cout << " current factor : " << inner_parallelism << "\n";
+    if(DEBUG_MAPMC == true) std::cout << " current factor : " << inner_parallelism << "\n";
     //std::string resource;
 	//resource = "loads"; stride = 0; total_length = 0;
-    //std::cout << exec->GetResourceRequirementExpression(app,resource)->GetText();
+    //if(DEBUG_MAPMC == true) std::cout << exec->GetResourceRequirementExpression(app,resource)->GetText();
     const vector<ASTExecutionStatement*> statements_exec = exec->GetStatements(); 
 
      
@@ -230,77 +233,13 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
             if (req->GetResource() != "loads" && req->GetResource() != "stores" ) return 0;
             // calling the analytical model
 			double memory_access_statement =  predictMemoryStatement(req, socket, inner_parallelism);
-            /*
-             
-            if (req->GetResource() == "loads") 
-            {  
-                //Expression *expr = NULL;
-                //expr = req->GetQuantity()->Cloned();
-                eb = req->GetQuantity()->Cloned();
-			    const vector<ASTTrait*> traits = req->GetTraits();
-			    for (int k = 0; k < traits.size(); k++)
-                {
-	                string ttrait = traits[k]->GetName();
-                    if (ttrait == "stride") 
-                    {
-                        //std::cout << "traits Name " << ttrait;
-                        //std::cout << " traits value " << 
-                        //	traits[k]->GetValue()->Evaluate() << std::endl;
-				        stride = traits[k]->GetValue()->Evaluate();
-				        //stride = stride * element_size;
-                    }
-			    }
-                std::cout << " Loads : " << eb.GetExpression()->GetText() << std::endl;
-			    double temp_total = eb.GetExpression()->Expanded(app->paramMap)->Evaluate();
-                total_length = temp_total / element_size;
-                std::cout << " Total length=" << total_length << " element size=" 
-				    << element_size << " stride=" << stride 
-				    << " cacheline=" << cacheline << "\n\n";
-			    double memory_access = 
-				    analyticalStreamingAccess(total_length, element_size, stride,
-				    cacheline);
-                memory_access = memory_access * parallelism; 
-        		total_memory_access += memory_access;
-			    std::cout << " memory access : " << memory_access << "\n \n";
-                          
-            }
-            else if (req->GetResource() == "stores") 
-		    {
-                //Expression *expr = NULL;
-                //expr = req->GetQuantity()->Cloned();
-                eb = req->GetQuantity()->Cloned();
-			    const vector<ASTTrait*> traits = req->GetTraits();
-			    for (int k = 0; k < traits.size(); k++)
-                {
-	                string ttrait = traits[k]->GetName();
-                    if (ttrait == "stride") 
-                    {
-
-                        //std::cout << "traits Name " << ttrait;
-                        //std::cout << " traits value " << 
-                        //    traits[k]->GetValue()->Evaluate() << std::endl;
-				        stride = traits[k]->GetValue()->Evaluate();
-				        //stride = stride * element_size;
-                    }
-			    }
-                std::cout << " stores : " << eb.GetExpression()->GetText() << std::endl;
-        		double temp_total = eb.GetExpression()->Expanded(app->paramMap)->Evaluate();
-                total_length = temp_total / element_size;
-			    std::cout << " Total length=" << total_length << " element size=" 
-				     << element_size << " stride=" << stride 
-				     << " cacheline=" << cacheline << "\n\n";
-        		double memory_access = 
-				              analyticalStreamingAccess(total_length, element_size, stride,
-					          cacheline);
-                memory_access = memory_access * parallelism; 
-			    total_memory_access += memory_access;
-			    std::cout << " memory access : " << memory_access << "\n \n";
-                      
-            } 
-            */
+			if(DEBUG_MAPMC == true) std::cout << " memory access statement : " << memory_access_statement << "\n";
+            total_memory_access += memory_access_statement;
+            if(DEBUG_MAPMC == true) std::cout << " Total executive block memory access : " << total_memory_access << "\n \n";
         }
     } 
 
+    if(DEBUG_MAPMC == true) std::cout << " Total executive block memory access : " << total_memory_access << "\n \n";
     return total_memory_access;
 
 }
@@ -314,9 +253,9 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
     const ASTExecutionBlock *exec = dynamic_cast<const ASTExecutionBlock*>(s);
     if (exec) // it's a kernel-like requires statement
     {
-        std::cout << " Execute block\n";
+        if(DEBUG_MAPMC == true) std::cout << " Execute block\n";
         total_memory_access += executeBlock(app, mach, socket, exec, outer_parallelism);
-        std::cout << "\n total memory upto this block: " << total_memory_access << "\n";
+        if(DEBUG_MAPMC == true) std::cout << "\n total memory upto this block: " << total_memory_access << "\n";
         return total_memory_access;
     }
     
@@ -326,12 +265,12 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
     //const ASTControlSequentialStatement *statements = 
                     //dynamic_cast<const ASTControlSequentialStatement *>(s);
     if (iter_statement){
-        std::cout << " Iter block\n";
+        if(DEBUG_MAPMC == true) std::cout << " Iter block\n";
         double new_parallelism = iter_statement->GetQuantity()->Expanded(app->paramMap)->Evaluate();
 
         outer_parallelism *= new_parallelism;
 
-        std::cout << "\n from iter: new factor: " << new_parallelism << "\n";
+        if(DEBUG_MAPMC == true) std::cout << "\n from iter: new factor: " << new_parallelism << "\n";
         ASTControlStatement * s_new = iter_statement->GetItem();
 
         total_memory_access += recursiveBlock(app, mach, socket, outer_parallelism, s_new);
@@ -346,12 +285,12 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
     //const ASTControlSequentialStatement *statements = 
                     //dynamic_cast<const ASTControlSequentialStatement *>(s);
     if (map_statement){
-        std::cout << " Map block\n";
+        if(DEBUG_MAPMC == true) std::cout << " Map block\n";
         double new_parallelism = map_statement->GetQuantity()->Expanded(app->paramMap)->Evaluate();
 
         outer_parallelism *= new_parallelism;
 
-        std::cout << "\n from map: new factor: " << new_parallelism << "\n";
+        if(DEBUG_MAPMC == true) std::cout << "\n from map: new factor: " << new_parallelism << "\n";
         ASTControlStatement * s_new = map_statement->GetItem();
 
         total_memory_access += recursiveBlock(app, mach, socket, outer_parallelism, s_new);
@@ -363,8 +302,8 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
                 = dynamic_cast<const ASTControlSequentialStatement*>(s);
 
     if (seq_statements){
-        std::cout << " Seq block\n";
-        std::cout << " size " << seq_statements->GetItems().size() << std::endl;
+        if(DEBUG_MAPMC == true) std::cout << " Seq block\n";
+        if(DEBUG_MAPMC == true) std::cout << " size " << seq_statements->GetItems().size() << std::endl;
 
         for (unsigned int i=0; i < seq_statements->GetItems().size(); ++i)
         {
@@ -380,8 +319,8 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
                 = dynamic_cast<const ASTControlParallelStatement*>(s);
 
     if (par_statements){
-        std::cout << " Par block\n";
-        std::cout << " size " << par_statements->GetItems().size() << std::endl;
+        if(DEBUG_MAPMC == true) std::cout << " Par block\n";
+        if(DEBUG_MAPMC == true) std::cout << " size " << par_statements->GetItems().size() << std::endl;
 
         for (unsigned int i=0; i < par_statements->GetItems().size(); ++i)
         {
@@ -396,9 +335,9 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
                 = dynamic_cast<const ASTControlKernelCallStatement*>(s);
 
     if (call_statements){
-        std::cout << " Call block\n";
+        if(DEBUG_MAPMC == true) std::cout << " Call block\n";
         const ASTKernel *k = call_statements->GetKernel(app);
-        std::cout << " Kernel name: " << k->GetName() << "\n";
+        if(DEBUG_MAPMC == true) std::cout << " Kernel name: " << k->GetName() << "\n";
         const ASTControlSequentialStatement *seq_statements = k->GetStatements();
  
         const ASTControlStatement *s_new
@@ -459,7 +398,7 @@ traverser::predictMemoryAccess(ASTAppModel *app, ASTMachModel *mach, std::string
         }
     }
 
-    //std::cout << " Total memory access: " << total_memory_access << "\n"; 
+    //if(DEBUG_MAPMC == true) std::cout << " Total memory access: " << total_memory_access << "\n"; 
     return total_memory_access;
 
 } 
@@ -498,7 +437,7 @@ traverser::getApplicationParam(ASTAppModel *app, std::string param)
         {
             vector<ASTStatement*> globals = app->GetGlobals();
 
-            //std::cout <<  "Size globals" << globals.size() << std::endl;
+            //if(DEBUG_MAPMC == true) std::cout <<  "Size globals" << globals.size() << std::endl;
 
             for (unsigned int i=0; i<globals.size(); ++i)
             {
@@ -507,11 +446,11 @@ traverser::getApplicationParam(ASTAppModel *app, std::string param)
                 if (!data)
                     continue;
                 std::string temp = data->GetName();
-                //std::cout << "Identifier name " << data->GetName() << std::endl;
-                //std::cout << "Identifier Value " << data->GetValue()->Evaluate() << std::endl;
+                //if(DEBUG_MAPMC == true) std::cout << "Identifier name " << data->GetName() << std::endl;
+                //if(DEBUG_MAPMC == true) std::cout << "Identifier Value " << data->GetValue()->Evaluate() << std::endl;
                 if (temp.find(param) != std::string::npos) {
                     param_value = data->GetValue()->Evaluate();
-                    //std::cout << "param " << temp << " : " << param_value << std::endl;
+                    //if(DEBUG_MAPMC == true) std::cout << "param " << temp << " : " << param_value << std::endl;
                     return param_value; 
                 }
             }  
@@ -522,7 +461,7 @@ traverser::getApplicationParam(ASTAppModel *app, std::string param)
             cerr << exc.PrettyString() <<endl;
         }
     }
-    std::cout << " Param: "  << param << " not found" << std::endl;
+    if(DEBUG_MAPMC == true) std::cout << " Param: "  << param << " not found" << std::endl;
     return param_value; 
 } 
 
@@ -601,7 +540,7 @@ traverser::getSocketComponent(ASTMachModel *mach, std::string socket)
         } 
      }
  
-    std::cout << " Socket: "  << socket << " not found" << std::endl;
+    if(DEBUG_MAPMC == true) std::cout << " Socket: "  << socket << " not found" << std::endl;
     return NULL;
 } 
 
@@ -645,9 +584,9 @@ traverser::getAnyMachineProperty(ASTMachModel *mach,
 	    if ( newcomp == NULL) return property_value;
             //cout << " Name = " << newcomp->GetName() << endl;
             //cout << " Type = " << newcomp->GetType() << endl;
-            //newcomp->Print(std::cout);
+            //newcomp->Print(if(DEBUG_MAPMC == true) std::cout);
             const vector<const ASTSubComponent*> newnewsub = newcomp->GetSubComponent();
-            //std::cout << " size = " << newnewsub.size() << endl;
+            //if(DEBUG_MAPMC == true) std::cout << " size = " << newnewsub.size() << endl;
    	    for (unsigned int k = 0; k < newnewsub.size(); ++k)
     	    {
                  const ASTSubComponent *newnewsc = newnewsub[k];
@@ -659,13 +598,13 @@ traverser::getAnyMachineProperty(ASTMachModel *mach,
                  {
                      //cout << " Name = " << newnewsc->GetName() << endl;
                      //cout << " Type = " << newnewsc->GetType() << endl;
-                     //newnewsc->Print(std::cout);
+                     //newnewsc->Print(if(DEBUG_MAPMC == true) std::cout);
  
                      const vector<const ASTMachProperty*> newnewproperties =  newnewcomp->GetProperties();
-                     //std::cout << "properties" << newnewproperties.size() << std::endl;
+                     //if(DEBUG_MAPMC == true) std::cout << "properties" << newnewproperties.size() << std::endl;
                      for (unsigned int l = 0; l < newnewproperties.size(); ++l)
     	             {
- 		         //std::cout << property << std::endl;
+ 		         //if(DEBUG_MAPMC == true) std::cout << property << std::endl;
                          if (newnewproperties[l]->GetName() == property)
                          {
                              //cout << " Name = " << newnewproperties[l]->GetName() << endl;
@@ -676,7 +615,7 @@ traverser::getAnyMachineProperty(ASTMachModel *mach,
                      } 
                  }
             } 
-	    std::cout << std::endl; 
+	    if(DEBUG_MAPMC == true) std::cout << std::endl; 
           }
           catch (const AspenException& exc)
           {
@@ -685,7 +624,7 @@ traverser::getAnyMachineProperty(ASTMachModel *mach,
         
     }
 
-    std::cout << " Property: "  << property << " not found" << std::endl;
+    if(DEBUG_MAPMC == true) std::cout << " Property: "  << property << " not found" << std::endl;
     return property_value; 
 }
 

@@ -55,7 +55,8 @@ TESTS=mapmc
 #  stream_access
 
 
-OBJ=./model_parser/main.o ./model_parser/traverser.o
+OBJ=./model_parser/main.o ./model_parser/traverser.o ./model_parser/analytical_model.o
+
 #OBJ=./model_parser/$(TESTS:=.o)
 
 all: $(TESTS)
@@ -69,7 +70,8 @@ stream_access: $(LIBDEP) ${SRC}/stream_access.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
 
 
-mapmc: $(LIBDEP) ./model_parser/main.o ./model_parser/traverser.o
+#mapmc: $(LIBDEP) ./model_parser/main.o ./model_parser/traverser.o ./model_parser/analytical_model.o
+mapmc: $(LIBDEP) $(OBJ)
 	#$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) ./model_parser/$(@:=.o) -o $@ $(LIBS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(OBJ) -o $@ $(LIBS)
 

@@ -43,13 +43,14 @@ analytical_model(
 analytical_model::analytical_model(
     int compiler,
     int instruction_type,
-    std::size_t cache_line_size,
+    int cache_line_size,
     vector<ASTTrait*> traits,
     bool prefetch_enabled,
     bool multithreaded,
     std::int64_t data_structure_size,
     int element_size
-) 
+)   
+     
 { 
     _compiler = compiler;
     _instruction_type = instruction_type;
@@ -59,11 +60,17 @@ analytical_model::analytical_model(
     _multithreaded = multithreaded;
     _data_structure_size = data_structure_size;
     _element_size = element_size;
-    std::cout << " ana model trait size " <<  traits.size() << std::endl;
+    if(DEBUG_MAPMC == true) std::cout << " Analytical model trait size " <<  traits.size() << std::endl;
 
     _access_pattern = findPattern(_traits);
     _initialized = findInitialized(_traits);
-    std::cout << " access pattern " <<  _access_pattern << " init " << _initialized << std::endl;
+    if(DEBUG_MAPMC == true) std::cout << " Analytical model access pattern " <<  _access_pattern << " init " << _initialized << std::endl;
+
+
+    if ( _element_size * _data_structure_size > 4 * KB ) _page_size = 2 * MB;
+    //predictMemoryAccess();
+        
+
 
 }
 
@@ -72,13 +79,13 @@ analytical_model::~analytical_model(){
 
 bool analytical_model::findInitialized(vector<ASTTrait*> traits){
     bool init = true;
-    std::cout << " size " <<  traits.size() << std::endl;
+    if(DEBUG_MAPMC == true) std::cout << " size " <<  traits.size() << std::endl;
     if (traits.size() < 1) return init;
     for (int k = 0; k < traits.size(); k++){
         std::string ttrait = traits[k]->GetName();
         if (ttrait == "initialized"){
-            //std::cout << "traits Name " << ttrait;
-            std::cout << " traits value " << 
+            //if(DEBUG_MAPMC == true) std::cout << "traits Name " << ttrait;
+            if(DEBUG_MAPMC == true) std::cout << " traits value " << 
                 traits[k]->GetValue()->Evaluate() << std::endl;
             init = (bool) traits[k]->GetValue()->Evaluate();
             //stride = stride * element_size;
@@ -89,13 +96,13 @@ bool analytical_model::findInitialized(vector<ASTTrait*> traits){
 
 int analytical_model::findPattern(vector<ASTTrait*> traits){
     int pattern = access_patterns::STREAM;
-    std::cout << " size " <<  traits.size() << std::endl;
+    if(DEBUG_MAPMC == true) std::cout << " size " <<  traits.size() << std::endl;
     if (traits.size() < 1) return pattern;
     for (int k = 0; k < traits.size(); k++){
         std::string ttrait = traits[k]->GetName();
         if (ttrait == "pattern"){
-            //std::cout << "traits Name " << ttrait;
-            std::cout << " traits value " << 
+            //if(DEBUG_MAPMC == true) std::cout << "traits Name " << ttrait;
+            if(DEBUG_MAPMC == true) std::cout << " traits value " << 
                 traits[k]->GetValue()->GetText() << std::endl;
             std::string temp_pattern = traits[k]->GetValue()->GetText();
             //std::string temp_pattern = traits[k]->GetValue()->Evaluate();
@@ -109,22 +116,63 @@ int analytical_model::findPattern(vector<ASTTrait*> traits){
     return pattern;
 }
 
-int findPattern(vector<ASTTrait*> traits);
 
 
-double  analytical_model::predictMemoryAccess(){
+std::int64_t analytical_model::predictMemoryAccess(){
+
+    std::int64_t memory_access = 0;
+    if ( _access_pattern == access_patterns::STREAM) memory_access = streamAccess();
+    if ( _access_pattern == access_patterns::STRIDE) memory_access = strideAccess();
+    if ( _access_pattern == access_patterns::STENCIL) memory_access = stencilAccess();
+    if ( _access_pattern == access_patterns::RANDOM)  memory_access = randomAccess();
+
+    return memory_access;
+}
+
+std::int64_t  analytical_model::streamAccess() {
+    std::int64_t memory_access = 0;
+    /// renaming the variables as per model described in the paper
+    int64_t N = _data_structure_size;
+    int CL = _cache_line_size;
+    int ES = _element_size;
+    // converting the stride and data size to bytes
+    
+    if (_compiler == compilers::GCC) {
+        if (_initialized == true) {
+            if ( _instruction_type == instructions::LOAD) {
+                //memory_access =  N * ES / (double) CL/10000 ;
+                //memory_access = ceil( N * ES / (double) CL/10000 );
+                memory_access = ceil( N * ES / (double) CL ) * CL;
+                if(DEBUG_MAPMC == true) std::cout << " Memory access " << memory_access << std::endl;
+            } else if ( _instruction_type == instructions::STORE) {
+                memory_access = 2 * ceil( N * ES / (double) CL ) * CL;
+            }
+        } else {
+            if ( _instruction_type == instructions::LOAD) {
+                memory_access = ceil( N * ES / (double) CL ) * CL;
+            } else if ( _instruction_type == instructions::STORE) {
+                memory_access = ceil( N * ES / (double) _page_size ) * _page_size;
+            }
+        }
+    } 
+    
+    memory_access = ceil( memory_access / (double) CL );
+
+    if(DEBUG_MAPMC == true) std::cout << " Analytical Model " << memory_access << " data size "  
+        <<  N  << " element size " << ES << " cacheline " 
+        << CL << " page size " << _page_size  << "  instruction " << _instruction_type << std::endl;
+
+    return memory_access;
 
 }
-double  analytical_model::streamAccess(int pattern) {
+
+std::int64_t analytical_model::randomAccess(){
 
 }
-double  analytical_model::randomAccess(int pattern){
+std::int64_t analytical_model::strideAccess(){
 
 }
-double  analytical_model::strideAccess(int pattern){
-
-}
-double  analytical_model::stencilAccess(int pattern){
+std::int64_t analytical_model::stencilAccess(){
 
 }
 

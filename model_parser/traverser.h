@@ -1,4 +1,8 @@
 // Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
+
+#ifndef TRAVERSER_H
+#define TRAVERSER_H
+
 #include <iostream>
 #include <deque>
 #include <cstdio>
@@ -76,5 +80,7 @@ ASTAppModel*  getAppModel() { return app;}
 ASTMachModel*  getMachineModel() {return mach;}
 
 };
+
+#endif
 
 
