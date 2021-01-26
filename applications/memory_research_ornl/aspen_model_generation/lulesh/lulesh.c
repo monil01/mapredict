@@ -1900,6 +1900,7 @@ void CalcVelocityForNodes(const Real_t dt, const Real_t u_cut,
 #pragma aspen control probability(1)
 #endif
      if( FABS8(xdtmp) < u_cut ) xdtmp = 0.0;
+#pragma aspen  control stores(0:from(p_xd):traits(initialized(0)))
      p_xd[i] = xdtmp ;
 
      ydtmp = p_yd[i] + p_ydd[i] * dt ;
@@ -1910,6 +1911,7 @@ void CalcVelocityForNodes(const Real_t dt, const Real_t u_cut,
 #pragma aspen control probability(1)
 #endif
      if( FABS8(ydtmp) < u_cut ) ydtmp = 0.0;
+#pragma aspen  control stores(0:from(p_yd):traits(initialized(0)))
      p_yd[i] = ydtmp ;
 
      zdtmp = p_zd[i] + p_zdd[i] * dt ;
@@ -1920,6 +1922,7 @@ void CalcVelocityForNodes(const Real_t dt, const Real_t u_cut,
 #pragma aspen control probability(1)
 #endif
      if( FABS8(zdtmp) < u_cut ) zdtmp = 0.0;
+#pragma aspen  control stores(0:from(p_zd):traits(initialized(0)))
      p_zd[i] = zdtmp ;
    }
 }
@@ -1955,13 +1958,17 @@ void LagrangeNodal()
    * acceleration boundary conditions. */
   //Monil CalcForceForNodes(m_fx,m_fy,m_fz);
 
+  //Monil CalcAccelerationForNodes(m_fx,m_fy,m_fz,m_xdd,m_ydd,m_zdd,m_nodalMass);
   CalcAccelerationForNodes(m_fx,m_fy,m_fz,m_xdd,m_ydd,m_zdd,m_nodalMass);
 
   //Monil ApplyAccelerationBoundaryConditionsForNodes(m_xdd,m_ydd,m_zdd,m_symmX,m_symmY,m_symmZ);
+  ApplyAccelerationBoundaryConditionsForNodes(m_xdd,m_ydd,m_zdd,m_symmX,m_symmY,m_symmZ);
 
+  CalcVelocityForNodes(delt,u_cut,m_xd,m_yd,m_zd,m_xdd,m_ydd,m_zdd);
   //Monil CalcVelocityForNodes(delt,u_cut,m_xd,m_yd,m_zd,m_xdd,m_ydd,m_zdd);
 
   //Monil CalcPositionForNodes(delt,m_x,m_y,m_z,m_xd,m_yd,m_zd);
+  CalcPositionForNodes(delt,m_x,m_y,m_z,m_xd,m_yd,m_zd);
 
   return;
 }

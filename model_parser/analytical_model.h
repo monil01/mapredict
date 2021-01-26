@@ -52,7 +52,7 @@ analytical_model(
     vector<ASTTrait*> traits,
     bool prefetch_enabled,
     bool multithreaded,
-    int64_t data_structure_size,
+    std::int64_t data_structure_size,
     int element_size
 );
 ~analytical_model();

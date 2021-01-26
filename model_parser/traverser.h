@@ -48,33 +48,34 @@ public:
 traverser(ASTAppModel *app, ASTMachModel *mach);
 ~traverser();
 
-double  predictMemoryAccess(ASTAppModel *app, 
+std::int64_t  predictMemoryAccess(ASTAppModel *app, 
                                         ASTMachModel *mach, std::string socket);
 
-double  predictMemoryStatement(const ASTRequiresStatement *req, std::string socket, 
-    double inner_parallelism);
+std::int64_t  predictMemoryStatement(const ASTRequiresStatement *req, std::string socket, 
+    std::int64_t inner_parallelism);
 
-double  getApplicationParam(ASTAppModel *app, std::string param);
+std::int64_t  getApplicationParam(ASTAppModel *app, std::string param);
+std::string  getNameOfDataType(std::string str_expression);
 
 const ASTMachComponent* getSocketComponent(ASTMachModel *mach, std::string socket);
 
-double getAnyMachineProperty(ASTMachModel *mach, 
+std::int64_t getAnyMachineProperty(ASTMachModel *mach, 
 			std::string socket,
 			std::string component, std::string property);
 
-double analyticalStreamingAccess(double D, double E, double S, double CL);
-double callAnalyticalModel(double D, double E, double S, double CL);
+std::int64_t analyticalStreamingAccess(std::int64_t D, std::int64_t E, std::int64_t S, std::int64_t CL);
+std::int64_t callAnalyticalModel(std::int64_t D, std::int64_t E, std::int64_t S, std::int64_t CL);
 
-double
+std::int64_t
 recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket, 
-    double outer_parallelism,
+    std::int64_t outer_parallelism,
     const ASTControlStatement *s);
 
 
 
-double executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket,
+std::int64_t executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket,
     const ASTExecutionBlock *exec,
-    double outer_parallelism);
+    std::int64_t outer_parallelism);
 
 ASTAppModel*  getAppModel() { return app;}
 ASTMachModel*  getMachineModel() {return mach;}

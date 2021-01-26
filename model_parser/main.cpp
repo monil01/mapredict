@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 
             cout << "\n\n>> for socket type '"<<socket<<"' <<\n\n";
 
-            double memory = traverser_obj->predictMemoryAccess(app, mach, socket); 
+            std::int64_t memory = traverser_obj->predictMemoryAccess(app, mach, socket); 
             std::cout << " Total Memory access : " << memory << "\n";
             //if(DEBUG_MAPMC == true) std::cout << " for Double data type : " << memory * 2 << "\n";
             //if(DEBUG_MAPMC == true) std::cout << " Total bytes accessed : " << memory << "\n";

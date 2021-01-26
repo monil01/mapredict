@@ -47,7 +47,7 @@ traverser::~traverser(){
  * 
  * Input: This function takes four arguments, 
  * 1.  D = total length of the data structure
- * 2.  E = Element size (i.e., size of float/double/int)
+ * 2.  E = Element size (i.e., size of float/std::int64_t/int)
  * 3.  S = Stride length
  * 4.  CL = cacheline length.
  * 
@@ -63,10 +63,10 @@ traverser::~traverser(){
 
 
 
-double  
-traverser::analyticalStreamingAccess(double D, double E, double S, double CL)
+std::int64_t  
+traverser::analyticalStreamingAccess(std::int64_t D, std::int64_t E, std::int64_t S, std::int64_t CL)
 {
-    double memory_access = 0;
+    std::int64_t memory_access = 0;
     // converting the stride and data size to bytes
     S = S * E;
     D = D * E;
@@ -75,15 +75,15 @@ traverser::analyticalStreamingAccess(double D, double E, double S, double CL)
     int e = (int) E;
 
     int mod = (e - 1) % cli;
-    double p = mod / CL;
-    //double p = find_mod((E - 1), CL) / CL;
+    std::int64_t p = mod / CL;
+    //std::int64_t p = find_mod((E - 1), CL) / CL;
 
     // First Case E >= CL 
     if (E >= CL)
     {
         if ( E < S) 
         {
-	    double AE = ceil(E/CL) + p;
+	    std::int64_t AE = ceil(E/CL) + p;
             memory_access = floor(D/S) * AE;
         }
         else 
@@ -113,9 +113,9 @@ traverser::analyticalStreamingAccess(double D, double E, double S, double CL)
 }
 
 
-double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::string socket,
-    double inner_parallelism){
-    double memory_access = 0;
+std::int64_t traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::string socket,
+    std::int64_t inner_parallelism){
+    std::int64_t memory_access = 0;
     int compiler;
     int instruction_type;
     int cache_line_size;
@@ -127,6 +127,8 @@ double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::s
     int element_size;
     std::string property, component;
 
+    //if(DEBUG_MAPMC == true) std::cout << " statement " << req->GetText() << std::endl;
+    
     // getting compiler
     property = "compiler";
     component = "cache";
@@ -134,10 +136,12 @@ double traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::s
     //if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << component << " : " << property << " " << getAnyMachineProperty(mach, socket, component, property) << std::endl;
     compiler = (int) getAnyMachineProperty(mach, socket, component, property);
     if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << component << " : " << property << " " << compiler << std::endl;
-sdfsfafasd
-    if (req->GetResource().compare("loads")) instruction_type = instructions::LOAD;
-    if (req->GetResource().compare("stores")) instruction_type = instructions::STORE;
-    if(DEBUG_MAPMC == true) std::cout << " " << socket << " :  instruction " << instruction_type << std::endl;
+
+    if (req->GetResource().compare("loads") == 0) instruction_type = instructions::LOAD;
+    if (req->GetResource().compare("stores") == 0) instruction_type = instructions::STORE;
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " :  instruction " 
+        << instruction_type << " string " << req->GetResource() 
+        << " instruction type " << instructions::LOAD << std::endl;
 
     // getting cacheline size
     property = "cacheline";
@@ -163,38 +167,44 @@ sdfsfafasd
     if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << component << " : " << property << " " << multithreaded << std::endl; 
     
     // getting element size
-    std::string param = "aspen_param_sizeof_";
+    ExpressionBuilder ebuilder = req->GetQuantity()->Cloned();
+    std::string param = getNameOfDataType(ebuilder.GetExpression()->GetText());
     element_size = (int) getApplicationParam(app, param);
-    if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << " element size " << element_size << std::endl; 
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << " element name: " << param << " element size " << element_size << std::endl; 
  
     // getting data size
-    ExpressionBuilder eb = req->GetQuantity()->Cloned();
-    double temp_total = eb.GetExpression()->Expanded(app->paramMap)->Evaluate();
+    std::int64_t temp_total = ebuilder.GetExpression()->Expanded(app->paramMap)->Evaluate();
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " :  expression " <<  ebuilder.GetExpression()->GetText() << " " << temp_total << std::endl; 
+    
     //multiplied by parallelism because of the for loop is counted as parallelism
-    data_structure_size = (int64_t) temp_total / element_size * inner_parallelism;
+    data_structure_size = (std::int64_t) ((temp_total / (double)element_size) * inner_parallelism);
+
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " :  value " << temp_total << " " << element_size << " parallel " << inner_parallelism << std::endl; 
     if(DEBUG_MAPMC == true) std::cout << " " << socket << " :  data size " << data_structure_size << std::endl; 
     if(DEBUG_MAPMC == true) std::cout << std::endl;	
 
+    if(DEBUG_MAPMC == true) std::cout << " Statement: " << req->GetResource() << " " << ebuilder.GetExpression()->GetText() << " " << req->GetToFrom() << " " << std::endl; 
+
     analytical_model * ana_model = new analytical_model(compiler, instruction_type, cache_line_size,
         traits, prefetch_enabled, multithreaded, data_structure_size, element_size);
-    memory_access = (double) ana_model->predictMemoryAccess(); 
+    memory_access = (std::int64_t) ana_model->predictMemoryAccess(); 
     if(DEBUG_MAPMC == true) std::cout << " memory access : " << memory_access << "\n";
 
     delete ana_model;
+
     return memory_access;
 }
 
 
- 
-double  
+std::int64_t
 traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket, 
     const ASTExecutionBlock *exec,
-    double outer_parallelism)
+    std::int64_t outer_parallelism)
 {  
-    double total_memory_access = 0;
+    std::int64_t total_memory_access = 0;
 
-    //double element_size = 0, stride = 0, total_length = 0;
-    //double cacheline = 0;
+    //std::int64_t element_size = 0, stride = 0, total_length = 0;
+    //std::int64_t cacheline = 0;
     //std::string param = "aspen_param_sizeof_";
 
     //element_size = getApplicationParam(app, param);
@@ -211,7 +221,7 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
 
     ExpressionBuilder eb;
     Expression* current_expression;
-    double inner_parallelism = 1;
+    std::int64_t inner_parallelism = 1;
     //if(DEBUG_MAPMC == true) std::cout << " outer multiplying factor : " << 
     //    exec->GetParallelism()->Expanded(app->paramMap)->Evaluate() << "\n";
     inner_parallelism = exec->GetParallelism()->Expanded(app->paramMap)->Evaluate();
@@ -230,32 +240,35 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
         if (req) // requires statement
         {
             // not entertaining other types of instructions
-            if (req->GetResource() != "loads" && req->GetResource() != "stores" ) return 0;
+            if (req->GetResource() != "loads" && req->GetResource() != "stores" ) continue;
             // calling the analytical model
-			double memory_access_statement =  predictMemoryStatement(req, socket, inner_parallelism);
+			std::int64_t memory_access_statement =  predictMemoryStatement(req, socket, inner_parallelism);
 			if(DEBUG_MAPMC == true) std::cout << " memory access statement : " << memory_access_statement << "\n";
             total_memory_access += memory_access_statement;
-            if(DEBUG_MAPMC == true) std::cout << " Total executive block memory access : " << total_memory_access << "\n \n";
+            if(DEBUG_MAPMC == true) std::cout << " Upto now Executive block memory access : " << total_memory_access << "\n \n";
         }
     } 
 
     if(DEBUG_MAPMC == true) std::cout << " Total executive block memory access : " << total_memory_access << "\n \n";
+
+    //exit(0);
     return total_memory_access;
 
 }
     
-double  
+std::int64_t
 traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket, 
-    double outer_parallelism,
+    std::int64_t outer_parallelism,
     const ASTControlStatement *s)
 {
-    double total_memory_access = 0;
+    std::int64_t total_memory_access = 0;
     const ASTExecutionBlock *exec = dynamic_cast<const ASTExecutionBlock*>(s);
     if (exec) // it's a kernel-like requires statement
     {
-        if(DEBUG_MAPMC == true) std::cout << " Execute block\n";
+        if(DEBUG_MAPMC == true) std::cout << " ---------------------- Execute block ------------------\n";
+        if(DEBUG_MAPMC == true) std::cout << " Execute Block name: " << exec->GetName() << "\n";
         total_memory_access += executeBlock(app, mach, socket, exec, outer_parallelism);
-        if(DEBUG_MAPMC == true) std::cout << "\n total memory upto this block: " << total_memory_access << "\n";
+        //if(DEBUG_MAPMC == true) std::cout << "\n total memory upto this block: " << total_memory_access << "\n";
         return total_memory_access;
     }
     
@@ -266,7 +279,7 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
                     //dynamic_cast<const ASTControlSequentialStatement *>(s);
     if (iter_statement){
         if(DEBUG_MAPMC == true) std::cout << " Iter block\n";
-        double new_parallelism = iter_statement->GetQuantity()->Expanded(app->paramMap)->Evaluate();
+        std::int64_t new_parallelism = iter_statement->GetQuantity()->Expanded(app->paramMap)->Evaluate();
 
         outer_parallelism *= new_parallelism;
 
@@ -286,7 +299,7 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
                     //dynamic_cast<const ASTControlSequentialStatement *>(s);
     if (map_statement){
         if(DEBUG_MAPMC == true) std::cout << " Map block\n";
-        double new_parallelism = map_statement->GetQuantity()->Expanded(app->paramMap)->Evaluate();
+        std::int64_t new_parallelism = map_statement->GetQuantity()->Expanded(app->paramMap)->Evaluate();
 
         outer_parallelism *= new_parallelism;
 
@@ -307,7 +320,7 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
 
         for (unsigned int i=0; i < seq_statements->GetItems().size(); ++i)
         {
-            //double outer_parallelism = 1;
+            //std::int64_t outer_parallelism = 1;
 
             const ASTControlStatement *s_new = seq_statements->GetItems()[i];
             total_memory_access += recursiveBlock(app, mach, socket, outer_parallelism, s_new);
@@ -324,7 +337,7 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
 
         for (unsigned int i=0; i < par_statements->GetItems().size(); ++i)
         {
-            //double outer_parallelism = 1;
+            //std::int64_t outer_parallelism = 1;
 
             const ASTControlStatement *s_new = par_statements->GetItems()[i];
             total_memory_access += recursiveBlock(app, mach, socket, outer_parallelism, s_new);
@@ -367,10 +380,11 @@ traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
  * to calculte the total memory traffic.
  */
 
-double  
+std::int64_t
 traverser::predictMemoryAccess(ASTAppModel *app, ASTMachModel *mach, std::string socket)
 {
-    double total_memory_access = 0;
+    std::int64_t total_memory_access = 0;
+
 
     //std::string size_name;
 
@@ -382,7 +396,7 @@ traverser::predictMemoryAccess(ASTAppModel *app, ASTMachModel *mach, std::string
             if(k->GetName() == "main")
             {
                 const ASTControlSequentialStatement *statements = k->GetStatements();
-                double outer_parallelism = 1;
+                std::int64_t outer_parallelism = 1;
  
                 const ASTControlStatement *s 
                     = dynamic_cast<const ASTControlStatement*>(statements);
@@ -426,10 +440,10 @@ traverser::predictMemoryAccess(ASTAppModel *app, ASTMachModel *mach, std::string
  */
 
 
-double  
+std::int64_t  
 traverser::getApplicationParam(ASTAppModel *app, std::string param)
 {
-    double param_value = -1;
+    std::int64_t param_value = -1;
     if (app)
     {
         //cout << "\n ------  Application model search:param search function called ------\n";
@@ -569,12 +583,12 @@ traverser::getSocketComponent(ASTMachModel *mach, std::string socket)
  */
 
 
-double 
+std::int64_t 
 traverser::getAnyMachineProperty(ASTMachModel *mach, 
 			std::string socket,
 			std::string component, std::string property)
 {
-    double property_value = -1;
+    std::int64_t property_value = -1;
     if (mach)
     {
         //cout << "\n ------  Machine model search:property function called ------\n";
@@ -631,4 +645,20 @@ traverser::getAnyMachineProperty(ASTMachModel *mach,
 
 
 
+std::string  traverser::getNameOfDataType(std::string str_expression){
+
+    std::string type_name;
+    if(str_expression.find("aspen_param_sizeof_int") != std::string::npos) {
+        if(DEBUG_MAPMC == true) std::cout << " type " << str_expression << " " << str_expression.find("aspen_param_sizeof_int") << std::endl;
+        return "aspen_param_sizeof_int";
+    }
+    if(str_expression.find("aspen_param_sizeof_double") != std::string::npos){
+        if(DEBUG_MAPMC == true) std::cout << " type " << str_expression << " " << str_expression.find("aspen_param_sizeof_double") << std::endl;
+        return "aspen_param_sizeof_double";
+    }
+    if(str_expression.find("aspen_param_sizeof_float") != std::string::npos){ 
+        if(DEBUG_MAPMC == true) std::cout << " type " << str_expression << " " << str_expression.find("aspen_param_sizeof_float") << std::endl;
+       return "aspen_param_sizeof_float";
+    }
+}
 

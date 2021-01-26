@@ -68,6 +68,7 @@ analytical_model::analytical_model(
 
 
     if ( _element_size * _data_structure_size > 4 * KB ) _page_size = 2 * MB;
+
     //predictMemoryAccess();
         
 
@@ -79,7 +80,6 @@ analytical_model::~analytical_model(){
 
 bool analytical_model::findInitialized(vector<ASTTrait*> traits){
     bool init = true;
-    if(DEBUG_MAPMC == true) std::cout << " size " <<  traits.size() << std::endl;
     if (traits.size() < 1) return init;
     for (int k = 0; k < traits.size(); k++){
         std::string ttrait = traits[k]->GetName();
@@ -96,7 +96,6 @@ bool analytical_model::findInitialized(vector<ASTTrait*> traits){
 
 int analytical_model::findPattern(vector<ASTTrait*> traits){
     int pattern = access_patterns::STREAM;
-    if(DEBUG_MAPMC == true) std::cout << " size " <<  traits.size() << std::endl;
     if (traits.size() < 1) return pattern;
     for (int k = 0; k < traits.size(); k++){
         std::string ttrait = traits[k]->GetName();
@@ -132,7 +131,7 @@ std::int64_t analytical_model::predictMemoryAccess(){
 std::int64_t  analytical_model::streamAccess() {
     std::int64_t memory_access = 0;
     /// renaming the variables as per model described in the paper
-    int64_t N = _data_structure_size;
+    std::int64_t N = _data_structure_size;
     int CL = _cache_line_size;
     int ES = _element_size;
     // converting the stride and data size to bytes
