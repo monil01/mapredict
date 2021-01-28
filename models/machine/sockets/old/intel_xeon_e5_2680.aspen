@@ -1,0 +1,53 @@
+// Model for a Xeon E5-2680
+
+// Key values:
+// 8 cores / socket
+// 2.7GHz
+// can retire 4 dp ops/cycle or 8 sp ops/cycle
+
+// WM Core Parameters
+param wmNumCores = 8
+param wmCoreClock = 2.7 * giga // turbo up to 3.5
+param wmIssueRate = wmCoreClock * 2
+param wmSIMD = 4
+
+// Cache
+param wmCacheCap = 20 * mega
+param wmCacheLat = (1 / wmCoreClock) * 40 // 48 Cycles for x5600 series, various reports say 32%-40% lower in 
+param wmCacheBW = wmNumCores * 96 * giga // 96GB per core WM, appears similar here
+
+// Power
+param wmTDP = 95
+param wmIdle = 10
+
+socket intel_xeon_e5_2680 {
+   core [wmNumCores] westmereCore
+   memory ddr3
+   cache wmCache
+   link qpi
+
+   static power [wmIdle]
+}
+
+core westmereCore {
+  
+  resource flops(number) [number / wmIssueRate ] 
+    with dp   [base * 2],
+         simd [base / wmSIMD], 
+         fmad [base],
+         sin  [base * 18]
+    dynamic power [(wmTDP - wmIdle) / wmNumCores]
+
+  resource intops(number) [ number / wmIssueRate ]
+    dynamic power [(wmTDP - wmIdle) / wmNumCores]
+}
+
+cache wmCache {
+   property capacity  [wmCacheCap] 
+}
+
+link qpi {
+   resource intracomm(bytes) [ micro + (bytes/(16*giga))]
+}
+
+

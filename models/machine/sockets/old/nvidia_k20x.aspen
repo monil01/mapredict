@@ -1,0 +1,103 @@
+// Model for an NVIDIA Tesla K20X (Kepler-based GPU)
+// This model treats a streaming multiprocessor (SMX) as a core.
+// And models the scratchpad (not register file) as the cache.
+//
+// References:
+//   Tesla Kepler GPU accelerators overview
+//     http://www.nvidia.com/content/tesla/pdf/Tesla-KSeries-Overview-LR.pdf
+//   Inside Kepler
+//     http://on-demand.gputechconf.com/gtc/2012/presentations/S0642-GTC2012-Inside-Kepler.pdf
+//
+//   CUDA Programming Guide 5.0
+//
+//   Whitepaper Kepler TM GK110
+//     http://www.nvidia.com/content/PDF/kepler/NVIDIA-Kepler-GK110-Architecture-Whitepaper.pdf
+// 
+// 192 CUDA core / SMX
+// K20X has 14 SMX and 2688 CUDA cores (14 * 192 = 2688)
+// 1.31 Double Precision FLOP/s (peak)
+// 3.95 Single Precision FLOP/s (peak)
+// 
+
+
+// Core Parameters
+param kNumCores = 14 // total #SMX's - 14 per
+param kCoreClock = 732 * mega in 100 * mega .. 2000 * mega // 732 MHz
+param kSIMD = 32
+
+// GDDR5 Parameters
+param gddr5Clock = 3700 * mega  in 100 * mega .. 4000 * mega // effective
+param gddr5Width = 48
+param eccPenalty = 0.75 // 133 GB/s vs. 177 GB/s
+param gddr5BW = gddr5Clock * gddr5Width * eccPenalty
+param gddr5Lat = 50 * nano / kSIMD ///\todo; DIVING BY FSIMD IS A HACK!!
+param gddr5Cap = 6 * giga
+
+// Power
+param fIdle = 30
+param fTDP = 250
+
+socket nvidia_k20x {
+   core [kNumCores] keplerCore 
+   memory gddr5
+   cache fermiSP
+   link pcie
+
+   static power [fIdle]
+}
+
+core keplerCore {
+   resource flops(number) [number / kCoreClock]
+     with dp   [base * 2], 
+          simd [base / kSIMD], 
+          fmad [base / 2],
+          sin  [base * 18]
+     dynamic power [(fTDP - fIdle) / kNumCores]
+}
+
+memory gddr5 {
+   property capacity  [gddr5Cap] 
+   
+   ///\todo: stride used to be ddr3BW/2.  I can only assume
+   /// it should have been "base*2" (which I'm now using), or else
+   /// the full expression ddr3Lat + numBytes / (ddr2BW/2).
+   ///\todo: random used to be 3*giga.  I'm not sure the 
+   /// intent, so I'm using base*8 instead.
+   resource loads(numBytes)  [gddr5Lat + (numBytes / gddr5BW)]
+     with stride [base*2], random[base*8]
+     dynamic power [fTDP - fIdle]
+
+   resource stores(numBytes) [gddr5Lat + (numBytes / gddr5BW)]
+     with stride [base*2], random[base*8]
+     dynamic power [fTDP - fIdle]
+
+   conflict loads, stores
+   ///\todo: having loads/stores conflict with flops drastically
+   /// improved the accuracy of the predictions for a matmul example:
+   conflict loads, flops
+}
+
+// Fermi Scratchpad cache
+cache fermiSP {
+  // bw = 1030 GB/s aggregate / 14 SM's
+  // Shared memory bandwidth:
+  // 
+  property capacity [32 * kilo]
+  property latency [0]
+  property bandwidth [1177 * giga / 14]
+}
+
+link pcie {
+  property latency [5 * micro]
+  property bandwidth [6 * giga]
+   
+  ///\todo: We should be able to use the above properties here, as follows:
+  //resource intracomm(bytes) [latency + (bytes/bandwidth)]
+  //resource intracomm(bytes) [5*micro + (bytes/(6*giga))]
+
+  // Jeremy, 2013-09-09: measured latency is nothing like 5 us.
+  // Using SHOC on my workstation: PCIe v3 to GTX680 is 15 us (pinned or not)
+  //                               PCIe v2 to C2050  is 30 us (pinned or not)
+  //                               and, oddly, the 9500GT is only about 15 us as well....
+  resource intracomm(bytes) [15*micro + (bytes/(6*giga))]
+}

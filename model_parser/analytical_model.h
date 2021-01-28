@@ -40,6 +40,7 @@ private:
     int64_t _data_structure_size;
     int _element_size;
     int _page_size;
+    std::string _pattern_string;
     
 
 

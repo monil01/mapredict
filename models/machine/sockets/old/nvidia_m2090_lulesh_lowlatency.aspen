@@ -1,0 +1,87 @@
+// Model for an NVIDIA Tesla M2090 (Fermi-based GPU)
+// This model treats a streaming multiprocessor (SM) as a core.
+// And models the scratchpad (not register file) as the cache.
+// Total number of cores: 512
+
+// Core Parameters
+param fNumCores = 8 // total #SM's - 16 per
+param fCoreClock = 1300 * mega in 100 * mega .. 2000 * mega
+param fSIMD = 64
+
+// GDDR5 Parameters
+param gddr5Clock = 3700 * mega  in 100 * mega .. 4000 * mega // effective
+param gddr5Width = 48
+param eccPenalty = 0.75 // 133 GB/s vs. 177 GB/s
+param gddr5BW = gddr5Clock * gddr5Width * eccPenalty
+param gddr5Lat = 50 * nano / fSIMD ///\todo; DIVING BY FSIMD IS A HACK!!
+param gddr5Cap = 6 * giga
+
+param pcieBW = 6*giga
+param pcieLat = 15*micro
+
+// Power
+param fIdle = 30
+param fTDP = 250
+
+socket nvidia_m2090 {
+   core [fNumCores] fermiCore
+   memory gddr5
+   cache fermiSP
+   link pcie
+
+   static power [fIdle]
+}
+
+core fermiCore {
+   resource flops(number) [number / fCoreClock]
+     with dp   [base * 2], 
+          simd [base / fSIMD], 
+          fmad [base / 2],
+          sin  [base * 18]
+     dynamic power [(fTDP - fIdle) / fNumCores]
+}
+
+memory gddr5 {
+   property capacity  [gddr5Cap] 
+   
+   ///\todo: stride used to be ddr3BW/2.  I can only assume
+   /// it should have been "base*2" (which I'm now using), or else
+   /// the full expression ddr3Lat + numBytes / (ddr2BW/2).
+   ///\todo: random used to be 3*giga.  I'm not sure the 
+   /// intent, so I'm using base*8 instead.
+   resource loads(numBytes)  [gddr5Lat + (numBytes / gddr5BW)]
+     with stride [base*2], random[base*8]
+     dynamic power [fTDP - fIdle]
+
+   resource stores(numBytes) [gddr5Lat + (numBytes / gddr5BW)]
+     with stride [base*2], random[base*8]
+     dynamic power [fTDP - fIdle]
+
+   conflict loads, stores
+   ///\todo: having loads/stores conflict with flops drastically
+   /// improved the accuracy of the predictions for a matmul example:
+   conflict loads, flops
+}
+
+// Fermi Scratchpad cache
+cache fermiSP {
+   // bw = 1030 GB/s aggregate / 14 SM's
+   property capacity [48 * kilo]
+   property latency [0]
+   property bandwidth [1177 * giga / 16]
+}
+
+link pcie {
+   //latency [5 * micro]
+   //bandwidth [6 * giga]
+   
+  ///\todo: We should be able to use the above properties here, as follows:
+  //resource intracomm(bytes) [latency + (bytes/bandwidth)]
+  //resource intracomm(bytes) [5*micro + (bytes/(6*giga))]
+
+  // Jeremy, 2013-09-09: measured latency is nothing like 5 us.
+  // Using SHOC on my workstation: PCIe v3 to GTX680 is 15 us (pinned or not)
+  //                               PCIe v2 to C2050  is 30 us (pinned or not)
+  //                               and, oddly, the 9500GT is only about 15 us as well....
+  resource intracomm(bytes) [pcieLat + (bytes/pcieBW)]
+}

@@ -1,0 +1,26 @@
+// DDR3 Parameters
+param ddr3Cap = 12 * giga
+//param ddr3MemClock = 1066 * mega
+param ddr3Channels = 3
+param ddr3BW  = ddr3MemClock * ddr3Channels * 8 //32 GB/s @ 1333 MHz, 25.6 GB/s @ 1066 MHz
+param ddr3Lat = 10 * nano / wmSIMD ///\todo; DIVING BY WMSIMD IS A HACK!!
+
+memory ddr3 {
+   property capacity  [ddr3Cap] 
+   
+   ///\todo: stride used to be ddr3BW/2.  I can only assume
+   /// it should have been "base*2" (which I'm now using), or else
+   /// the full expression ddr3Lat + numBytes / (ddr2BW/2).
+   ///\todo: random used to be 3*giga.  I'm not sure the 
+   /// intent, so I'm using base*8 instead.
+   resource loads(numBytes) [ddr3Lat + (numBytes / ddr3BW)]
+     with stride [base*2], random[base*8]
+  
+   resource stores(numBytes) [ddr3Lat + (numBytes / ddr3BW)]
+     with stride [base*2], random[base*8]
+
+   dynamic power [wmTDP - wmIdle]
+     
+   conflict loads, stores  
+}
+

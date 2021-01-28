@@ -1,0 +1,71 @@
+model vecmul {
+param aspen_param_default = 1
+param aspen_param_sizeof_float = 4
+param N = 50000000
+param I = 2 
+param n = 2 
+param wordsize = 2 
+param numChunks = 2
+param chunkSize = 3 
+data a [(4*N)] 
+data b [(4*N)] 
+data c [(4*N)] 
+
+kernel timestep
+  {
+    execute { flops [1] } ///< placeholder
+    //call matvec
+    //call vecadd
+  }
+
+kernel forward
+  {
+    iterate [numChunks]
+    {
+      iterate [chunkSize]
+      {
+        call timestep
+      }
+      execute { stores [n*wordsize] to allx }
+    }
+  }
+
+
+
+kernel vectorMultiplication_openacc {
+
+iterate [6]
+{
+    execute [(I)] "block_vectorMultiplication_openacc7__intracommIN"
+    {
+         intracomm [(aspen_param_sizeof_float*N)] to c as copyin
+         intracomm [(aspen_param_sizeof_float*N)] to a as copyin
+         flops [1] as integer
+         loads [((1*aspen_param_sizeof_float)*N)] from a as stride(1)
+         loads [((1*aspen_param_sizeof_float)*N)] from b as stride(1)
+         stores [((1*aspen_param_sizeof_float)*N)] to c as stride(1)
+         flops [(1*N)] as sp, simd
+    }
+
+    iterate [7]
+    {
+        execute [(10)]
+        {
+         intracomm [(aspen_param_sizeof_float*N)] to c as copyin
+         intracomm [(aspen_param_sizeof_float*N)] to a as copyin
+         flops [1] as integer
+         loads [((1*aspen_param_sizeof_float)*N)] from a as stride(1)
+         loads [((1*aspen_param_sizeof_float)*N)] from b as stride(1)
+         stores [((1*aspen_param_sizeof_float)*N)] to c as stride(1)
+         flops [(1*N)] as sp, simd
+        }
+    }
+}
+
+}
+
+kernel main {
+call vectorMultiplication_openacc
+call forward
+}
+}

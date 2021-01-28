@@ -1,0 +1,26 @@
+model stream {
+param aspen_param_default = 1
+data a as Array(50000000, aspen_param_sizeof_double)
+data b as Array(50000000, aspen_param_sizeof_double)
+data c as Array(50000000, aspen_param_sizeof_double)
+param aspen_param_sizeof_double = 8
+kernel tuned_STREAM_Triad {
+execute [50000000] "block_tuned_STREAM_Triad3" {
+flops [1] as integer
+}
+execute [50000000] "block_tuned_STREAM_Triad4" {
+loads [(1*aspen_param_sizeof_double)] from b as stride(1)
+loads [(1*aspen_param_sizeof_double)] from c as stride(1)
+stores [(1*aspen_param_sizeof_double)] to a as stride(1)
+flops [2] as dp, simd
+}
+}
+kernel main {
+execute  "block_main48" {
+flops [1] as integer
+}
+iterate [1] {
+call tuned_STREAM_Triad()
+}
+}
+}

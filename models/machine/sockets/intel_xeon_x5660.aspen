@@ -1,0 +1,70 @@
+// Model for a Xeon X5660 (Intel Westmere CPU)
+
+// Key values:
+// 6 cores / socket
+// 2.8GHz
+// can retire 4 dp ops/cycle or 8 sp ops/cycle
+// gives us 11.2 DP GFLOP/s per core
+//       or 67.2 DP GFLOP/s per socket
+//       or 134.4 SP GFLOP/s per socket, I believe....
+
+// WM Core Parameters
+param wmNumCores = 6
+param wmCoreClock = 2.8 * giga
+param wmIssueRate = wmCoreClock * 2
+param wmSIMD = 4
+param GCC = 2
+
+// Cache
+param wmCacheCap = 12 * mega
+param wmCacheLat = (1 / wmCoreClock) * 48 // 48 Cycles
+param wmCacheBW = wmNumCores * 96 * giga // 96GB per core
+
+// Power
+param wmTDP = 90
+param wmIdle = 10
+
+socket intel_xeon_x5660 {
+   core [wmNumCores] westmereCore
+   memory ddr3
+   cache wmCache
+   //cache extra 
+   link qpi
+
+   static power [wmIdle]
+}
+
+core westmereCore {
+  resource flops(number) [number / wmIssueRate ]
+    with dp   [base * 2],
+         simd [base / wmSIMD],
+         fmad [base],
+         sin  [base * 18]
+
+  resource intops(number) [ number / wmIssueRate ]
+
+  dynamic power [(wmTDP - wmIdle) / wmNumCores]
+}
+
+cache wmCache {
+   property capacity  [wmCacheCap]
+   property cacheline [64]
+   // 0 is prefetching off , 1 is on
+   property prefetch [1]
+   // 0 is gcc , 1 is intel
+   property compiler  [0]
+   // 0 is one thred off , 1 is multithread
+   property multithreaded [1]
+
+}
+
+//cache extra {
+//   property compiler  [5]
+//   property multithreaded [0]
+//}
+
+link qpi {
+   resource intracomm(bytes) [ micro + (bytes/(12.5*giga))]
+}
+
+

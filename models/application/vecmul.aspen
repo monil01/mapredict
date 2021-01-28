@@ -1,0 +1,25 @@
+model vecmul {
+    param aspen_param_default = 1
+    param aspen_param_sizeof_float = 4
+    param N = 100000
+    data a [(4*N)] 
+    data b [(4*N)] 
+    data c [(4*N)] 
+
+    kernel vectorMultiplication_openacc {
+        execute [(1)]  "block_vectorMultiplication_openacc7__intracommIN" {
+            intracomm [(aspen_param_sizeof_float*N)] to c as copyin
+            intracomm [(aspen_param_sizeof_float*N)] to a as copyin
+            flops [1] as integer
+            loads [((1*aspen_param_sizeof_float)*N)] from a as stride(1), pattern(stream), initialized(1)
+            //loads [((1*aspen_param_sizeof_float)*N)] from a as stride(100), initialized
+            //loads [((1*aspen_param_sizeof_float)*N)] from b as stride(100), initialized
+            //stores [((1*aspen_param_sizeof_float)*N)] to c as stride(100), non-initialized
+            flops [(1*N)] as sp, simd
+        }
+    }
+
+    kernel main {
+        call vectorMultiplication_openacc()
+    }
+}
