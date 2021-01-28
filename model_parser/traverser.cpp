@@ -227,6 +227,7 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
     inner_parallelism = exec->GetParallelism()->Expanded(app->paramMap)->Evaluate();
     //parallelism *= outer_parallelism;
     if(DEBUG_MAPMC == true) std::cout << " current factor : " << inner_parallelism << "\n";
+    if(DEBUG_MAPMC == true) std::cout << " outer factor : " << outer_parallelism << "\n";
     //std::string resource;
 	//resource = "loads"; stride = 0; total_length = 0;
     //if(DEBUG_MAPMC == true) std::cout << exec->GetResourceRequirementExpression(app,resource)->GetText();
@@ -249,6 +250,7 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
         }
     } 
 
+    total_memory_access *= outer_parallelism;
     if(DEBUG_MAPMC == true) std::cout << " Total executive block memory access : " << total_memory_access << "\n \n";
 
     //exit(0);
