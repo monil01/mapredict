@@ -1,0 +1,70 @@
+// Model for a Xeon Gold 6140 (Intel Sky Lake CPU)
+
+// Key values:
+// 6 cores / socket
+// 2.8GHz
+// can retire 4 dp ops/cycle or 8 sp ops/cycle
+// gives us 11.2 DP GFLOP/s per core
+//       or 67.2 DP GFLOP/s per socket
+//       or 134.4 SP GFLOP/s per socket, I believe....
+
+// WM Core Parameters
+param slNumCores = 6
+param slCoreClock = 2.8 * giga
+param slIssueRate = slCoreClock * 2
+param slSIMD = 4
+param GCC = 2
+
+// Cache
+param slCacheCap = 25 * mega
+param slCacheLat = (1 / slCoreClock) * 48 // 48 Cycles
+param slCacheBW = slNumCores * 96 * giga // 96GB per core
+
+// Power
+param slTDP = 90
+param slIdle = 10
+
+socket intel_xeon_x6140 {
+   core [slNumCores] westmereCore
+   memory ddr3
+   cache slCache
+   //cache extra 
+   link qpi
+
+   static power [slIdle]
+}
+
+core westmereCore {
+  resource flops(number) [number / slIssueRate ]
+    with dp   [base * 2],
+         simd [base / slSIMD],
+         fmad [base],
+         sin  [base * 18]
+
+  resource intops(number) [ number / slIssueRate ]
+
+  dynamic power [(slTDP - slIdle) / slNumCores]
+}
+
+cache slCache {
+   property capacity  [slCacheCap]
+   property cacheline [64]
+   // 0 is prefetching off , 1 is on
+   property prefetch [0]
+   // 0 is gcc , 1 is intel
+   property compiler  [0]
+   // 0 is one thred off , 1 is multithread
+   property multithreaded [1]
+
+}
+
+//cache extra {
+//   property compiler  [5]
+//   property multithreaded [0]
+//}
+
+link qpi {
+   resource intracomm(bytes) [ micro + (bytes/(12.5*giga))]
+}
+
+

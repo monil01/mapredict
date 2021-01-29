@@ -1,0 +1,70 @@
+// Model for a Xeon Gold 6248 (Intel Cascade Lake CPU)
+
+// Key values:
+// 6 cores / socket
+// 2.8GHz
+// can retire 4 dp ops/cycle or 8 sp ops/cycle
+// gives us 11.2 DP GFLOP/s per core
+//       or 67.2 DP GFLOP/s per socket
+//       or 134.4 SP GFLOP/s per socket, I believe....
+
+// CSL Core Parameters
+param cslNumCores = 6
+param cslCoreClock = 2.8 * giga
+param cslIssueRate = cslCoreClock * 2
+param cslSIMD = 4
+param GCC = 2
+
+// Cache
+param cslCacheCap = 28 * mega
+param cslCacheLat = (1 / cslCoreClock) * 48 // 48 Cycles
+param cslCacheBW = cslNumCores * 96 * giga // 96GB per core
+
+// Power
+param cslTDP = 90
+param cslIdle = 10
+
+socket intel_xeon_x6248 {
+   core [cslNumCores] westmereCore
+   memory ddr3
+   cache cslCache
+   //cache extra 
+   link qpi
+
+   static power [cslIdle]
+}
+
+core westmereCore {
+  resource flops(number) [number / cslIssueRate ]
+    with dp   [base * 2],
+         simd [base / cslSIMD],
+         fmad [base],
+         sin  [base * 18]
+
+  resource intops(number) [ number / cslIssueRate ]
+
+  dynamic power [(cslTDP - cslIdle) / cslNumCores]
+}
+
+cache cslCache {
+   property capacity  [cslCacheCap]
+   property cacheline [64]
+   // 0 is prefetching off , 1 is on
+   property prefetch [1]
+   // 0 is gcc , 1 is intel
+   property compiler  [0]
+   // 0 is one thred off , 1 is multithread
+   property multithreaded [1]
+
+}
+
+//cache extra {
+//   property compiler  [5]
+//   property multithreaded [0]
+//}
+
+link qpi {
+   resource intracomm(bytes) [ micro + (bytes/(12.5*giga))]
+}
+
+

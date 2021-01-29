@@ -1,0 +1,70 @@
+// Model for a Xeon E5-2683 (Intel BroadWell CPU)
+
+// Key values:
+// 6 cores / socket
+// 2.8GHz
+// can retire 4 dp ops/cycle or 8 sp ops/cycle
+// gives us 11.2 DP GFLOP/s per core
+//       or 67.2 DP GFLOP/s per socket
+//       or 134.4 SP GFLOP/s per socket, I believe....
+
+// BW Core Parameters
+param bwNumCores = 6
+param bwCoreClock = 2.8 * giga
+param bwIssueRate = bwCoreClock * 2
+param bwSIMD = 4
+param GCC = 2
+
+// Cache
+param bwCacheCap = 40 * mega
+param bwCacheLat = (1 / bwCoreClock) * 48 // 48 Cycles
+param bwCacheBW = bwNumCores * 96 * giga // 96GB per core
+
+// Power
+param bwTDP = 90
+param bwIdle = 10
+
+socket intel_xeon_x2623 {
+   core [bwNumCores] westmereCore
+   memory ddr3
+   cache bwCache
+   //cache extra 
+   link qpi
+
+   static power [bwIdle]
+}
+
+core westmereCore {
+  resource flops(number) [number / bwIssueRate ]
+    with dp   [base * 2],
+         simd [base / bwSIMD],
+         fmad [base],
+         sin  [base * 18]
+
+  resource intops(number) [ number / bwIssueRate ]
+
+  dynamic power [(bwTDP - bwIdle) / bwNumCores]
+}
+
+cache bwCache {
+   property capacity  [bwCacheCap]
+   property cacheline [64]
+   // 0 is prefetching off , 1 is on
+   property prefetch [1]
+   // 0 is gcc , 1 is intel
+   property compiler  [1]
+   // 0 is one thred off , 1 is multithread
+   property multithreaded [1]
+
+}
+
+//cache extra {
+//   property compiler  [5]
+//   property multithreaded [0]
+//}
+
+link qpi {
+   resource intracomm(bytes) [ micro + (bytes/(12.5*giga))]
+}
+
+

@@ -1,0 +1,70 @@
+// Model for a Xeon Gold 6348H (Intel Cooper Lake CPU)
+
+// Key values:
+// 6 cores / socket
+// 2.8GHz
+// can retire 4 dp ops/cycle or 8 sp ops/cycle
+// gives us 11.2 DP GFLOP/s per core
+//       or 67.2 DP GFLOP/s per socket
+//       or 134.4 SP GFLOP/s per socket, I believe....
+
+// WM Core Parameters
+param cplNumCores = 6
+param cplCoreClock = 2.8 * giga
+param cplIssueRate = cplCoreClock * 2
+param cplSIMD = 4
+param GCC = 2
+
+// Cache
+param cplCacheCap = 33 * mega
+param cplCacheLat = (1 / cplCoreClock) * 48 // 48 Cycles
+param cplCacheBW = cplNumCores * 96 * giga // 96GB per core
+
+// Power
+param cplTDP = 90
+param cplIdle = 10
+
+socket intel_xeon_x6348 {
+   core [cplNumCores] westmereCore
+   memory ddr3
+   cache cplCache
+   //cache extra 
+   link qpi
+
+   static power [cplIdle]
+}
+
+core westmereCore {
+  resource flops(number) [number / cplIssueRate ]
+    with dp   [base * 2],
+         simd [base / cplSIMD],
+         fmad [base],
+         sin  [base * 18]
+
+  resource intops(number) [ number / cplIssueRate ]
+
+  dynamic power [(cplTDP - cplIdle) / cplNumCores]
+}
+
+cache cplCache {
+   property capacity  [cplCacheCap]
+   property cacheline [64]
+   // 0 is prefetching off , 1 is on
+   property prefetch [0]
+   // 0 is gcc , 1 is intel
+   property compiler  [0]
+   // 0 is one thred off , 1 is multithread
+   property multithreaded [1]
+
+}
+
+//cache extra {
+//   property compiler  [5]
+//   property multithreaded [0]
+//}
+
+link qpi {
+   resource intracomm(bytes) [ micro + (bytes/(12.5*giga))]
+}
+
+
