@@ -119,6 +119,23 @@ int analytical_model::findPattern(vector<ASTTrait*> traits){
     return pattern;
 }
 
+int analytical_model::findStride(vector<ASTTrait*> traits){
+    int stride = 0;
+    for (int k = 0; k < traits.size(); k++){
+        std::string ttrait = traits[k]->GetName();
+        if (ttrait == "stride"){
+            //if(DEBUG_MAPMC == true) std::cout << "traits Name " << ttrait;
+            stride = traits[k]->GetValue()->Evaluate();
+            if(DEBUG_MAPMC == true) std::cout << " Stride trait value " << stride << std::endl;
+        }
+    }
+    if(stride == 0)  { 
+        std::cout << " ERROR Stride not found and set the stride to 1 " << std::endl;
+        stride = 1;
+    }
+    return stride;
+}
+
 
 
 std::int64_t analytical_model::predictMemoryAccess(){
@@ -127,13 +144,16 @@ std::int64_t analytical_model::predictMemoryAccess(){
     
     //if(DEBUG_MAPMC == true) std::cout << " Calling Stencil prediction " <<  _access_pattern << " init " << _initialized << access_patterns::STREAM << access_patterns::STRIDE << access_patterns::STENCIL << access_patterns::RANDOM << std::endl;
     if ( _access_pattern == access_patterns::STREAM) {
+        if(DEBUG_MAPMC == true) std::cout << " Calling Stream prediction " <<  _access_pattern << " init " << _initialized << std::endl;
         memory_access = streamAccess();
     } else if ( _access_pattern == access_patterns::STRIDE) {
+        if(DEBUG_MAPMC == true) std::cout << " Calling Stride prediction " <<  _access_pattern << " init " << _initialized << std::endl;
         memory_access = strideAccess();
     } else if ( _access_pattern == access_patterns::STENCIL) {
         if(DEBUG_MAPMC == true) std::cout << " Calling Stencil prediction " <<  _access_pattern << " init " << _initialized << std::endl;
         memory_access = stencilAccess();
     } else if ( _access_pattern == access_patterns::RANDOM)  {
+        if(DEBUG_MAPMC == true) std::cout << " Calling Random prediction " <<  _access_pattern << " init " << _initialized << std::endl;
         memory_access = randomAccess();
     }
 
@@ -154,22 +174,25 @@ std::int64_t  analytical_model::streamAccess() {
                 //memory_access =  N * ES / (double) CL/10000 ;
                 //memory_access = ceil( N * ES / (double) CL/10000 );
                 memory_access = ceil( N * ES / (double) CL ) * CL;
-                if(DEBUG_MAPMC == true) std::cout << " Memory access " << memory_access << std::endl;
+                if(DEBUG_MAPMC == true) std::cout << " STREAM Memory access region 1 - 1  : " << memory_access << std::endl;
             } else if ( _instruction_type == instructions::STORE) {
                 memory_access = 2 * ceil( N * ES / (double) CL ) * CL;
+                if(DEBUG_MAPMC == true) std::cout << " STREAM Memory access region 1 - 2  : " << memory_access << std::endl;
             }
         } else {
             if ( _instruction_type == instructions::LOAD) {
                 memory_access = ceil( N * ES / (double) CL ) * CL;
+                if(DEBUG_MAPMC == true) std::cout << " STREAM Memory access region 1 - 3  : " << memory_access << std::endl;
             } else if ( _instruction_type == instructions::STORE) {
                 memory_access = ceil( N * ES / (double) _page_size ) * _page_size;
+                if(DEBUG_MAPMC == true) std::cout << " STREAM Memory access region 1 - 4  : " << memory_access << std::endl;
             }
         }
     } 
     
     memory_access = ceil( memory_access / (double) CL );
 
-    if(DEBUG_MAPMC == true) std::cout << " Analytical Model STREM " << memory_access << " data size "  
+    if(DEBUG_MAPMC == true) std::cout << " Analytical Model STREAM " << memory_access << " data size "  
         <<  N  << " element size " << ES << " cacheline " 
         << CL << " page size " << _page_size  << "  instruction " << _instruction_type << std::endl;
 
@@ -180,7 +203,128 @@ std::int64_t  analytical_model::streamAccess() {
 std::int64_t analytical_model::randomAccess(){
 
 }
+
 std::int64_t analytical_model::strideAccess(){
+    int S = findStride(_traits);
+    std::int64_t memory_access = 0;
+    /// renaming the variables as per model described in the paper
+    std::int64_t N = _data_structure_size * S;
+     _data_structure_size = N;
+    if(DEBUG_MAPMC == true) std::cout << " Stride data structure size " << N << std::endl;
+    int CL = _cache_line_size;
+    int ES = _element_size;
+    int PS = _page_size;
+    // converting the stride and data size to bytes
+
+    // Streaming zone
+    if( S*ES <= CL) {
+        //_data_structure_size = N * S;
+        memory_access = streamAccess() * CL;
+        if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory acces region 6 - 1 " << memory_access << std::endl; 
+    }
+    // No prefetching zone
+    else if( S*ES >  5* CL) {
+        //_data_structure_size = N * S;
+            if (_initialized == true) {
+                memory_access = streamAccess() * CL;
+                memory_access = memory_access * CL / (S * ES);
+                if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 8 - 1  : " << memory_access << std::endl;
+            } else {
+                if (S <= PS){
+                    if (_instruction_type == instructions::STORE) {
+                        memory_access = streamAccess() * CL;
+                        memory_access = memory_access * 1; //same as streaming access
+                        if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 8 - 2  : " << memory_access << std::endl;
+                    }
+                    else if(_instruction_type == instructions::LOAD)  {
+                        memory_access = streamAccess() * CL;
+                        memory_access = memory_access * CL / (S * ES);
+                        if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 8 - 3  : " << memory_access << std::endl;
+                    }
+                } else { 
+                    if (_instruction_type == instructions::STORE)  {
+                        memory_access = streamAccess() * CL;
+                        memory_access = memory_access * PS/ (S * ES); //same as streaming access
+                        if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 8 - 4  : " << memory_access << std::endl;
+                    }
+                    else if(_instruction_type == instructions::LOAD)  {
+                        memory_access = streamAccess() * CL;
+                        memory_access = memory_access * CL / (S * ES);
+                        if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 8 - 5  : " << memory_access << std::endl;
+                    }
+                }
+            }
+
+        //if(DEBUG_MAPMC == true) std::cout << " Memory access region 8 " << memory_access << std::endl; 
+    } 
+    // prefetching zone
+    else {
+        //_data_structure_size = N * S;
+
+        // prefetching disabled 
+        if (_prefetch_enabled == 0) {
+            if (_initialized == true) {
+                memory_access = streamAccess() * CL;
+                memory_access = memory_access * CL / (S * ES);
+                if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 7 - 1  : " << memory_access << std::endl;
+            } else {
+                if (S <= PS){
+                    if (_instruction_type == instructions::STORE) {
+                        memory_access = streamAccess() * CL;
+                        memory_access = memory_access * 1; //same as streaming access
+                        if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 7 - 2  : " << memory_access << std::endl;
+                    }
+                    else if(_instruction_type == instructions::LOAD)  {
+                        memory_access = streamAccess() * CL;
+                        memory_access = memory_access * CL / (S * ES);
+                        if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 7 - 3  : " << memory_access << std::endl;
+                    }
+                } else { 
+                    if (_instruction_type == instructions::STORE)  {
+                        memory_access = streamAccess() * CL;
+                        memory_access = memory_access * 1; //same as streaming access
+                        if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 7 - 4  : " << memory_access << std::endl;
+                    }
+                    else if(_instruction_type == instructions::LOAD)  {
+                        memory_access = streamAccess() * CL;
+                        memory_access = memory_access * PS/ (S * ES); 
+                        if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 7 - 5  : " << memory_access << std::endl;
+                    }
+                }
+            }
+
+        // prefetching enabled 
+        } else {
+            if (_initialized == true) {
+                if ( _instruction_type == instructions::LOAD) {
+                    memory_access = 3 * CL * (N/(double)S);
+                    if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 7 - 6  : " << memory_access << std::endl;
+                } else if ( _instruction_type == instructions::STORE) {
+                    memory_access = streamAccess() * CL;
+                    memory_access = memory_access * CL / (S * ES);
+                    if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 7 - 7  : " << memory_access << std::endl;
+                }
+            } else { 
+                if ( _instruction_type == instructions::LOAD) {
+                    memory_access = streamAccess() * CL;
+                    memory_access = 3 * CL * (N/(double)S);
+                    if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 7 - 8  : " << memory_access << std::endl;
+                } else if ( _instruction_type == instructions::STORE) {
+                    memory_access = streamAccess() * CL;
+                    memory_access = memory_access * 1; //same as streaming access
+                    if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 7 - 9  : " << memory_access << std::endl;
+                }
+            }
+        }
+        //if(DEBUG_MAPMC == true) std::cout << " Memory access region 8" << memory_access << std::endl; 
+    }
+
+    memory_access = ceil( memory_access / (double) CL );
+    if(DEBUG_MAPMC == true) std::cout << " Analytical Model STRIDE " << memory_access << " data size "  
+        <<  N  << " element size " << ES << " cacheline "
+        << CL << " page size " << _page_size  << "  instruction " << _instruction_type << std::endl;
+
+    return memory_access;
 
 }
 std::int64_t analytical_model::stencilAccess(){
@@ -203,7 +347,7 @@ std::int64_t analytical_model::stencilAccess(){
         _data_structure_size = _data_structure_size / 27;
     }
   
-    memory_access = streamAccess();
+    memory_access = streamAccess() * CL;
     //return memory_access; 
     /* 
     if (_compiler == compilers::GCC) {
@@ -222,9 +366,9 @@ std::int64_t analytical_model::stencilAccess(){
             }
         }
     } 
+    */
     
     memory_access = ceil( memory_access / (double) CL );
-    */
     if(DEBUG_MAPMC == true) std::cout << " Analytical Model STENCIL " << memory_access << " data size "  
         <<  N  << " element size " << ES << " cacheline " 
         << CL << " page size " << _page_size  << "  instruction " << _instruction_type << std::endl;

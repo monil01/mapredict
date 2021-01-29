@@ -65,6 +65,7 @@ std::int64_t  strideAccess();
 std::int64_t  stencilAccess();
 bool findInitialized(vector<ASTTrait*> traits);
 int findPattern(vector<ASTTrait*> traits);
+int findStride(vector<ASTTrait*> traits);
 
 };
 
