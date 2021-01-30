@@ -94,6 +94,23 @@ bool analytical_model::findInitialized(vector<ASTTrait*> traits){
     return init;
 }
 
+std::string analytical_model::findAlgorithm(vector<ASTTrait*> traits){
+    std::string alg = "log";
+    if (traits.size() < 1) return alg;
+    for (int k = 0; k < traits.size(); k++){
+        std::string ttrait = traits[k]->GetName();
+        if (ttrait == "algorithm"){
+            //if(DEBUG_MAPMC == true) std::cout << "traits Name " << ttrait;
+            if(DEBUG_MAPMC == true) std::cout << " algorithm traits value " << 
+                traits[k]->GetValue()->GetText() << std::endl;
+            alg = traits[k]->GetValue()->GetText();
+            //stride = stride * element_size;
+        }
+    }
+    return alg;
+}
+
+
 int analytical_model::findPattern(vector<ASTTrait*> traits){
     int pattern = access_patterns::STREAM;
     if (traits.size() < 1) return pattern;
@@ -120,7 +137,7 @@ int analytical_model::findPattern(vector<ASTTrait*> traits){
 }
 
 int analytical_model::findStride(vector<ASTTrait*> traits){
-    int stride = 0;
+    int stride = 1;
     for (int k = 0; k < traits.size(); k++){
         std::string ttrait = traits[k]->GetName();
         if (ttrait == "stride"){
@@ -202,6 +219,56 @@ std::int64_t  analytical_model::streamAccess() {
 
 std::int64_t analytical_model::randomAccess(){
 
+    std::int64_t memory_access = 0;
+    double access = 0;
+    std::string algorithm = findAlgorithm(_traits);
+    int factor = findStride(_traits); // Using stride we transer any factor that can be used.
+    std::int64_t N = _data_structure_size;
+    if (algorithm == "logarithm"){
+        //access = log(N)/ log(2); 
+        access = log10(N); 
+        if(DEBUG_MAPMC == true) std::cout << " Random logarithm " << access << std::endl;
+    }
+    
+    memory_access = access * factor;
+ 
+    if(DEBUG_MAPMC == true) std::cout << " Analytical Model RANDOM " << memory_access << " data size "  
+        <<  N   << " algorithm " << algorithm  << "  instruction " << _instruction_type << std::endl;
+    /************* TODO ***************
+ *
+ * there could be three kinds of randomness
+ * 1   algorithmic randomness
+ * 2    Cache thrashing
+ * 3    Data structure access randomness
+ *
+ * We currently have provision for algorithmic randomness. 
+ * other algorithmic randomness needs to cover.
+ * Here it is for the binary search
+ * ***********************************/
+
+    //return memory_access; 
+    /* 
+    if (_compiler == compilers::GCC) {
+        if (_initialized == true) {
+            if ( _instruction_type == instructions::LOAD) {
+                memory_access = ceil( N * ES / (double) CL ) * CL;
+                if(DEBUG_MAPMC == true) std::cout << " Memory access " << memory_access << std::endl;
+            } else if ( _instruction_type == instructions::STORE) {
+                memory_access = 2 * ceil( N * ES / (double) CL ) * CL;
+            }
+        } else {
+            if ( _instruction_type == instructions::LOAD) {
+                memory_access = ceil( N * ES / (double) CL ) * CL;
+            } else if ( _instruction_type == instructions::STORE) {
+                memory_access = ceil( N * ES / (double) _page_size ) * _page_size;
+            }
+        }
+    } 
+    */
+ 
+   
+
+    return memory_access;
 }
 
 std::int64_t analytical_model::strideAccess(){
@@ -348,6 +415,15 @@ std::int64_t analytical_model::stencilAccess(){
     }
   
     memory_access = streamAccess() * CL;
+    /************* TODO ***************
+ *
+ *  need to implement the probability when the size of stencil is bigger than the cache.
+ *  This is unrealistic and for the ICS submission it's not required since none of the apps
+ *  go that big. 
+ *  This can be useful only for massive application where the data structure size is 500GB,
+ *  which is very unlikely.
+ * ***********************************/
+
     //return memory_access; 
     /* 
     if (_compiler == compilers::GCC) {

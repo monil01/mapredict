@@ -1,0 +1,22 @@
+model xsbench {
+param aspen_param_default = 1
+param aspen_param_whilecnt = 100
+param aspen_param_sizeof_double = 8
+param aspen_param_length_array = 768604
+data unionize_array as Array(aspen_param_lenght_array, aspen_param_sizeof_double)
+kernel grid_search {
+execute  "block_grid_search6" {
+flops [1] as integer
+flops [1] as integer
+loads [((1*aspen_param_sizeof_double)*aspen_param_length_array)] from unionize_array as stride(100000), pattern(random), algorithm(logarithm)
+flops [(4*aspen_param_length_array)]
+flops [(2*aspen_param_lenght_array)] as sp, simd
+}
+}
+kernel main {
+execute  "block_calculate_macro_xs33" {
+flops [1] as integer
+}
+call grid_search()
+}
+}
