@@ -1,0 +1,22 @@
+model vecmul_strided_200_50M {
+param aspen_param_default = 1
+param aspen_param_sizeof_float = 4
+param N = 50000000
+data a [(4*N)] 
+data b [(4*N)] 
+data c [(4*N)] 
+kernel vectorMultiplication_openacc {
+execute  "block_vectorMultiplication_openacc7__intracommIN" {
+intracomm [(aspen_param_sizeof_float*N)] to c as copyin
+intracomm [(aspen_param_sizeof_float*N)] to a as copyin
+flops [1] as integer
+loads [((1*aspen_param_sizeof_float)*(floor(((-200+N)/200))+1))] from a as stride(200), pattern(stride)
+loads [((1*aspen_param_sizeof_float)*(floor(((-200+N)/200))+1))] from b as stride(200), pattern(stride)
+stores [((1*aspen_param_sizeof_float)*(floor(((-200+N)/200))+1))] from c as stride(200), pattern(stride)
+flops [(1*(floor(((-200+N)/200))+1))] as sp, simd
+}
+}
+kernel main {
+call vectorMultiplication_openacc()
+}
+}

@@ -13,7 +13,7 @@ popd
 pwd
 
 
-./mapmc models/application/vecmul_strided_50.aspen models/machine/monil.aspen
-./mapmc models/application/vecmul_strided_50.aspen models/machine/apachepass_no_prefetch.aspen
+#./mapmc models/application/vecmul_strided_50.aspen models/machine/apachepass_no_prefetch.aspen
+./mapmc models/application/vecmul_strided_50.aspen models/machine/apachepass.aspen
 
 

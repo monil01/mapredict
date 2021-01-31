@@ -62,7 +62,7 @@ traverser::~traverser(){
  */
 
 
-
+/*
 std::int64_t  
 traverser::analyticalStreamingAccess(std::int64_t D, std::int64_t E, std::int64_t S, std::int64_t CL)
 {
@@ -111,7 +111,7 @@ traverser::analyticalStreamingAccess(std::int64_t D, std::int64_t E, std::int64_
     // memory access is multiplied by CL to convert it to bytes
     return memory_access * CL;
 }
-
+*/
 
 std::int64_t traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::string socket,
     std::int64_t inner_parallelism){
@@ -125,6 +125,7 @@ std::int64_t traverser::predictMemoryStatement(const ASTRequiresStatement *req, 
     bool multithreaded;
     int64_t data_structure_size;
     int element_size;
+    int microarchitecture;
     std::string property, component;
 
     //if(DEBUG_MAPMC == true) std::cout << " statement " << req->GetText() << std::endl;
@@ -149,6 +150,16 @@ std::int64_t traverser::predictMemoryStatement(const ASTRequiresStatement *req, 
 
     cache_line_size = (int) getAnyMachineProperty(mach, socket, component, property);
     if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << component << " : " << property << " " << cache_line_size << std::endl; 
+
+    // getting microarchitecture
+    property = "microarchitecture";
+    component = "cache";
+
+
+    microarchitecture = getMicroarchitecture(socket);
+    if(DEBUG_MAPMC == true) std::cout << " " << socket << " : " << component << " : " << property << " " << microarchitecture << std::endl; 
+
+
     traits = req->GetTraits();
  
     // getting prefetch 
@@ -186,7 +197,7 @@ std::int64_t traverser::predictMemoryStatement(const ASTRequiresStatement *req, 
     if(DEBUG_MAPMC == true) std::cout << " Statement: " << req->GetResource() << " " << ebuilder.GetExpression()->GetText() << " " << req->GetToFrom() << " " << std::endl; 
 
     analytical_model * ana_model = new analytical_model(compiler, instruction_type, cache_line_size,
-        traits, prefetch_enabled, multithreaded, data_structure_size, element_size);
+        traits, prefetch_enabled, multithreaded, data_structure_size, element_size, microarchitecture);
     memory_access = (std::int64_t) ana_model->predictMemoryAccess(); 
     if(DEBUG_MAPMC == true) std::cout << " memory access : " << memory_access << "\n";
 
@@ -644,7 +655,16 @@ traverser::getAnyMachineProperty(ASTMachModel *mach,
     return property_value; 
 }
 
+int traverser::getMicroarchitecture(std::string socket){
 
+    // getting microarchitecture
+    std::string property = "microarchitecture";
+    std::string component = "cache";
+
+    int micro = (int) getAnyMachineProperty(mach, socket, component, property);
+    return micro;
+
+}
 
 
 std::string  traverser::getNameOfDataType(std::string str_expression){

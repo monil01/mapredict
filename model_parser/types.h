@@ -23,6 +23,14 @@ GCC,
 INTEL}
 compilers;
 
+typedef enum microarchitecture{
+BW,
+SK,
+CS,
+CP}
+microarchitecture;
+
+
 #define KB 1024
 #define MB KB*1024
 #define GB MB*1024

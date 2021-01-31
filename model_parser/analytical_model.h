@@ -40,6 +40,7 @@ private:
     int64_t _data_structure_size;
     int _element_size;
     int _page_size;
+    int _microarchitecture;
     std::string _pattern_string;
     
 
@@ -54,7 +55,8 @@ analytical_model(
     bool prefetch_enabled,
     bool multithreaded,
     std::int64_t data_structure_size,
-    int element_size
+    int element_size,
+    int microarchitecture
 );
 ~analytical_model();
 

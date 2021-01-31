@@ -16,7 +16,7 @@ flops [2] as dp, simd
 }
 }
 kernel main {
-execute  "block_main48" {
+execute  "block_main53" {
 flops [1] as integer
 }
 iterate [1] {

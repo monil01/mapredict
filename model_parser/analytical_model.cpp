@@ -48,7 +48,8 @@ analytical_model::analytical_model(
     bool prefetch_enabled,
     bool multithreaded,
     std::int64_t data_structure_size,
-    int element_size
+    int element_size,
+    int microarchitecture 
 )   
      
 { 
@@ -60,6 +61,8 @@ analytical_model::analytical_model(
     _multithreaded = multithreaded;
     _data_structure_size = data_structure_size;
     _element_size = element_size;
+    _microarchitecture = microarchitecture;
+
     if(DEBUG_MAPMC == true) std::cout << " Analytical model trait size " <<  traits.size() << std::endl;
 
     _access_pattern = findPattern(_traits);
@@ -365,6 +368,13 @@ std::int64_t analytical_model::strideAccess(){
             if (_initialized == true) {
                 if ( _instruction_type == instructions::LOAD) {
                     memory_access = 3 * CL * (N/(double)S);
+                    //check microarchitecture
+                    //if (_microarchitecture == microarchitecture::BW) double factor = 1;
+                    if (_microarchitecture == microarchitecture::SK || _microarchitecture == microarchitecture::CS || _microarchitecture == microarchitecture::CP ) {
+                        double factor = 0.85;
+                        memory_access = (std::int64_t) (memory_access * factor);
+                    }
+
                     if(DEBUG_MAPMC == true) std::cout << " STRIDE Memory access region 7 - 6  : " << memory_access << std::endl;
                 } else if ( _instruction_type == instructions::STORE) {
                     memory_access = streamAccess() * CL;
@@ -387,6 +397,7 @@ std::int64_t analytical_model::strideAccess(){
     }
 
     memory_access = ceil( memory_access / (double) CL );
+    
     if(DEBUG_MAPMC == true) std::cout << " Analytical Model STRIDE " << memory_access << " data size "  
         <<  N  << " element size " << ES << " cacheline "
         << CL << " page size " << _page_size  << "  instruction " << _instruction_type << std::endl;
