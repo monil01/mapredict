@@ -13,6 +13,6 @@ popd
 pwd
 
 
-./mapmc models/application/lulesh.aspen models/machine/monil.aspen
+time ./mapmc models/application/lulesh.aspen models/machine/monil.aspen
 
 

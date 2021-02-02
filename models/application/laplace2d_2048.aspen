@@ -1,0 +1,38 @@
+model laplace2d_2048 {
+param aspen_param_default = 1
+param aspen_param_sizeof_double = 8
+param n = 10000
+param m = n
+data A as Matrix(n, n)
+data Anew as Matrix(n, n)
+param aspen_param_whilecnt = 1
+kernel main {
+execute  "block_main33" {
+flops [1] as integer
+flops [1] as dp
+intracomm [((aspen_param_sizeof_double*n)*n)] to A as copyin
+}
+iterate [aspen_param_whilecnt] {
+execute [(-2+n)] "block_main48" {
+flops [2] as integer
+}
+map [(-2+n)] "mapblock_main48" {
+execute [(-2+m)] "block_main49" {
+flops [2] as integer
+}
+execute [(-2+m)] "block_main42" {
+loads [(4*aspen_param_sizeof_double)] from A as pattern(stencil4)
+stores [(1*aspen_param_sizeof_double)] to Anew as stride(1)
+flops [14] as integer
+flops [4] as dp, simd
+}
+}
+execute  "block_main55" {
+flops [1] as integer
+}
+}
+execute  "block_main33__intracommOUT" {
+intracomm [((aspen_param_sizeof_double*n)*n)] to A as copyout
+}
+}
+}

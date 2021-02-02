@@ -1,0 +1,195 @@
+model lulesh_400 {
+param aspen_param_default = 1
+param aspen_param_sizeof_double = 8
+param aspen_param_sizeof_int = 4
+data m_x as Array(m_numNode, aspen_param_sizeof_double)
+data m_y as Array(m_numNode, aspen_param_sizeof_double)
+data m_z as Array(m_numNode, aspen_param_sizeof_double)
+data m_xd as Array(m_numNode, aspen_param_sizeof_double)
+data m_yd as Array(m_numNode, aspen_param_sizeof_double)
+data m_zd as Array(m_numNode, aspen_param_sizeof_double)
+data m_xdd as Array(m_numNode, aspen_param_sizeof_double)
+data m_ydd as Array(m_numNode, aspen_param_sizeof_double)
+data m_zdd as Array(m_numNode, aspen_param_sizeof_double)
+data m_fx as Array(m_numNode, aspen_param_sizeof_double)
+data m_fy as Array(m_numNode, aspen_param_sizeof_double)
+data m_fz as Array(m_numNode, aspen_param_sizeof_double)
+data m_nodalMass as Array(m_numNode, aspen_param_sizeof_double)
+data m_symmX as Array(size_renamed, aspen_param_sizeof_int)
+data m_symmY as Array(size_renamed, aspen_param_sizeof_int)
+data m_symmZ as Array(size_renamed, aspen_param_sizeof_int)
+data m_nodeElemCount as Array(m_numNode, aspen_param_sizeof_int)
+data m_nodeElemStart as Array(m_numNode, aspen_param_sizeof_int)
+data m_matElemlist as Array(m_numElem, aspen_param_sizeof_int)
+data m_nodelist as Array((8*m_numElem), aspen_param_sizeof_int)
+data m_lxim as Array(m_numElem, aspen_param_sizeof_int)
+data m_lxip as Array(m_numElem, aspen_param_sizeof_int)
+data m_letam as Array(m_numElem, aspen_param_sizeof_int)
+data m_letap as Array(m_numElem, aspen_param_sizeof_int)
+data m_lzetam as Array(m_numElem, aspen_param_sizeof_int)
+data m_lzetap as Array(m_numElem, aspen_param_sizeof_int)
+data m_elemBC as Array(m_numElem, aspen_param_sizeof_int)
+data m_e as Array(m_numElem, aspen_param_sizeof_double)
+data m_p as Array(m_numElem, aspen_param_sizeof_double)
+data m_v as Array(m_numElem, aspen_param_sizeof_double)
+data m_volo as Array(m_numElem, aspen_param_sizeof_double)
+data m_elemMass as Array(m_numElem, aspen_param_sizeof_double)
+param edgeElems = 400
+param edgeNodes = (edgeElems+1)
+param m_sizeX = edgeElems
+param m_numElem = ((edgeElems*edgeElems)*edgeElems)
+param m_numElem8 = (m_numElem*8)
+param m_numNode = ((edgeNodes*edgeNodes)*edgeNodes)
+param m_nCorner = m_numElem8
+param size_renamed = ((edgeElems+1)*(edgeElems+1))
+data m_nodeElemCornerList as Array(m_nCorner, aspen_param_int)
+param aspen_param_whilecnt = 1
+kernel CalcAccelerationForNodes {
+execute [m_numNode] "block_CalcAccelerationForNodes5" {
+flops [1] as integer
+}
+execute [m_numNode] "block_CalcAccelerationForNodes464" {
+loads [(1*aspen_param_sizeof_double)] from m_fx as stride(1)
+loads [(1*aspen_param_sizeof_double)] from m_nodalMass as stride(1)
+stores [(1*aspen_param_sizeof_double)] from m_xdd as initialized(0)
+flops [1] as dp, simd
+loads [(1*aspen_param_sizeof_double)] from m_nodalMass as stride(1)
+loads [(1*aspen_param_sizeof_double)] from m_fy as stride(1)
+stores [(1*aspen_param_sizeof_double)] from m_ydd as initialized(0)
+flops [1] as dp, simd
+loads [(1*aspen_param_sizeof_double)] from m_nodalMass as stride(1)
+loads [(1*aspen_param_sizeof_double)] from m_fz as stride(1)
+stores [(1*aspen_param_sizeof_double)] from m_zdd as initialized(0)
+flops [1] as dp, simd
+}
+}
+kernel ApplyAccelerationBoundaryConditionsForNodes {
+execute  "block_ApplyAccelerationBoundaryConditionsForNodes4" {
+flops [3] as integer
+}
+execute [((1+(2*m_sizeX))+(m_sizeX*m_sizeX))] "block_ApplyAccelerationBoundaryConditionsForNodes6" {
+flops [1] as integer
+}
+execute [((1+(2*m_sizeX))+(m_sizeX*m_sizeX))] "block_ApplyAccelerationBoundaryConditionsForNodes7" {
+loads [(1*aspen_param_sizeof_int)] from m_symmX as stride(1)
+stores [(1*aspen_param_sizeof_double)] to m_xdd as random
+}
+execute [((1+(2*m_sizeX))+(m_sizeX*m_sizeX))] "block_ApplyAccelerationBoundaryConditionsForNodes8" {
+flops [1] as integer
+}
+execute [((1+(2*m_sizeX))+(m_sizeX*m_sizeX))] "block_ApplyAccelerationBoundaryConditionsForNodes9" {
+loads [(1*aspen_param_sizeof_int)] from m_symmY as stride(1)
+stores [(1*aspen_param_sizeof_double)] to m_ydd as random
+}
+execute [((1+(2*m_sizeX))+(m_sizeX*m_sizeX))] "block_ApplyAccelerationBoundaryConditionsForNodes10" {
+flops [1] as integer
+}
+execute [((1+(2*m_sizeX))+(m_sizeX*m_sizeX))] "block_ApplyAccelerationBoundaryConditionsForNodes11" {
+loads [(1*aspen_param_sizeof_int)] from m_symmZ as stride(1)
+stores [(1*aspen_param_sizeof_double)] to m_zdd as random
+}
+}
+kernel FABS8 {
+execute  "block_FABS83" {
+flops [1] as dp
+}
+}
+kernel CalcVelocityForNodes {
+execute [m_numNode] "block_CalcVelocityForNodes7" {
+flops [1] as integer
+}
+execute [m_numNode] "block_CalcVelocityForNodes14" {
+loads [(1*aspen_param_sizeof_double)] from m_xdd as stride(1)
+loads [(1*aspen_param_sizeof_double)] from m_xd as stride(1)
+flops [2] as dp, simd
+flops [1] as dp
+stores [(1*aspen_param_sizeof_double)] from m_xd as initialized(0)
+loads [(1*aspen_param_sizeof_double)] from m_yd as stride(1)
+loads [(1*aspen_param_sizeof_double)] from m_ydd as stride(1)
+flops [2] as dp, simd
+flops [1] as dp
+stores [(1*aspen_param_sizeof_double)] from m_yd as initialized(0)
+loads [(1*aspen_param_sizeof_double)] from m_zdd as stride(1)
+loads [(1*aspen_param_sizeof_double)] from m_zd as stride(1)
+flops [2] as dp, simd
+flops [1] as dp
+stores [(1*aspen_param_sizeof_double)] from m_zd as initialized(0)
+}
+}
+kernel CalcPositionForNodes {
+execute [m_numNode] "block_CalcPositionForNodes6" {
+flops [1] as integer
+}
+execute [m_numNode] "block_CalcPositionForNodes7" {
+loads [(1*aspen_param_sizeof_double)] from m_xd as stride(1)
+stores [(1*aspen_param_sizeof_double)] to m_x as stride(1)
+flops [2] as dp, simd
+loads [(1*aspen_param_sizeof_double)] from m_yd as stride(1)
+stores [(1*aspen_param_sizeof_double)] to m_y as stride(1)
+flops [2] as dp, simd
+loads [(1*aspen_param_sizeof_double)] from m_zd as stride(1)
+stores [(1*aspen_param_sizeof_double)] to m_z as stride(1)
+flops [2] as dp, simd
+}
+}
+kernel LagrangeNodal {
+call CalcAccelerationForNodes()
+call ApplyAccelerationBoundaryConditionsForNodes()
+call CalcVelocityForNodes()
+call CalcPositionForNodes()
+}
+kernel LagrangeLeapFrog {
+call LagrangeNodal()
+}
+kernel main {
+execute  "block_main135__intracommIN" {
+intracomm [(aspen_param_sizeof_double*m_numElem)] to m_e as copyin
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_yd as copyin
+intracomm [(aspen_param_sizeof_int*m_nCorner)] to m_nodeElemCornerList as copyin
+intracomm [(aspen_param_sizeof_int*m_numElem)] to m_elemBC as copyin
+intracomm [(aspen_param_sizeof_int*(edgeNodes*edgeNodes))] to m_symmY as copyin
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_xd as copyin
+intracomm [(aspen_param_sizeof_int*m_numElem)] to m_lzetap as copyin
+intracomm [(aspen_param_sizeof_int*m_numElem)] to m_letam as copyin
+intracomm [(aspen_param_sizeof_int*m_numElem)] to m_letap as copyin
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_x as copyin
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_xdd as copyin
+intracomm [(aspen_param_sizeof_int*m_numElem)] to m_lzetam as copyin
+intracomm [(aspen_param_sizeof_double*m_numElem)] to m_volo as copyin
+intracomm [(aspen_param_sizeof_int*m_numElem)] to m_matElemlist as copyin
+intracomm [(aspen_param_sizeof_int*(edgeNodes*edgeNodes))] to m_symmX as copyin
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_z as copyin
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_ydd as copyin
+intracomm [(aspen_param_sizeof_double*m_numElem)] to m_v as copyin
+intracomm [(aspen_param_sizeof_double*m_numElem)] to m_elemMass as copyin
+intracomm [(aspen_param_sizeof_double*m_numElem)] to m_p as copyin
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_nodalMass as copyin
+intracomm [(aspen_param_sizeof_int*m_numElem8)] to m_nodelist as copyin
+intracomm [(aspen_param_sizeof_int*(edgeNodes*edgeNodes))] to m_symmZ as copyin
+intracomm [(aspen_param_sizeof_int*m_numNode)] to m_nodeElemCount as copyin
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_zd as copyin
+intracomm [(aspen_param_sizeof_int*m_numNode)] to m_nodeElemStart as copyin
+intracomm [(aspen_param_sizeof_int*m_numElem)] to m_lxip as copyin
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_y as copyin
+intracomm [(aspen_param_sizeof_int*m_numElem)] to m_lxim as copyin
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_zdd as copyin
+flops [1] as dp
+}
+iterate [aspen_param_whilecnt] {
+call LagrangeLeapFrog()
+execute  "block_main139" {
+flops [1] as integer
+}
+}
+execute  "block_main135__intracommOUT" {
+intracomm [(aspen_param_sizeof_double*m_numElem)] to m_e as copyout
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_yd as copyout
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_xd as copyout
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_x as copyout
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_z as copyout
+intracomm [(aspen_param_sizeof_double*m_numElem)] to m_p as copyout
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_zd as copyout
+intracomm [(aspen_param_sizeof_double*m_numNode)] to m_y as copyout
+}
+}
+}

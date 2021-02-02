@@ -156,6 +156,24 @@ int analytical_model::findStride(vector<ASTTrait*> traits){
     return stride;
 }
 
+double analytical_model::findFactor(vector<ASTTrait*> traits){
+    double factor = 0;
+    for (int k = 0; k < traits.size(); k++){
+        std::string ttrait = traits[k]->GetName();
+        if (ttrait == "factor"){
+            //if(DEBUG_MAPMC == true) std::cout << "traits Name " << ttrait;
+            factor = (double) traits[k]->GetValue()->Evaluate();
+            if(DEBUG_MAPMC == true) std::cout << " Factor trait value " << factor << std::endl;
+        }
+    }
+    if(factor == 0)  { 
+        std::cout << " ERROR Factor not found and set the factor to 1 " << std::endl;
+        factor = 1;
+    }
+    return factor;
+}
+
+
 
 
 std::int64_t analytical_model::predictMemoryAccess(){
@@ -225,7 +243,7 @@ std::int64_t analytical_model::randomAccess(){
     std::int64_t memory_access = 0;
     double access = 0;
     std::string algorithm = findAlgorithm(_traits);
-    int factor = findStride(_traits); // Using stride we transer any factor that can be used.
+    int factor = findFactor(_traits); // Using stride we transer any factor that can be used.
     std::int64_t N = _data_structure_size;
     if (algorithm == "logarithm"){
         //access = log(N)/ log(2); 

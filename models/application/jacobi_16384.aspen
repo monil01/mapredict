@@ -1,0 +1,31 @@
+model jacobi_16384 {
+param aspen_param_default = 1
+param aspen_param_sizeof_float = 4
+param m_size = 16384
+data a as Matrix((2+m_size), (2+m_size))
+data b as Matrix((2+m_size), (2+m_size))
+kernel openacc_comp1 {
+execute [m_size] "block_openacc_comp17" {
+flops [2] as integer
+}
+execute [m_size] "block_openacc_comp18" {
+flops [1] as integer
+loads [((4*aspen_param_sizeof_float)*m_size)] from b as pattern(stencil4)
+stores [((1*aspen_param_sizeof_float)*m_size)] from a as initialized(0)
+flops [(4*m_size)] as sp, simd
+flops [(9*m_size)] as integer
+}
+}
+kernel main {
+execute  "block_main34" {
+flops [1] as integer
+intracomm [((aspen_param_sizeof_float*(2+m_size))*(2+m_size))] to b as copyin
+}
+iterate [1] {
+call openacc_comp1()
+}
+execute  "block_main34__intracommOUT" {
+intracomm [((aspen_param_sizeof_float*(2+m_size))*(2+m_size))] to b as copyout
+}
+}
+}
