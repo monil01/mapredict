@@ -173,6 +173,23 @@ double analytical_model::findFactor(vector<ASTTrait*> traits){
     return factor;
 }
 
+double analytical_model::findCorrection(vector<ASTTrait*> traits, std::string correction_str){
+    double correction = 0;
+    for (int k = 0; k < traits.size(); k++){
+        std::string ttrait = traits[k]->GetName();
+        if (ttrait == correction_str){
+            //if(DEBUG_MAPMC == true) std::cout << "traits Name " << ttrait;
+            correction = (double) traits[k]->GetValue()->Evaluate();
+            if(DEBUG_MAPMC == true) std::cout << " Correction trait name " << correction_str << " correction trait value " << correction << std::endl;
+        }
+    }
+    if(correction == 0)  {
+        std::cout << " ERROR Factor not found and set the correction to 1 " << std::endl;
+        correction = 1;
+    }
+    return correction;
+}
+
 
 
 
@@ -238,6 +255,34 @@ std::int64_t  analytical_model::streamAccess() {
 
 }
 
+std::string analytical_model::generateCorrectionString(){
+    double correction = 1;
+    std::string correction_str = "correction_";
+    switch(_microarchitecture){
+        case microarchitecture::BW:
+            correction_str = correction_str + "BW";
+            break;
+        case microarchitecture::SK:
+            correction_str = correction_str + "SK";
+            break;
+        case microarchitecture::CS:
+            correction_str = correction_str + "CS";
+            break;
+        case microarchitecture::CP:
+            correction_str = correction_str + "CP";
+            break;
+        default:
+            correction_str="";
+    }
+
+    if(DEBUG_MAPMC == true) std::cout << " Correction String " << correction_str << std::endl;
+     
+    if (_prefetch_enabled == true) correction_str = correction_str + "_prefetch";
+    else correction_str = correction_str + "_noprefetch";
+    if(DEBUG_MAPMC == true) std::cout << " Correction STR " << correction_str << " micro architecture " << _microarchitecture << std::endl;
+    return correction_str;
+}
+
 std::int64_t analytical_model::randomAccess(){
 
     std::int64_t memory_access = 0;
@@ -245,6 +290,9 @@ std::int64_t analytical_model::randomAccess(){
     std::string algorithm = findAlgorithm(_traits);
     int factor = findFactor(_traits); // Using stride we transer any factor that can be used.
     std::int64_t N = _data_structure_size;
+    std::string correction_str = generateCorrectionString();
+    double correction = findCorrection(_traits, correction_str);
+
     if (algorithm == "logarithm"){
         //access = log(N)/ log(2); 
         access = log10(N); 
@@ -252,6 +300,7 @@ std::int64_t analytical_model::randomAccess(){
     }
     
     memory_access = access * factor;
+    if(correction != 1) memory_access = memory_access * correction;
  
     if(DEBUG_MAPMC == true) std::cout << " Analytical Model RANDOM " << memory_access << " data size "  
         <<  N   << " algorithm " << algorithm  << "  instruction " << _instruction_type << std::endl;

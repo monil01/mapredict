@@ -69,8 +69,10 @@ bool findInitialized(vector<ASTTrait*> traits);
 int findPattern(vector<ASTTrait*> traits);
 int findStride(vector<ASTTrait*> traits);
 double findFactor(vector<ASTTrait*> traits);
-std::string findAlgorithm(vector<ASTTrait*> traits);
+double findCorrection(vector<ASTTrait*> traits, std::string correction_str);
 
+std::string findAlgorithm(vector<ASTTrait*> traits);
+std::string generateCorrectionString();
 };
 
 

@@ -1,4 +1,4 @@
-model xsbench_big {
+model xsbench_big_corrected {
 param aspen_param_default = 1
 param aspen_param_whilecnt = 100
 param aspen_param_sizeof_double = 8
@@ -8,7 +8,7 @@ kernel grid_search {
 execute  "block_grid_search6" {
 flops [1] as integer
 flops [1] as integer
-loads [((1*aspen_param_sizeof_double)*aspen_param_length_array)] from unionize_array as factor((100000*1.2)), pattern(random), algorithm(logarithm)
+loads [((1*aspen_param_sizeof_double)*aspen_param_length_array)] from unionize_array as factor((100000*1.2)), pattern(random), algorithm(logarithm), correction_BW_noprefetch(1), correction_SK_noprefetch(0.82), correction_CS_noprefetch(0.77), correction_CP_noprefetch(3.27), correction_BW_prefetch(1.21), correction_SK_prefetch(1.48), correction_CS_prefetch(0.81), correction_CP_prefetch(4.1)
 flops [(4*aspen_param_length_array)]
 flops [(2*aspen_param_lenght_array)] as sp, simd
 }

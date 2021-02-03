@@ -24,7 +24,7 @@ param bwCacheBW = bwNumCores * 96 * giga // 96GB per core
 param bwTDP = 90
 param bwIdle = 10
 
-socket intel_xeon_x2623 {
+socket intel_xeon_x2683 {
    core [bwNumCores] westmereCore
    memory ddr3
    cache bwCache

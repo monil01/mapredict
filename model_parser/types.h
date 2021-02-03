@@ -27,7 +27,8 @@ typedef enum microarchitecture{
 BW,
 SK,
 CS,
-CP}
+CP,
+SK_NIC}
 microarchitecture;
 
 
