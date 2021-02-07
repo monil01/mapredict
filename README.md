@@ -2,9 +2,9 @@
 
 ![](model_parser/mapredict.png)
 
-MAPredict: A static analysis driven memory access prediction framework for moder CPUs.
+# MAPredict: A static analysis driven memory access prediction framework for moder CPUs.
 
-1. Overview
+## Overview
 MAPredict, a static analysis driven framework that provides memory access prediction by gathering application and machines properties at compile time. By exploring and analyzing the behavior of modern Intel processors, MAPredict formulates compiler and micro-architecture aware an-alytical models. MAPredict then invokes the analytical model topredict LLC-DRAM traffic by combining the application model, themachine model, and user-provided hints for capturing dynamic information. MAPredict is tested on different micro-architectures of Intel and provided high accuracy for application with different access patterns.
 
 2. Installation.
