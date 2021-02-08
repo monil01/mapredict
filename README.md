@@ -47,7 +47,7 @@
   #### 4. Examples
     4.1 Source Code annonation: Source code annotation examplese are in [applications/memory_research_ornl/aspen_model_generation].
     4.2 Memory predictio for all applicaitons: [./scripts] directory has scripts for all applications that generates memory prediction.
-    4.3 #### Lules : source code annotation processor for lulesh can be found in [applications/memory_research_ornl/aspen_model_generation].
+    4.3 #### Lulesh : source code annotation processor for lulesh can be found in [applications/memory_research_ornl/aspen_model_generation].
 
 
   
