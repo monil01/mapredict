@@ -32,7 +32,7 @@
         3.2.3 git submodule update
         
     3.3 installing
-        3.3.1 cd aspen
+        3.3.1 cd [MAPredict_root]/aspen
         3.3.2 ./configure
         3.3.3 make all -j (it should build libaspen.a in the lib folder)
         3.3.4 cd .. (come out of aspen directory)
@@ -44,7 +44,11 @@
         3.4.2 convention of running MAPredict: ./[MAPredict_binary] [application_model] [machine_model]
   
   
-  
+  #### 4. Examples
+    4.1 Source Code annonation: Source code annotation examplese are in [applications/memory_research_ornl/aspen_model_generation].
+    4.2 Memory predictio for all applicaitons: [./scripts] directory has scripts for all applications that generates memory prediction.
+    4.3 #### Lules : source code annotation processor for lulesh can be found in [applications/memory_research_ornl/aspen_model_generation].
+
 
   
     
