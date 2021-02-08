@@ -1,0 +1,185 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+<meta content="text/html; charset=utf-8" http-equiv="content-type" name="Aspen Grammar" keywords="Aspen, Grammar"/>
+<title>Aspen Grammar</title>
+<body>
+<code>
+<br/>
+$accept: <font color="#000088">BEGIN</font> $end<br/>
+<br/>
+BEGIN  =  <font color="#000088">MACH</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">APP</font><br/>
+<br/>
+MACH  =  <font color="#000088">MACHCONTENT</font><br/>
+<br/>
+MACHCONTENT  =  <font color="#000088">GLOBALSTMT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">COMPONENT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">MACHCONTENT</font> <font color="#000088">GLOBALSTMT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">MACHCONTENT</font> <font color="#000088">COMPONENT</font><br/>
+<br/>
+COMPONENT  =  &lt;<font color="#884488">identifier</font>&gt; &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">{</font>&quot;  <font color="#000088">COMPONENTSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+<br/>
+COMPONENTSTATEMENTS  =  <font color="#000088">COMPONENTSTMT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">COMPONENTSTATEMENTS</font> <font color="#000088">COMPONENTSTMT</font><br/>
+<br/>
+COMPONENTSTMT  =  <font color="#000088">PROPERTY</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">RESOURCE</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">POWER</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">CONFLICT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">SUBCOMPONENT</font><br/>
+<br/>
+SUBCOMPONENT  =  &lt;<font color="#884488">identifier</font>&gt; &lt;<font color="#884488">identifier</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &lt;<font color="#884488">identifier</font>&gt; <font color="#000088">QUANTITY</font> &lt;<font color="#884488">identifier</font>&gt;<br/>
+<br/>
+PROPERTY  =  &quot;<font color="#008800">property</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; <font color="#000088">QUANTITY</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">property</font>&quot;  &lt;<font color="#884488">identifier</font>&gt;<br/>
+<br/>
+CONFLICT  =  &quot;<font color="#008800">conflict</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">,</font>&quot;  &lt;<font color="#884488">identifier</font>&gt;<br/>
+<br/>
+RESOURCE  =  &quot;<font color="#008800">resource</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">(</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">)</font>&quot;  <font color="#000088">QUANTITY</font> &quot;<font color="#008800">with</font>&quot;  <font color="#000088">TRAITDEFINITIONS</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">resource</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">(</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">)</font>&quot;  <font color="#000088">QUANTITY</font><br/>
+<br/>
+TRAITDEFINITIONS  =  &lt;<font color="#884488">identifier</font>&gt; <font color="#000088">QUANTITY</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">(</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">)</font>&quot;  <font color="#000088">QUANTITY</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">TRAITDEFINITIONS</font> &quot;<font color="#008800">,</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; <font color="#000088">QUANTITY</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">TRAITDEFINITIONS</font> &quot;<font color="#008800">,</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">(</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">)</font>&quot;  <font color="#000088">QUANTITY</font><br/>
+<br/>
+POWER  =  &quot;<font color="#008800">static</font>&quot;  &quot;<font color="#008800">power</font>&quot;  <font color="#000088">QUANTITY</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">dynamic</font>&quot;  &quot;<font color="#008800">power</font>&quot;  <font color="#000088">QUANTITY</font><br/>
+<br/>
+APP  =  &quot;<font color="#008800">model</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">{</font>&quot;  <font color="#000088">GLOBALSTATEMENTS</font> <font color="#000088">KERNELS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+<br/>
+KERNELS  =  <font color="#000088">KERNEL</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">KERNELS</font> <font color="#000088">KERNEL</font><br/>
+<br/>
+KERNEL  =  &quot;<font color="#008800">kernel</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">kernel</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">(</font>&quot;  <font color="#000088">VARDECLLIST</font> &quot;<font color="#008800">)</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+<br/>
+IDENT  =  &lt;<font color="#884488">identifier</font>&gt;<br/>
+<br/>
+VALUE  =  &lt;<font color="#884488">integer</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &lt;<font color="#884488">real</font>&gt;<br/>
+<br/>
+CONSTANT  =  &lt;<font color="#884488">si_prefix</font>&gt;<br/>
+<br/>
+GLOBALSTATEMENTS  =  <font color="#000088">GLOBALSTMT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">GLOBALSTATEMENTS</font> <font color="#000088">GLOBALSTMT</font><br/>
+<br/>
+KERNELSTATEMENTS  =  <font color="#000088">KERNELSTMT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">KERNELSTATEMENTS</font> <font color="#000088">KERNELSTMT</font><br/>
+<br/>
+EXECSTATEMENTS  =  <font color="#000088">EXECSTMT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXECSTATEMENTS</font> <font color="#000088">EXECSTMT</font><br/>
+<br/>
+GLOBALSTMT  =  <font color="#000088">IMPORTSTMT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">PARAMSTMT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">DATASTMT</font><br/>
+<br/>
+KERNELSTMT  =  &quot;<font color="#008800">execute</font>&quot;  (&lt;<font color="#884488">string</font>&gt; <font color="#600000">|</font> &lt;<font color="#884488">empty</font>&gt;) &quot;<font color="#008800">{</font>&quot;  <font color="#000088">EXECSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">execute</font>&quot;  <font color="#000088">QUANTITY</font> (&lt;<font color="#884488">string</font>&gt; <font color="#600000">|</font> &lt;<font color="#884488">empty</font>&gt;) &quot;<font color="#008800">{</font>&quot;  <font color="#000088">EXECSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">CONTROLSTMT</font><br/>
+<br/>
+EXECSTMT  =  &lt;<font color="#884488">identifier</font>&gt; <font color="#000088">QUANTITY</font> <font color="#000088">TOFROM</font> (<font color="#000088">TRAITLIST</font> <font color="#600000">|</font> &lt;<font color="#884488">empty</font>&gt;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &lt;<font color="#884488">identifier</font>&gt; <font color="#000088">QUANTITY</font> &quot;<font color="#008800">of</font>&quot;  &quot;<font color="#008800">size</font>&quot;  <font color="#000088">QUANTITY</font> <font color="#000088">TOFROM</font> (<font color="#000088">TRAITLIST</font> <font color="#600000">|</font> &lt;<font color="#884488">empty</font>&gt;)<br/>
+<br/>
+PARAMSTMT  =  &quot;<font color="#008800">param</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">=</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">param</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">=</font>&quot;  <font color="#000088">EXPR</font> &quot;<font color="#008800">in</font>&quot;  <font color="#000088">EXPR</font> &quot;<font color="#008800">..</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">param</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">=</font>&quot;  <font color="#000088">EXPR</font> &quot;<font color="#008800">in</font>&quot;  &lt;<font color="#884488">identifier</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">param</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">[</font>&quot;  &quot;<font color="#008800">]</font>&quot;  &quot;<font color="#008800">=</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">VALUELIST</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">enum</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">{</font>&quot;  <font color="#000088">IDENTLIST</font> &quot;<font color="#008800">}</font>&quot; <br/>
+<br/>
+VALUELIST  =  &lt;<font color="#884488">integer</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &lt;<font color="#884488">real</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">VALUELIST</font> &quot;<font color="#008800">,</font>&quot;  &lt;<font color="#884488">integer</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">VALUELIST</font> &quot;<font color="#008800">,</font>&quot;  &lt;<font color="#884488">real</font>&gt;<br/>
+<br/>
+IDENTLIST  =  &lt;<font color="#884488">identifier</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">IDENTLIST</font> &quot;<font color="#008800">,</font>&quot;  &lt;<font color="#884488">identifier</font>&gt;<br/>
+<br/>
+SAMPLESTMT  =  &quot;<font color="#008800">sample</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">from</font>&quot;  <font color="#000088">FUNCTIONCALL</font><br/>
+<br/>
+DATASTMT  =  &quot;<font color="#008800">data</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">as</font>&quot;  <font color="#000088">FUNCTIONCALL</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">data</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; <font color="#000088">QUANTITY</font><br/>
+<br/>
+IMPORTSTMT  =  &quot;<font color="#008800">import</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">from</font>&quot;  &lt;<font color="#884488">string</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">import</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">from</font>&quot;  &lt;<font color="#884488">string</font>&gt; &quot;<font color="#008800">with</font>&quot;  <font color="#000088">NAMEDARGUMENTS</font><br/>
+<br/>
+KERNELCALL  =  &quot;<font color="#008800">call</font>&quot;  &lt;<font color="#884488">identifier</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">call</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">(</font>&quot;  <font color="#000088">ARGUMENTS</font> &quot;<font color="#008800">)</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">call</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">.</font>&quot;  &lt;<font color="#884488">identifier</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">call</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">.</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">(</font>&quot;  <font color="#000088">ARGUMENTS</font> &quot;<font color="#008800">)</font>&quot; <br/>
+<br/>
+COMPARISON  =  <font color="#000088">COMPARISON</font> &quot;<font color="#008800">and</font>&quot;  <font color="#000088">COMPARISON</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">COMPARISON</font> &quot;<font color="#008800">or</font>&quot;  <font color="#000088">COMPARISON</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font> &quot;<font color="#008800">==</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font> &quot;<font color="#008800">!=</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font> &quot;<font color="#008800"><</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font> &quot;<font color="#008800">></font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font> &quot;<font color="#008800"><=</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font> &quot;<font color="#008800">>=</font>&quot;  <font color="#000088">EXPR</font><br/>
+<br/>
+IFTHENCONTROL  =  &quot;<font color="#008800">if</font>&quot;  &quot;<font color="#008800">(</font>&quot;  <font color="#000088">COMPARISON</font> &quot;<font color="#008800">)</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">if</font>&quot;  &quot;<font color="#008800">(</font>&quot;  <font color="#000088">COMPARISON</font> &quot;<font color="#008800">)</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot;  &quot;<font color="#008800">else</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">if</font>&quot;  &quot;<font color="#008800">(</font>&quot;  <font color="#000088">COMPARISON</font> &quot;<font color="#008800">)</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot;  &quot;<font color="#008800">else</font>&quot;  <font color="#000088">IFTHENCONTROL</font><br/>
+<br/>
+CASEITEMS  =  <font color="#000088">QUANTITY</font> &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">CASEITEMS</font> <font color="#000088">QUANTITY</font> &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+<br/>
+PROBABILITYCONTROL  =  &quot;<font color="#008800">probability</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">CASEITEMS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">probability</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">CASEITEMS</font> &quot;<font color="#008800">else</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot;  &quot;<font color="#008800">}</font>&quot; <br/>
+<br/>
+SWITCHCONTROL  =  &quot;<font color="#008800">switch</font>&quot;  &quot;<font color="#008800">(</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">)</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">CASEITEMS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">switch</font>&quot;  &quot;<font color="#008800">(</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">)</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">CASEITEMS</font> &quot;<font color="#008800">else</font>&quot;  &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot;  &quot;<font color="#008800">}</font>&quot; <br/>
+<br/>
+CONTROLSTMT  =  <font color="#000088">KERNELCALL</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">SAMPLESTMT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">par</font>&quot;  (&lt;<font color="#884488">string</font>&gt; <font color="#600000">|</font> &lt;<font color="#884488">empty</font>&gt;) &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">seq</font>&quot;  (&lt;<font color="#884488">string</font>&gt; <font color="#600000">|</font> &lt;<font color="#884488">empty</font>&gt;) &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">iterate</font>&quot;  (&lt;<font color="#884488">identifier</font>&gt; <font color="#600000">|</font> &lt;<font color="#884488">empty</font>&gt;) <font color="#000088">QUANTITY</font> (&lt;<font color="#884488">string</font>&gt; <font color="#600000">|</font> &lt;<font color="#884488">empty</font>&gt;) &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">map</font>&quot;  (&lt;<font color="#884488">identifier</font>&gt; <font color="#600000">|</font> &lt;<font color="#884488">empty</font>&gt;) <font color="#000088">QUANTITY</font> (&lt;<font color="#884488">string</font>&gt; <font color="#600000">|</font> &lt;<font color="#884488">empty</font>&gt;) &quot;<font color="#008800">{</font>&quot;  <font color="#000088">KERNELSTATEMENTS</font> &quot;<font color="#008800">}</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">IFTHENCONTROL</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">PROBABILITYCONTROL</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">SWITCHCONTROL</font><br/>
+<br/>
+TOFROM  =  &lt;<font color="#884488">empty</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">to</font>&quot;  &lt;<font color="#884488">identifier</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">from</font>&quot;  &lt;<font color="#884488">identifier</font>&gt;<br/>
+<br/>
+TRAITLIST  =  <font color="#000088">TRAIT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">TRAITLIST</font> &quot;<font color="#008800">,</font>&quot;  <font color="#000088">TRAIT</font><br/>
+<br/>
+TRAIT  =  &lt;<font color="#884488">identifier</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">(</font>&quot;  <font color="#000088">EXPR</font> &quot;<font color="#008800">)</font>&quot; <br/>
+<br/>
+VARDECLLIST  =  <font color="#000088">VARDECL</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">VARDECLLIST</font> &quot;<font color="#008800">,</font>&quot;  <font color="#000088">VARDECL</font><br/>
+<br/>
+VARDECL  =  &quot;<font color="#008800">data</font>&quot;  &lt;<font color="#884488">identifier</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">param</font>&quot;  &lt;<font color="#884488">identifier</font>&gt;<br/>
+<br/>
+QUANTITY  =  &quot;<font color="#008800">[</font>&quot;  <font color="#000088">EXPR</font> &quot;<font color="#008800">]</font>&quot; <br/>
+<br/>
+EXPR  =  <font color="#000088">VALUE</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">CONSTANT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">IDENT</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">[</font>&quot;  <font color="#000088">EXPR</font> &quot;<font color="#008800">]</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">(</font>&quot;  <font color="#000088">EXPR</font> &quot;<font color="#008800">)</font>&quot; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font> &quot;<font color="#008800">+</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font> &quot;<font color="#008800">-</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font> &quot;<font color="#008800">*</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font> &quot;<font color="#008800">/</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font> &quot;<font color="#008800">^</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  &quot;<font color="#008800">-</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">FUNCTIONCALL</font><br/>
+<br/>
+FUNCTIONCALL  =  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">(</font>&quot;  <font color="#000088">ARGUMENTS</font> &quot;<font color="#008800">)</font>&quot; <br/>
+<br/>
+ARGUMENTS  =  &lt;<font color="#884488">empty</font>&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">ARGUMENTS</font> &quot;<font color="#008800">,</font>&quot;  <font color="#000088">EXPR</font><br/>
+<br/>
+NAMEDARGUMENTS  =  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">=</font>&quot;  <font color="#000088">EXPR</font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#600000">|</font>  <font color="#000088">NAMEDARGUMENTS</font> &quot;<font color="#008800">,</font>&quot;  &lt;<font color="#884488">identifier</font>&gt; &quot;<font color="#008800">=</font>&quot;  <font color="#000088">EXPR</font><br/>
+<br/>
+</code>
+</body>

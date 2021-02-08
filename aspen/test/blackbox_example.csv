@@ -1,0 +1,3 @@
+runtime,natoms,machine,socket
+100.0,10,../models/machine/simple.aspen,SimpleCPU
+380.0,19,../models/machine/simple.aspen,SimpleCPU

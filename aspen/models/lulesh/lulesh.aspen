@@ -1,0 +1,960 @@
+model lulesh {
+  param edgeElems = 15 /// problem size
+  param aspen_param_whilecnt = 1 /// number of time steps
+
+  param aspen_param_double = 8
+  param aspen_param_int = 4
+
+  data m_x as Array(m_numNode, aspen_param_double)
+  data m_y as Array(m_numNode, aspen_param_double)
+  data m_z as Array(m_numNode, aspen_param_double)
+  data m_xd as Array(m_numNode, aspen_param_double)
+  data m_yd as Array(m_numNode, aspen_param_double)
+  data m_zd as Array(m_numNode, aspen_param_double)
+  data m_xdd as Array(m_numNode, aspen_param_double)
+  data m_ydd as Array(m_numNode, aspen_param_double)
+  data m_zdd as Array(m_numNode, aspen_param_double)
+  data m_fx as Array(m_numNode, aspen_param_double)
+  data m_fy as Array(m_numNode, aspen_param_double)
+  data m_fz as Array(m_numNode, aspen_param_double)
+  data m_nodalMass as Array(m_numNode, aspen_param_double)
+  data m_symmX as Array(size_renamed, aspen_param_int)
+  data m_symmY as Array(size_renamed, aspen_param_int)
+  data m_symmZ as Array(size_renamed, aspen_param_int)
+  data m_nodeElemCount as Array(m_numNode, aspen_param_int)
+  data m_nodeElemStart as Array(m_numNode, aspen_param_int)
+  data m_matElemlist as Array(m_numElem, aspen_param_int)
+  data m_nodelist as Array((8*m_numElem), aspen_param_int)
+  data m_lxim as Array(m_numElem, aspen_param_int)
+  data m_lxip as Array(m_numElem, aspen_param_int)
+  data m_letam as Array(m_numElem, aspen_param_int)
+  data m_letap as Array(m_numElem, aspen_param_int)
+  data m_lzetam as Array(m_numElem, aspen_param_int)
+  data m_lzetap as Array(m_numElem, aspen_param_int)
+  data m_elemBC as Array(m_numElem, aspen_param_int)
+  data m_dxx as Array(m_numElem, aspen_param_double)
+  data m_dyy as Array(m_numElem, aspen_param_double)
+  data m_dzz as Array(m_numElem, aspen_param_double)
+  data m_delv_xi as Array(m_numElem, aspen_param_double)
+  data m_delv_eta as Array(m_numElem, aspen_param_double)
+  data m_delv_zeta as Array(m_numElem, aspen_param_double)
+  data m_delx_xi as Array(m_numElem, aspen_param_double)
+  data m_delx_eta as Array(m_numElem, aspen_param_double)
+  data m_delx_zeta as Array(m_numElem, aspen_param_double)
+  data m_e as Array(m_numElem, aspen_param_double)
+  data m_p as Array(m_numElem, aspen_param_double)
+  data m_q as Array(m_numElem, aspen_param_double)
+  data m_ql as Array(m_numElem, aspen_param_double)
+  data m_qq as Array(m_numElem, aspen_param_double)
+  data m_v as Array(m_numElem, aspen_param_double)
+  data m_volo as Array(m_numElem, aspen_param_double)
+  data m_vnew as Array(m_numElem, aspen_param_double)
+  data m_delv as Array(m_numElem, aspen_param_double)
+  data m_vdov as Array(m_numElem, aspen_param_double)
+  data m_arealg as Array(m_numElem, aspen_param_double)
+  data m_ss as Array(m_numElem, aspen_param_double)
+  data m_elemMass as Array(m_numElem, aspen_param_double)
+  data fx_elem as Array(m_numElem8, aspen_param_double)
+  data fy_elem as Array(m_numElem8, aspen_param_double)
+  data fz_elem as Array(m_numElem8, aspen_param_double)
+  data dvdx as Array(m_numElem8, aspen_param_double)
+  data dvdy as Array(m_numElem8, aspen_param_double)
+  data dvdz as Array(m_numElem8, aspen_param_double)
+  data x8n as Array(m_numElem8, aspen_param_double)
+  data y8n as Array(m_numElem8, aspen_param_double)
+  data z8n as Array(m_numElem8, aspen_param_double)
+  data e_old as Array(m_numElem, aspen_param_double)
+  data delvc as Array(m_numElem, aspen_param_double)
+  data p_old as Array(m_numElem, aspen_param_double)
+  data q_old as Array(m_numElem, aspen_param_double)
+  data compression as Array(m_numElem, aspen_param_double)
+  data compHalfStep as Array(m_numElem, aspen_param_double)
+  data qq as Array(m_numElem, aspen_param_double)
+  data ql as Array(m_numElem, aspen_param_double)
+  data work as Array(m_numElem, aspen_param_double)
+  data p_new as Array(m_numElem, aspen_param_double)
+  data e_new as Array(m_numElem, aspen_param_double)
+  data q_new as Array(m_numElem, aspen_param_double)
+  data bvc as Array(m_numElem, aspen_param_double)
+  data pbvc as Array(m_numElem, aspen_param_double)
+  data vnewc as Array(m_numElem, aspen_param_double)
+  data sigxx as Array(m_numElem, aspen_param_double)
+  data sigyy as Array(m_numElem, aspen_param_double)
+  data sigzz as Array(m_numElem, aspen_param_double)
+  data determ as Array(m_numElem, aspen_param_double)
+  param edgeNodes = (edgeElems+1)
+  param m_sizeX = edgeElems
+  param m_numElem = ((edgeElems*edgeElems)*edgeElems)
+  param m_numElem8 = (m_numElem*8)
+  param m_numNode = ((edgeNodes*edgeNodes)*edgeNodes)
+  param m_nCorner = m_numElem8
+  param size_renamed = ((edgeElems+1)*(edgeElems+1))
+  data m_nodeElemCornerList as Array(m_nCorner, aspen_param_int)
+  data elemNodes as Array(8, aspen_param_int)
+  param aspen_param_elemCount = 1
+  data elemToNode_CalcFBHourglassForceForElems as Array(8, aspen_param_int)
+  data fx_local as Array(8, aspen_param_double)
+  data fy_local as Array(8, aspen_param_double)
+  data fz_local as Array(8, aspen_param_double)
+  data elemToNode_CalcHourglassControlForElems as Array(8, aspen_param_int)
+  param numElem_CalcVolumeForceForElems = m_numElem
+  data pfx as Array(8, aspen_param_double)
+  data pfy as Array(8, aspen_param_double)
+  data pfz as Array(8, aspen_param_double)
+  param detJ = 0.0
+  data elemToNode_CalcKinematicsForElems as Array(8, aspen_param_int)
+  param numElem_CalcLagrangeElements = m_numElem
+  data elemToNode_CalcMonotonicQGradientsForElems as Array(8, aspen_param_int)
+  param elength = m_numElem
+  data pHalfStep as Array(length, aspen_param_double)
+  param length = m_numElem
+  kernel TimeIncrement {
+    execute {
+      flops [1] as dp
+      flops [2] as dp
+      flops [1] as dp
+      flops [1] as dp
+      flops [1] as dp
+      flops [2] as dp
+      flops [1] as dp
+      flops [3] as dp
+      flops [1] as dp
+      flops [6] as dp
+      flops [1] as dp
+    }
+  }
+  kernel InitStressTermsForElems {
+    execute [numElem_CalcVolumeForceForElems] {
+      loads [(1*aspen_param_double)] from m_q as stride(1)
+      loads [(1*aspen_param_double)] from m_p as stride(1)
+      stores [(1*aspen_param_double)] to sigzz as stride(1)
+      stores [(1*aspen_param_double)] to sigxx as stride(1)
+      stores [(1*aspen_param_double)] to sigyy as stride(1)
+      flops [1] as dp, simd
+    }
+  }
+  kernel CalcElemShapeFunctionDerivatives {
+    execute {
+      flops [72+27+24+6] as dp, simd
+      stores [(1*aspen_param_double)]
+    }
+  }
+  kernel SumElemFaceNormal {
+    execute {
+      flops [48] as dp, simd
+      stores [(12*aspen_param_double)]
+    }
+  }
+  kernel CalcElemNodeNormals {
+    execute {
+      stores [((1*aspen_param_double)*8)] as stride(1)
+      stores [((1*aspen_param_double)*8)] as stride(1)
+      stores [((1*aspen_param_double)*8)] as stride(1)
+    }
+    call SumElemFaceNormal()
+    call SumElemFaceNormal()
+    call SumElemFaceNormal()
+    call SumElemFaceNormal()
+    call SumElemFaceNormal()
+    call SumElemFaceNormal()
+  }
+  kernel SumElemStressesToNodeForces {
+    execute {
+      flops [24] as dp, simd
+    }
+  }
+  kernel IntegrateStressForElems {
+    execute [numElem_CalcVolumeForceForElems] {
+      flops [24+27+96+78+72] as dp, simd
+      loads [((1*aspen_param_double)*8)] from m_x
+      loads [((1*aspen_param_double)*8)] from m_y
+      loads [((1*aspen_param_double)*8)] from m_z
+      loads [((1*aspen_param_int)*8)] from elemNodes as stride(1)
+      loads [(1*aspen_param_double)] from determ as stride(1)
+      loads [(1*aspen_param_double)] from fx_elem
+      loads [(1*aspen_param_double)] from fy_elem
+      loads [(1*aspen_param_double)] from fz_elem
+      loads [(1*aspen_param_double)] from sigxx as stride(1)
+      loads [(1*aspen_param_double)] from sigyy as stride(1)
+      loads [(1*aspen_param_double)] from sigzz as stride(1)
+      stores [((3*aspen_param_double)*8)] as stride(1)
+      stores [(73*aspen_param_double)]
+    }
+    execute [m_numNode] {
+      loads [(1*aspen_param_int)] from m_nodeElemCount as stride(1)
+      loads [(1*aspen_param_int)] from m_nodeElemStart as stride(1)
+      loads [((1*aspen_param_int)*aspen_param_elemCount)] from m_nodeElemCornerList as stride(1)
+      loads [((1*aspen_param_double)*aspen_param_elemCount)] from fx_elem
+      flops [(1*aspen_param_elemCount)] as dp, simd
+      loads [((1*aspen_param_double)*aspen_param_elemCount)] from fy_elem
+      flops [(1*aspen_param_elemCount)] as dp, simd
+      loads [((1*aspen_param_double)*aspen_param_elemCount)] from fz_elem
+      flops [(1*aspen_param_elemCount)] as dp, simd
+      stores [(1*aspen_param_double)] to m_fx as stride(1)
+      stores [(1*aspen_param_double)] to m_fy as stride(1)
+      stores [(1*aspen_param_double)] to m_fz as stride(1)
+    }
+  }
+  kernel CollectDomainNodesToElemNodes {
+    execute {
+      loads [(8*aspen_param_int)] from elemToNode_CalcHourglassControlForElems as stride(0)
+      loads [(8*aspen_param_double)] from m_x as stride(0)
+      loads [(8*aspen_param_double)] from m_y as stride(0)
+      loads [(8*aspen_param_double)] from m_z as stride(0)
+      stores [(24*aspen_param_double)] as stride(0)
+    }
+  }
+  kernel VoluDer {
+    execute {
+      stores [(1*aspen_param_double)]
+      flops [23] as dp, simd
+      stores [(1*aspen_param_double)]
+      flops [23] as dp, simd
+      stores [(1*aspen_param_double)]
+      flops [23] as dp, simd
+      stores [(1*aspen_param_double)]
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)]
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)]
+      flops [1] as dp, simd
+    }
+  }
+  kernel CalcElemVolumeDerivative {
+    execute {
+      loads [(6*aspen_param_double)] as stride(0)
+      loads [(12*aspen_param_double)] as stride(0)
+      loads [(2*aspen_param_double)] as stride(0)
+      loads [(1*aspen_param_double)] as stride(0)
+    }
+    call VoluDer()
+    execute {
+      loads [(6*aspen_param_double)] as stride(0)
+      loads [(12*aspen_param_double)] as stride(0)
+      loads [(2*aspen_param_double)] as stride(0)
+      loads [(1*aspen_param_double)] as stride(0)
+    }
+    call VoluDer()
+    execute {
+      loads [(6*aspen_param_double)] as stride(0)
+      loads [(12*aspen_param_double)] as stride(0)
+      loads [(2*aspen_param_double)] as stride(0)
+      loads [(1*aspen_param_double)] as stride(0)
+    }
+    call VoluDer()
+    execute {
+      loads [(6*aspen_param_double)] as stride(0)
+      loads [(12*aspen_param_double)] as stride(0)
+      loads [(2*aspen_param_double)] as stride(0)
+      loads [(1*aspen_param_double)] as stride(0)
+    }
+    call VoluDer()
+    execute {
+      loads [(6*aspen_param_double)] as stride(0)
+      loads [(12*aspen_param_double)] as stride(0)
+      loads [(2*aspen_param_double)] as stride(0)
+      loads [(1*aspen_param_double)] as stride(0)
+    }
+    call VoluDer()
+    execute {
+      loads [(6*aspen_param_double)] as stride(0)
+      loads [(12*aspen_param_double)] as stride(0)
+      loads [(2*aspen_param_double)] as stride(0)
+      loads [(1*aspen_param_double)] as stride(0)
+    }
+    call VoluDer()
+    execute {
+      loads [(6*aspen_param_double)] as stride(0)
+      loads [(12*aspen_param_double)] as stride(0)
+      loads [(2*aspen_param_double)] as stride(0)
+      loads [(1*aspen_param_double)] as stride(0)
+    }
+    call VoluDer()
+    execute {
+      loads [(6*aspen_param_double)] as stride(0)
+      loads [(12*aspen_param_double)] as stride(0)
+      loads [(2*aspen_param_double)] as stride(0)
+      loads [(1*aspen_param_double)] as stride(0)
+    }
+    call VoluDer()
+  }
+  kernel CBRT8 {
+    execute {
+      flops [1] as dp, simd
+    }
+  }
+  kernel CalcElemFBHourglassForce {
+    execute {
+      flops [180+48] as dp, simd
+    }
+  }
+  kernel CalcFBHourglassForceForElems {
+    execute {
+      intracomm [((aspen_param_double*4)*8)] as copyin
+    }
+    execute [m_numElem] {
+      loads [(1*aspen_param_int)] from m_nodelist
+      loads [(1*aspen_param_double)] from determ as stride(1)
+      flops [1] as dp, simd
+      loads [((8*aspen_param_double)*4)] from x8n
+      flops [(15*4)] as dp, simd
+      loads [((8*aspen_param_double)*4)] from y8n
+      flops [(15*4)] as dp, simd
+      loads [((8*aspen_param_double)*4)] from z8n
+      flops [(15*4)] as dp, simd
+      loads [((1*aspen_param_double)*4)] from dvdz
+      loads [((1*aspen_param_double)*4)] from dvdx
+      loads [((1*aspen_param_double)*4)] from dvdy
+      flops [(7*4)] as dp, simd
+      loads [((1*aspen_param_double)*4)] from dvdz
+      loads [((1*aspen_param_double)*4)] from dvdx
+      loads [((1*aspen_param_double)*4)] from dvdy
+      flops [(7*4)] as dp, simd
+      loads [((1*aspen_param_double)*4)] from dvdz
+      loads [((1*aspen_param_double)*4)] from dvdx
+      loads [((1*aspen_param_double)*4)] from dvdy
+      flops [(7*4)] as dp, simd
+      loads [((1*aspen_param_double)*4)] from dvdz
+      loads [((1*aspen_param_double)*4)] from dvdx
+      loads [((1*aspen_param_double)*4)] from dvdy
+      flops [(7*4)] as dp, simd
+      loads [((1*aspen_param_double)*4)] from dvdz
+      loads [((1*aspen_param_double)*4)] from dvdx
+      loads [((1*aspen_param_double)*4)] from dvdy
+      flops [(7*4)] as dp, simd
+      loads [((1*aspen_param_double)*4)] from dvdz
+      loads [((1*aspen_param_double)*4)] from dvdx
+      loads [((1*aspen_param_double)*4)] from dvdy
+      flops [(7*4)] as dp, simd
+      loads [((1*aspen_param_double)*4)] from dvdz
+      loads [((1*aspen_param_double)*4)] from dvdx
+      loads [((1*aspen_param_double)*4)] from dvdy
+      flops [(7*4)] as dp, simd
+      loads [((1*aspen_param_double)*4)] from dvdz
+      loads [((1*aspen_param_double)*4)] from dvdx
+      loads [((1*aspen_param_double)*4)] from dvdy
+      flops [(7*4)] as dp, simd
+      loads [(1*aspen_param_double)] from m_ss as stride(1)
+      loads [(1*aspen_param_double)] from m_elemMass as stride(1)
+      loads [(1*aspen_param_double)] from determ as stride(1)
+      flops [1] as dp, simd
+      loads [(8*aspen_param_double)] from m_xd
+      loads [(8*aspen_param_double)] from m_yd
+      loads [(8*aspen_param_double)] from m_zd
+      flops [4+124*3] as dp, simd
+      loads [(1*aspen_param_double)] from fx_elem
+      loads [(1*aspen_param_double)] from fy_elem
+      loads [(1*aspen_param_double)] from fz_elem
+    }
+    execute [m_numNode] {
+      loads [(1*aspen_param_int)] from m_nodeElemCount as stride(1)
+      loads [(1*aspen_param_int)] from m_nodeElemStart as stride(1)
+      loads [((1*aspen_param_int)*aspen_param_elemCount)] from m_nodeElemCornerList as stride(1)
+      loads [((1*aspen_param_double)*aspen_param_elemCount)] from fx_elem
+      flops [(1*aspen_param_elemCount)] as dp, simd
+      loads [((1*aspen_param_double)*aspen_param_elemCount)] from fy_elem
+      flops [(1*aspen_param_elemCount)] as dp, simd
+      loads [((1*aspen_param_double)*aspen_param_elemCount)] from fz_elem
+      flops [(1*aspen_param_elemCount)] as dp, simd
+      stores [(1*aspen_param_double)] to m_fx as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to m_fy as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to m_fz as stride(1)
+      flops [1] as dp, simd
+    }
+  }
+  kernel CalcHourglassControlForElems {
+    execute [m_numElem] {
+      flops [552+24] as dp, simd
+      loads [(1*aspen_param_int)] from m_nodelist
+      stores [(48*aspen_param_double)]
+      stores [((1*aspen_param_double)*8)] to dvdx
+      stores [((1*aspen_param_double)*8)] to dvdy
+      stores [((1*aspen_param_double)*8)] to dvdz
+      stores [((1*aspen_param_double)*8)] to x8n
+      stores [((1*aspen_param_double)*8)] to y8n
+      stores [((1*aspen_param_double)*8)] to z8n
+      loads [(1*aspen_param_double)] from m_v as stride(1)
+      loads [(1*aspen_param_double)] from m_volo as stride(1)
+      stores [(1*aspen_param_double)] to determ as stride(1)
+      flops [1] as dp, simd
+    }
+    execute {
+      flops [1] as dp
+    }
+    call CalcFBHourglassForceForElems()
+  }
+  kernel CalcVolumeForceForElems {
+    call InitStressTermsForElems()
+    call IntegrateStressForElems()
+    call CalcHourglassControlForElems()
+  }
+  kernel CalcForceForNodes {
+    execute [m_numNode] {
+      stores [(1*aspen_param_double)] to m_fx as stride(1)
+      stores [(1*aspen_param_double)] to m_fy as stride(1)
+      stores [(1*aspen_param_double)] to m_fz as stride(1)
+    }
+    call CalcVolumeForceForElems()
+  }
+  kernel CalcAccelerationForNodes {
+    execute [m_numNode] {
+      loads [(1*aspen_param_double)] from m_nodalMass as stride(1)
+      loads [(1*aspen_param_double)] from m_fx as stride(1)
+      stores [(1*aspen_param_double)] to m_xdd as stride(1)
+      flops [1] as dp, simd
+      loads [(1*aspen_param_double)] from m_nodalMass as stride(1)
+      loads [(1*aspen_param_double)] from m_fy as stride(1)
+      stores [(1*aspen_param_double)] to m_ydd as stride(1)
+      flops [1] as dp, simd
+      loads [(1*aspen_param_double)] from m_nodalMass as stride(1)
+      loads [(1*aspen_param_double)] from m_fz as stride(1)
+      stores [(1*aspen_param_double)] to m_zdd as stride(1)
+      flops [1] as dp, simd
+    }
+  }
+  kernel ApplyAccelerationBoundaryConditionsForNodes {
+    execute [((1+(2*m_sizeX))+(m_sizeX*m_sizeX))] {
+      stores [(1*aspen_param_double)] to m_xdd
+      stores [(1*aspen_param_int)] to m_symmX as stride(1)
+    }
+    execute [((1+(2*m_sizeX))+(m_sizeX*m_sizeX))] {
+      stores [(1*aspen_param_int)] to m_symmY as stride(1)
+      stores [(1*aspen_param_double)] to m_ydd
+    }
+    execute [((1+(2*m_sizeX))+(m_sizeX*m_sizeX))] {
+      stores [(1*aspen_param_double)] to m_zdd
+      stores [(1*aspen_param_int)] to m_symmZ as stride(1)
+    }
+  }
+  kernel FABS8 {
+    execute {
+      flops [1] as dp, simd
+    }
+  }
+  kernel CalcVelocityForNodes {
+    execute [m_numNode] {
+      flops [9] as dp, simd
+      loads [(1*aspen_param_double)] from m_xd as stride(1)
+      loads [(1*aspen_param_double)] from m_xdd as stride(1)
+      loads [(1*aspen_param_double)] from m_yd as stride(1)
+      loads [(1*aspen_param_double)] from m_ydd as stride(1)
+      loads [(1*aspen_param_double)] from m_zd as stride(1)
+      loads [(1*aspen_param_double)] from m_zdd as stride(1)
+      stores [(1*aspen_param_double)] to m_xd as stride(1)
+      stores [(1*aspen_param_double)] to m_yd as stride(1)
+      stores [(1*aspen_param_double)] to m_zd as stride(1)
+    }
+  }
+  kernel CalcPositionForNodes {
+    execute [m_numNode] {
+      loads [(1*aspen_param_double)] from m_xd as stride(1)
+      stores [(1*aspen_param_double)] to m_x as stride(1)
+      flops [2] as dp, simd
+      loads [(1*aspen_param_double)] from m_yd as stride(1)
+      stores [(1*aspen_param_double)] to m_y as stride(1)
+      flops [2] as dp, simd
+      loads [(1*aspen_param_double)] from m_zd as stride(1)
+      stores [(1*aspen_param_double)] to m_z as stride(1)
+      flops [2] as dp, simd
+    }
+  }
+  kernel LagrangeNodal {
+    call CalcForceForNodes()
+    call CalcAccelerationForNodes()
+    call ApplyAccelerationBoundaryConditionsForNodes()
+    call CalcVelocityForNodes()
+    call CalcPositionForNodes()
+  }
+  kernel AreaFace {
+    execute {
+      flops [41] as dp, simd
+    }
+  }
+  kernel SQRT8 {
+    execute {
+      flops [1] as dp, simd
+    }
+  }
+  kernel CalcElemCharacteristicLength {
+    execute {
+      loads [(4*aspen_param_double)] as stride(0)
+      loads [(8*aspen_param_double)] as stride(0)
+    }
+    call AreaFace()
+    execute {
+      flops [1] as dp, simd
+      loads [(4*aspen_param_double)] as stride(0)
+      loads [(8*aspen_param_double)] as stride(0)
+    }
+    call AreaFace()
+    execute {
+      flops [1] as dp, simd
+      loads [(4*aspen_param_double)] as stride(0)
+      loads [(8*aspen_param_double)] as stride(0)
+    }
+    call AreaFace()
+    execute {
+      flops [1] as dp, simd
+      loads [(4*aspen_param_double)] as stride(0)
+      loads [(8*aspen_param_double)] as stride(0)
+    }
+    call AreaFace()
+    execute {
+      flops [1] as dp, simd
+      loads [(4*aspen_param_double)] as stride(0)
+      loads [(8*aspen_param_double)] as stride(0)
+    }
+    call AreaFace()
+    execute {
+      flops [1] as dp, simd
+      loads [(4*aspen_param_double)] as stride(0)
+      loads [(8*aspen_param_double)] as stride(0)
+    }
+    call AreaFace()
+    execute {
+      flops [1] as dp, simd
+      flops [2] as dp, simd
+    }
+    call SQRT8()
+  }
+  kernel CalcElemVelocityGrandient {
+    execute {
+      flops [114] as dp, simd
+    }
+  }
+  kernel CalcKinematicsForElems {
+    execute [numElem_CalcLagrangeElements] {
+      flops [(6*8)+118+23*6+24+135+78] as dp, simd
+      loads [((1*aspen_param_double)*8)] from m_x
+      loads [((1*aspen_param_double)*8)] from m_xd
+      loads [((1*aspen_param_double)*8)] from m_y
+      loads [((1*aspen_param_double)*8)] from m_yd
+      loads [((1*aspen_param_double)*8)] from m_z
+      loads [((1*aspen_param_double)*8)] from m_zd
+      loads [((1*aspen_param_int)*8)] from elemToNode_CalcKinematicsForElems as stride(1)
+      loads [((1*aspen_param_int)*8)] from elemToNode_CalcKinematicsForElems as stride(1)
+      loads [(1*aspen_param_double)] from m_v as stride(1)
+      loads [(1*aspen_param_double)] from m_volo as stride(1)
+      stores [(1*aspen_param_double)]
+      stores [(1*aspen_param_double)] to m_arealg as stride(1)
+      stores [(1*aspen_param_double)] to m_delv as stride(1)
+      stores [(1*aspen_param_double)] to m_dxx as stride(1)
+      stores [(1*aspen_param_double)] to m_dyy as stride(1)
+      stores [(1*aspen_param_double)] to m_dzz as stride(1)
+      stores [(1*aspen_param_double)] to m_vnew as stride(1)
+    }
+  }
+  kernel CalcLagrangeElements {
+    call CalcKinematicsForElems()
+    execute [numElem_CalcLagrangeElements] {
+      loads [(1*aspen_param_double)] from m_dyy as stride(1)
+      loads [(1*aspen_param_double)] from m_dzz as stride(1)
+      loads [(1*aspen_param_double)] from m_dxx as stride(1)
+      flops [2] as dp, simd
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to m_vdov as stride(1)
+      stores [(1*aspen_param_double)] to m_dxx as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to m_dyy as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to m_dzz as stride(1)
+      flops [1] as dp, simd
+    }
+  }
+  kernel CalcMonotonicQGradientsForElems {
+    execute [m_numElem] {
+      loads [(1*aspen_param_int)] from m_nodelist
+      loads [(8*aspen_param_double)] from m_x
+      loads [(8*aspen_param_double)] from m_y
+      loads [(8*aspen_param_double)] from m_z
+      loads [(8*aspen_param_double)] from m_xd
+      loads [(8*aspen_param_double)] from m_yd
+      loads [(8*aspen_param_double)] from m_zd
+      loads [(1*aspen_param_double)] from m_vnew as stride(1)
+      loads [(1*aspen_param_double)] from m_volo as stride(1)
+      flops [78+18*8] as dp, simd
+      stores [(1*aspen_param_double)] to m_delv_eta as stride(1)
+      stores [(1*aspen_param_double)] to m_delv_xi as stride(1)
+      stores [(1*aspen_param_double)] to m_delv_zeta as stride(1)
+      stores [(1*aspen_param_double)] to m_delx_eta as stride(1)
+      stores [(1*aspen_param_double)] to m_delx_xi as stride(1)
+      stores [(1*aspen_param_double)] to m_delx_zeta as stride(1)
+    }
+  }
+  kernel CalcMonotonicQRegionForElems {
+    execute [elength] {
+      flops [47] as dp, simd
+      loads [(5*aspen_param_double)] from m_delv_eta
+      loads [(5*aspen_param_double)] from m_delv_xi
+      loads [(5*aspen_param_double)] from m_delv_zeta
+      loads [(1*aspen_param_double)] from m_vdov
+      loads [(1*aspen_param_int)] from m_elemBC
+      loads [(1*aspen_param_int)] from m_letam
+      loads [(1*aspen_param_int)] from m_letap
+      loads [(1*aspen_param_int)] from m_lxim
+      loads [(1*aspen_param_int)] from m_lxip
+      loads [(1*aspen_param_int)] from m_lzetam
+      loads [(1*aspen_param_int)] from m_lzetap
+      loads [(1*aspen_param_int)] from m_matElemlist as stride(1)
+      stores [(1*aspen_param_double)] to m_ql
+      stores [(1*aspen_param_double)] to m_qq
+    }
+  }
+  kernel CalcMonotonicQForElems {
+    call CalcMonotonicQRegionForElems()
+  }
+  kernel CalcQForElems {
+    call CalcMonotonicQGradientsForElems()
+    call CalcMonotonicQForElems()
+  }
+  kernel CalcPressureForElems {
+    execute [length] {
+      flops [1] as dp, simd
+      loads [(1*aspen_param_double)] from compHalfStep as stride(1)
+      stores [(1*aspen_param_double)] to bvc as stride(1)
+      flops [2] as dp, simd
+      stores [(1*aspen_param_double)] to pbvc as stride(1)
+    }
+    execute [length] {
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      loads [(1*aspen_param_double)] from bvc as stride(1)
+      stores [(1*aspen_param_double)] to pHalfStep as stride(1)
+      flops [1] as dp, simd
+      loads [(1*aspen_param_double)] from pHalfStep as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to pHalfStep as stride(1)
+      loads [(1*aspen_param_double)] from pHalfStep as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to pHalfStep as stride(1)
+    }
+  }
+  kernel CalcPressureForElems_clnd1 {
+    execute [length] {
+      flops [1] as dp, simd
+      loads [(1*aspen_param_double)] from compression as stride(1)
+      stores [(1*aspen_param_double)] to bvc as stride(1)
+      flops [2] as dp, simd
+      stores [(1*aspen_param_double)] to pbvc as stride(1)
+    }
+    execute [length] {
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      loads [(1*aspen_param_double)] from bvc as stride(1)
+      stores [(1*aspen_param_double)] to p_new as stride(1)
+      flops [1] as dp, simd
+      loads [(1*aspen_param_double)] from p_new as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to p_new as stride(1)
+      loads [(1*aspen_param_double)] from p_new as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to p_new as stride(1)
+    }
+  }
+  kernel CalcPressureForElems_clnd2 {
+    execute [length] {
+      flops [1] as dp, simd
+      loads [(1*aspen_param_double)] from compression as stride(1)
+      stores [(1*aspen_param_double)] to bvc as stride(1)
+      flops [2] as dp, simd
+      stores [(1*aspen_param_double)] to pbvc as stride(1)
+    }
+    execute [length] {
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      loads [(1*aspen_param_double)] from bvc as stride(1)
+      stores [(1*aspen_param_double)] to p_new as stride(1)
+      flops [1] as dp, simd
+      loads [(1*aspen_param_double)] from p_new as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to p_new as stride(1)
+      loads [(1*aspen_param_double)] from p_new as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to p_new as stride(1)
+    }
+  }
+  kernel Release {
+    execute {
+      loads [(1*aspen_param_double)] from pHalfStep
+      flops [1] as dp
+      stores [(1*aspen_param_double)] to pHalfStep
+      stores [(1*aspen_param_double)] to pHalfStep
+    }
+  }
+  kernel CalcEnergyForElems {
+    execute [length] {
+      loads [(1*aspen_param_double)] from work as stride(1)
+      loads [(1*aspen_param_double)] from delvc as stride(1)
+      loads [(1*aspen_param_double)] from q_old as stride(1)
+      loads [(1*aspen_param_double)] from p_old as stride(1)
+      loads [(1*aspen_param_double)] from e_old as stride(1)
+      stores [(1*aspen_param_double)] to e_new as stride(1)
+      flops [6] as dp, simd
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to e_new as stride(1)
+    }
+    call CalcPressureForElems()
+    execute [length] {
+      loads [(1*aspen_param_double)] from compHalfStep as stride(1)
+      flops [2] as dp, simd
+      loads [(1*aspen_param_double)] from delvc as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to q_new as stride(1)
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      loads [(1*aspen_param_double)] from delvc as stride(1)
+      loads [(1*aspen_param_double)] from q_new as stride(1)
+      loads [(1*aspen_param_double)] from q_old as stride(1)
+      loads [(1*aspen_param_double)] from pHalfStep as stride(1)
+      loads [(1*aspen_param_double)] from p_old as stride(1)
+      stores [(1*aspen_param_double)] to e_new as stride(1)
+      flops [8] as dp, simd
+    }
+    execute [length] {
+      loads [(1*aspen_param_double)] from work as stride(1)
+      stores [(1*aspen_param_double)] to e_new as stride(1)
+      flops [2] as dp, simd
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to e_new as stride(1)
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to e_new as stride(1)
+    }
+    call CalcPressureForElems_clnd1()
+    execute [length] {
+      loads [(1*aspen_param_double)] from delvc as stride(1)
+      flops [1] as dp, simd
+      loads [(1*aspen_param_double)] from p_new as stride(1)
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      loads [(1*aspen_param_double)] from delvc as stride(1)
+      loads [(1*aspen_param_double)] from q_new as stride(1)
+      loads [(1*aspen_param_double)] from q_old as stride(1)
+      loads [(1*aspen_param_double)] from pHalfStep as stride(1)
+      loads [(1*aspen_param_double)] from p_old as stride(1)
+      stores [(1*aspen_param_double)] to e_new as stride(1)
+      flops [10] as dp, simd
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to e_new as stride(1)
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to e_new as stride(1)
+    }
+    call CalcPressureForElems_clnd2()
+    execute [length] {
+      loads [(1*aspen_param_double)] from delvc as stride(1)
+      flops [1] as dp, simd
+      loads [(1*aspen_param_double)] from p_new as stride(1)
+      loads [(2*aspen_param_double)] from vnewc as stride(1)
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      loads [(1*aspen_param_double)] from pbvc as stride(1)
+      loads [(1*aspen_param_double)] from bvc as stride(1)
+      flops [6] as dp, simd
+      loads [(1*aspen_param_double)] from ql as stride(1)
+      loads [(1*aspen_param_double)] from qq as stride(1)
+      stores [(1*aspen_param_double)] to q_new as stride(1)
+      flops [2] as dp, simd
+      loads [(1*aspen_param_double)] from q_new as stride(1)
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to q_new as stride(1)
+    }
+    call Release()
+  }
+  kernel CalcSoundSpeedForElems {
+    execute [length] {
+      loads [(1*aspen_param_int)] from m_matElemlist as stride(1)
+      loads [(2*aspen_param_double)] from vnewc as stride(1)
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      loads [(1*aspen_param_double)] from pbvc as stride(1)
+      loads [(1*aspen_param_double)] from p_new as stride(1)
+      loads [(1*aspen_param_double)] from bvc as stride(1)
+      flops [6] as dp, simd
+      flops [1] as dp, simd
+      stores [(1*aspen_param_double)] to m_ss
+      flops [1] as dp, simd
+    }
+  }
+  kernel EvalEOSForElems {
+    execute [length] {
+      loads [(1*aspen_param_int)] from m_matElemlist as stride(1)
+      loads [(1*aspen_param_double)] from m_e
+      stores [(1*aspen_param_double)] to e_old as stride(1)
+      loads [(1*aspen_param_double)] from m_delv
+      stores [(1*aspen_param_double)] to delvc as stride(1)
+      loads [(1*aspen_param_double)] from m_p
+      stores [(1*aspen_param_double)] to p_old as stride(1)
+      loads [(1*aspen_param_double)] from m_q
+      stores [(1*aspen_param_double)] to q_old as stride(1)
+    }
+    execute [length] {
+      loads [(1*aspen_param_double)] from vnewc as stride(1)
+      stores [(1*aspen_param_double)] to compression as stride(1)
+      flops [2] as dp, simd
+      loads [(1*aspen_param_double)] from delvc as stride(1)
+      loads [(1*aspen_param_double)] from vnewc as stride(1)
+      flops [2] as dp, simd
+      stores [(1*aspen_param_double)] to compHalfStep as stride(1)
+      flops [2] as dp, simd
+    }
+    execute [length] {
+      loads [(1*aspen_param_int)] from m_matElemlist as stride(1)
+      loads [(1*aspen_param_double)] from m_qq
+      stores [(1*aspen_param_double)] to qq as stride(1)
+      loads [(1*aspen_param_double)] from m_ql
+      stores [(1*aspen_param_double)] to ql as stride(1)
+      stores [(1*aspen_param_double)] to work as stride(1)
+      loads [(1*aspen_param_double)] from vnewc as stride(1)
+      flops [2] as dp, simd
+      loads [(1*aspen_param_double)] from compression as stride(1)
+      stores [(1*aspen_param_double)] to compHalfStep as stride(1)
+      loads [(1*aspen_param_double)] from vnewc as stride(1)
+      flops [2] as dp, simd
+      stores [(1*aspen_param_double)] to p_old as stride(1)
+      stores [(1*aspen_param_double)] to compression as stride(1)
+      stores [(1*aspen_param_double)] to compHalfStep as stride(1)
+    }
+    call CalcEnergyForElems()
+    execute [length] {
+      loads [(1*aspen_param_int)] from m_matElemlist as stride(1)
+      loads [(1*aspen_param_double)] from p_new as stride(1)
+      stores [(1*aspen_param_double)] to m_p
+      loads [(1*aspen_param_double)] from e_new as stride(1)
+      stores [(1*aspen_param_double)] to m_e
+      loads [(1*aspen_param_double)] from q_new as stride(1)
+      stores [(1*aspen_param_double)] to m_q
+    }
+    call CalcSoundSpeedForElems()
+  }
+  kernel ApplyMaterialPropertiesForElems {
+    execute [m_numElem] {
+      loads [(1*aspen_param_int)] from m_matElemlist as stride(1)
+      loads [(1*aspen_param_double)] from m_vnew
+      stores [(1*aspen_param_double)] to vnewc as stride(1)
+      loads [(1*aspen_param_double)] from vnewc as stride(1)
+      flops [2] as dp, simd
+      stores [(1*aspen_param_double)] to vnewc as stride(1)
+      loads [(1*aspen_param_double)] from vnewc as stride(1)
+      flops [2] as dp, simd
+      stores [(1*aspen_param_double)] to vnewc as stride(1)
+    }
+    execute [m_numElem] {
+      loads [(1*aspen_param_int)] from m_matElemlist as stride(1)
+      loads [(1*aspen_param_double)] from m_v
+      flops [2] as dp
+      flops [2] as dp
+    }
+    call EvalEOSForElems()
+  }
+  kernel UpdateVolumesForElems {
+    execute [m_numElem] {
+      loads [(1*aspen_param_double)] from m_vnew as stride(1)
+      flops [2] as dp, simd
+      stores [(1*aspen_param_double)] to m_v as stride(1)
+    }
+  }
+  kernel LagrangeElements {
+    call CalcLagrangeElements()
+    call CalcQForElems()
+    call ApplyMaterialPropertiesForElems()
+    call UpdateVolumesForElems()
+  }
+  kernel CalcCourantConstraintForElems {
+    execute {
+      flops [2] as dp
+    }
+    iterate [m_numElem] {
+      execute {
+        loads [(1*aspen_param_int)] from m_matElemlist as stride(1)
+        loads [(2*aspen_param_double)] from m_ss
+        flops [1] as dp
+        loads [(1*aspen_param_double)] from m_vdov
+        flops [1] as dp
+        loads [(2*aspen_param_double)] from m_arealg
+        loads [(2*aspen_param_double)] from m_vdov
+        flops [5] as dp
+      }
+      call SQRT8()
+      execute {
+        loads [(1*aspen_param_double)] from m_arealg
+        flops [1] as dp
+        loads [(1*aspen_param_double)] from m_vdov as stride(1)
+        flops [2] as dp
+      }
+    }
+  }
+  kernel CalcHydroConstraintForElems {
+    iterate [m_numElem] {
+      execute {
+        loads [(1*aspen_param_int)] from m_matElemlist as stride(1)
+        loads [(1*aspen_param_double)] from m_vdov
+        flops [1] as dp
+        loads [(1*aspen_param_double)] from m_vdov
+        flops [2] as dp
+      }
+      call FABS8()
+    }
+  }
+  kernel CalcTimeConstraintsForElems {
+    execute {
+      intracomm [(aspen_param_double*m_numElem)] to m_ss as copyout
+      intracomm [(aspen_param_double*m_numElem)] to m_vdov as copyout
+      intracomm [(aspen_param_double*m_numElem)] to m_arealg as copyout
+    }
+    call CalcCourantConstraintForElems()
+    call CalcHydroConstraintForElems()
+  }
+  kernel LagrangeLeapFrog {
+    call LagrangeNodal()
+    call LagrangeElements()
+    call CalcTimeConstraintsForElems()
+  }
+  kernel main {
+    execute {
+      intracomm [(aspen_param_double*m_numNode)] to m_xdd as copyin
+      intracomm [(aspen_param_int*m_numElem)] to m_lxim as copyin
+      intracomm [(aspen_param_int*m_numElem)] to m_lzetam as copyin
+      intracomm [(aspen_param_int*m_nCorner)] to m_nodeElemCornerList as copyin
+      intracomm [(aspen_param_int*m_numElem)] to m_lxip as copyin
+      intracomm [(aspen_param_int*(edgeNodes*edgeNodes))] to m_symmX as copyin
+      intracomm [(aspen_param_double*m_numElem)] to m_e as copyin
+      intracomm [(aspen_param_int*m_numElem)] to m_letam as copyin
+      intracomm [(aspen_param_int*m_numElem8)] to m_nodelist as copyin
+      intracomm [(aspen_param_double*m_numElem)] to m_p as copyin
+      intracomm [(aspen_param_double*m_numNode)] to m_y as copyin
+      intracomm [(aspen_param_double*m_numNode)] to m_x as copyin
+      intracomm [(aspen_param_double*m_numNode)] to m_zd as copyin
+      intracomm [(aspen_param_double*m_numNode)] to m_xd as copyin
+      intracomm [(aspen_param_double*m_numNode)] to m_nodalMass as copyin
+      intracomm [(aspen_param_double*m_numNode)] to m_z as copyin
+      intracomm [(aspen_param_double*m_numNode)] to m_yd as copyin
+      intracomm [(aspen_param_double*m_numNode)] to m_ydd as copyin
+      intracomm [(aspen_param_int*m_numElem)] to m_elemBC as copyin
+      intracomm [(aspen_param_int*m_numNode)] to m_nodeElemStart as copyin
+      intracomm [(aspen_param_double*m_numNode)] to m_zdd as copyin
+      intracomm [(aspen_param_int*(edgeNodes*edgeNodes))] to m_symmY as copyin
+      intracomm [(aspen_param_int*(edgeNodes*edgeNodes))] to m_symmZ as copyin
+      intracomm [(aspen_param_double*m_numElem)] to m_v as copyin
+      intracomm [(aspen_param_int*m_numElem)] to m_matElemlist as copyin
+      intracomm [(aspen_param_int*m_numElem)] to m_letap as copyin
+      intracomm [(aspen_param_int*m_numNode)] to m_nodeElemCount as copyin
+      intracomm [(aspen_param_double*m_numElem)] to m_volo as copyin
+      intracomm [(aspen_param_int*m_numElem)] to m_lzetap as copyin
+      intracomm [(aspen_param_double*m_numElem)] to m_elemMass as copyin
+      flops [1] as dp
+    }
+    iterate [aspen_param_whilecnt] {
+      call TimeIncrement()
+      call LagrangeLeapFrog()
+    }
+    execute {
+      intracomm [(aspen_param_double*m_numElem)] to m_e as copyout
+      intracomm [(aspen_param_double*m_numElem)] to m_p as copyout
+      intracomm [(aspen_param_double*m_numNode)] to m_y as copyout
+      intracomm [(aspen_param_double*m_numNode)] to m_x as copyout
+      intracomm [(aspen_param_double*m_numNode)] to m_zd as copyout
+      intracomm [(aspen_param_double*m_numNode)] to m_xd as copyout
+      intracomm [(aspen_param_double*m_numNode)] to m_z as copyout
+      intracomm [(aspen_param_double*m_numNode)] to m_yd as copyout
+    }
+  }
+}

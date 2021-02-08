@@ -1,0 +1,15 @@
+model maxloads
+{
+  param n = kilo in 1 .. mega
+
+  kernel serial
+  {
+    execute [1]
+    {
+      loads [n*mega]
+    }
+  }
+
+  kernel main { call serial() }
+
+}

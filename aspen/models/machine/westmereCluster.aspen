@@ -1,0 +1,22 @@
+// Machine Model for A generic Westmere Cluster
+param wmcNodes = 1
+param wmcJoulesPerByte = 20 * nano
+
+include memory/ddr3_1066.aspen
+include interconnects/qdrInfiniband.aspen
+include sockets/intel_xeon_x5660.aspen
+
+machine westmereCluster {
+  // Properties
+  node [wmcNodes] genericWM
+  interconnect qdrInfiniband
+  
+  // Resources
+  resource bbw(msgVolume) [msgVolume / bisectionBW]
+    dynamic power [msgVolume * wmcJoulesPerByte]
+}
+
+node genericWM {
+   socket [1] intel_xeon_x5660
+}
+

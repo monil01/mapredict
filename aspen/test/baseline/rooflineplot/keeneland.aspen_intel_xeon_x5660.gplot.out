@@ -1,0 +1,28 @@
+max(a,b) = (a > b) ? a : b
+min(a,b) = (a > b) ? b : a
+pow(a,b) = a ** b
+
+sp_flops(x) = min(8064, x*6140.16)
+sp_simd_flops(x) = min(32256, x*6140.16)
+sp_simd_fmad_flops(x) = min(32256, x*6140.16)
+dp_flops(x) = min(4032, x*6140.16)
+dp_simd_flops(x) = min(16128, x*6140.16)
+dp_simd_fmad_flops(x) = min(16128, x*6140.16)
+# Using specified X range
+set xrange [0.5:8]
+
+# Using specified Y range
+set yrange [1000:100000]
+
+set logscale x 2
+set logscale y
+
+set key top left
+# X Axis Label
+set xlabel "Flop:Byte Ratio"
+# Y Axis Label
+set ylabel "GFLOPS"
+set title "Achievable GFLOPS for intel_xeon_x5660 on Keeneland"
+
+plot sp_flops(x) with lines linewidth 2 ti "sp_flops", sp_simd_flops(x) with lines linewidth 2 ti "sp_simd_flops", sp_simd_fmad_flops(x) with lines linewidth 2 ti "sp_simd_fmad_flops", dp_flops(x) with lines linewidth 2 ti "dp_flops", dp_simd_flops(x) with lines linewidth 2 ti "dp_simd_flops", dp_simd_fmad_flops(x) with lines linewidth 2 ti "dp_simd_fmad_flops"
+pause -1 "hit any key to continue"

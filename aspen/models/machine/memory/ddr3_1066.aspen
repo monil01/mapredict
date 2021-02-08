@@ -1,0 +1,2 @@
+param ddr3MemClock = 1066 * mega
+include memory/ddr3.aspen

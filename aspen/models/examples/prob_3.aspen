@@ -1,0 +1,15 @@
+model simple
+{
+  param chance  = 80
+
+  param percent = 100
+
+  kernel main
+  {
+    probability
+    {
+      [chance/percent] { execute { flops [100] } }
+      else             { execute { flops [200] } }
+    }
+  }
+}

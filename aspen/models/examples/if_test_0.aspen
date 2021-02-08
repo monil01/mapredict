@@ -1,0 +1,15 @@
+model simple
+{
+  param value = 5
+
+  kernel main
+  {
+    if (value == 1)
+    {
+      execute
+      {
+        flops [50]
+      }   
+    }
+  }
+}

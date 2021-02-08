@@ -1,0 +1,57 @@
+# Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
+@VARIABLES@
+
+CPPFLAGS+=-I$(TOPDIR)/aspen
+LIBS=-L$(TOPDIR)/lib -laspen
+LIBDEP=$(TOPDIR)/lib/libaspen.a
+
+TESTS=\
+ executiontrace \
+ kernelmemusageexclusive \
+ kernelmemusageinclusive \
+ memorytrace \
+ new_resource_count \
+ parallelism \
+ resourcecount \
+ resourcematch \
+ roofline \
+ singleregionmemusage
+
+OBJ=$(TESTS:=.o)
+
+all: $(TESTS)
+
+# programs
+
+executiontrace: $(LIBDEP) executiontrace.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+kernelmemusageexclusive: $(LIBDEP) kernelmemusageexclusive.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+kernelmemusageinclusive: $(LIBDEP) kernelmemusageinclusive.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+memorytrace: $(LIBDEP) memorytrace.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+new_resource_count: $(LIBDEP) new_resource_count.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+parallelism: $(LIBDEP) parallelism.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+resourcecount: $(LIBDEP) resourcecount.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+resourcematch: $(LIBDEP) resourcematch.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+roofline: $(LIBDEP) roofline.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+singleregionmemusage: $(LIBDEP) singleregionmemusage.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+
+@TARGETS@

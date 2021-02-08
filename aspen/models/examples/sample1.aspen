@@ -1,0 +1,30 @@
+model testsample
+{
+  param n = kilo in 1 .. mega
+  param r = 3
+
+  kernel k1
+  {
+    sample x from uniform(0,1)
+    execute [n]
+    {
+      flops [1500*mega*x/r] as sp, fmad, simd
+    }
+ }
+
+  kernel k2
+  {
+    execute [n]
+    {
+      flops [mega] as sp, fmad, simd
+    }
+ }
+
+  kernel main
+  {
+    iterate [r]
+    {
+      call k1
+    }
+  }
+}

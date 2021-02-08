@@ -1,0 +1,23 @@
+model xfer
+{
+  param n = kilo in 1 .. mega
+
+  kernel serial
+  {
+    execute [1]
+    {
+      intracomm [n*mega] as copyin
+    }
+  }
+
+  kernel parallel
+  {
+    execute [n]
+    {
+      intracomm [mega] as copyin
+    }
+  }
+
+  kernel main { call parallel() }
+
+}

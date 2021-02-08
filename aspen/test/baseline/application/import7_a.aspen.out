@@ -1,0 +1,136 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Application Model -----
+App model model1:
+   Globals:
+      Import model2 from ''import7_b.aspen'' with 1 args:
+         Identifier n = 
+            Binary Op *
+               LHS
+                  Int: 2
+               RHS
+                  Ident: n
+      Import model3 from ''import7_c.aspen'' with 1 args:
+         Identifier n = 
+            Ident: n
+      Identifier n = 
+         Int: 10
+      Identifier model2.n = 
+         Binary Op *
+            LHS
+               Int: 2
+            RHS
+               Ident: n
+      Import model2 from ''import7_b.aspen'' with 1 args:
+         Identifier n = 
+            Ident: model3.n
+      Identifier model3.n = 
+         Ident: n
+      Identifier model3.model2.n = 
+         Ident: model3.n
+   Kernels:
+      Kernel k1:
+         Args:
+            Type=param name=x
+         Control node '101': sequential:
+            Execution Block (control node '100')
+               Requires flops of quantity: 
+                  Ident: x
+      Kernel main:
+         Control node '105': sequential:
+            Control node '102': kernel call k1 with 1 args:
+               Int: 1
+            Control node '103': kernel call model2.k2 with 1 args:
+               Ident: n
+            Control node '104': kernel call model3.k3 with 1 args:
+               Int: 100
+      Kernel model2.k2:
+         Args:
+            Type=param name=model2.y
+         Control node '107': sequential:
+            Execution Block (control node '106')
+               Requires flops of quantity: 
+                  Ident: model2.y
+      Kernel model3.k3:
+         Args:
+            Type=param name=model3.z
+         Control node '110': sequential:
+            Execution Block (control node '108')
+               Requires flops of quantity: 
+                  Ident: model3.z
+            Control node '109': kernel call model3.model2.k2 with 1 args:
+               Ident: model3.z
+      Kernel model3.model2.k2:
+         Args:
+            Type=param name=model3.model2.y
+         Control node '112': sequential:
+            Execution Block (control node '111')
+               Requires flops of quantity: 
+                  Ident: model3.model2.y
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = (model2.k2 + model3.k3 + k1)
+
+>> Raw expression without variable expansion:
+flops    = ((1*1) + (1*n) + (((1*100) + (1*100))))
+messages = ((0) + (0) + ((0 + 0)))
+loads    = ((0) + (0) + ((0 + 0)))
+stores   = ((0) + (0) + ((0 + 0)))
+
+>> Raw expression with variable expansion:
+flops    = ((1*1) + (1*10) + (((1*100) + (1*100))))
+messages = (0 + 0 + ((0 + 0)))
+loads    = (0 + 0 + ((0 + 0)))
+stores   = (0 + 0 + ((0 + 0)))
+
+>> as values, With parameters using default values
+flops    = 211
+messages = 0
+loads    = 0
+stores   = 0
+
+>> Simplification test:
+flops (noexp)       = ((1*1) + (1*n) + (((1*100) + (1*100))))
+flops (noexp,simpl) = ((1*1) + (1*n) + (((1*100) + (1*100))))
+flops (exp)         = ((1*1) + (1*10) + (((1*100) + (1*100))))
+flops (exp,simpl)   = 211
+
+There are 0 parameters with ranges.
+
+
+
+>> Kernel k1
+
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 211
+Raw loads for kernel 'main' = 0
+Raw stores for kernel 'main' = 0
+Raw messages for kernel 'main' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'main':
+  = (((1*1) + (1*n) + (((1*100) + (1*100))))) / (((0) + (0) + ((0 + 0))))
+  expanding, but in terms of x:
+  = (((1*1) + (1*10) + (((1*100) + (1*100))))) / ((0 + 0 + ((0 + 0))))
+
+
+>> Kernel model2.k2
+
+
+
+>> Kernel model3.k3
+
+
+
+>> Kernel model3.model2.k2
+

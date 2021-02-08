@@ -1,0 +1,13 @@
+
+// Simple model for FDR infiniband
+
+// Infiniband information
+param fdrLatency = 1.5 * micro // estimated from http://glennklockwood.blogspot.com/2013/05/fdr-infiniband-vs-dual-rail-qdr.html (a bit higher than qdr, apparently)
+param fdrBW = 54.5 * giga / 8
+
+interconnect fdrInfiniband {
+   property fatTree
+   resource messages(msgsize) [fdrLatency + (msgsize/fdrBW)]
+     with separate(nMessages) [nMessages * base]
+}
+

@@ -1,0 +1,55 @@
+# Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
+@VARIABLES@
+
+CPPFLAGS+=-I../aspen
+LIBS=-L../lib -laspen
+LIBDEP=../lib/libaspen.a
+
+TESTS=\
+ bigtest \
+ export \
+ parsestring \
+ smallmodeltest \
+ walker
+
+OBJ=$(TESTS:=.o)
+
+DISTCLEAN_FILES=diffs.sh tkdiffs.sh results.txt rebaseline.sh current/*/*.out current/*/*.err
+
+all: $(TESTS)
+	@echo ""
+	@echo "Run 'make check' to run validation tests."
+	@echo ""
+
+.SUFFIXES: .y .l .cpp .o .d
+
+# programs
+
+bigtest: $(LIBDEP) bigtest.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+export: $(LIBDEP) export.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+parsestring: $(LIBDEP) parsestring.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+smallmodeltest: $(LIBDEP) smallmodeltest.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+walker: $(LIBDEP) walker.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+
+# test code
+
+
+check test: $(TESTS)
+	@if test -z `which python`; then \
+	   echo "Warning; need python to run full test suite"; \
+	else \
+	   echo "== Running tests =="; \
+	   python runtest.py; \
+	fi
+
+@TARGETS@

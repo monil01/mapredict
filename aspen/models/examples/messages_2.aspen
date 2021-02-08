@@ -1,0 +1,15 @@
+model xfer
+{
+  param n = kilo in 1 .. mega
+
+  kernel serial
+  {
+    execute [1]
+    {
+      messages [n*mega]
+    }
+  }
+
+  kernel main { call serial() }
+
+}

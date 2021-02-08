@@ -1,0 +1,101 @@
+
+----- Parsed Application Model -----
+App model simple:
+   Globals:
+      Identifier value = 
+         Int: 1
+   Kernels:
+      Kernel main:
+         Control node '101': sequential:
+            Execution Block (control node '100')
+               Requires flops of quantity: 
+                  Int: 20
+               Requires loads of quantity: 
+                  Int: 10
+
+----- Parsed Machine Model -----
+Machine model:
+   Globals:
+   Components:
+      core: 'mycore'
+         Resource 'flops' (arg=num) quantity=
+            Binary Op /
+               LHS
+                  Ident: num
+               RHS
+                  Real: 1e+12
+            Traits: none
+      memory: 'mymem'
+         Resource 'loads' (arg=bytes) quantity=
+            Binary Op +
+               LHS
+                  Binary Op *
+                     LHS
+                        Int: 70
+                     RHS
+                        Real: 1e-09
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: bytes
+                     RHS
+                        Binary Op *
+                           LHS
+                              Int: 32
+                           RHS
+                              Real: 1e+09
+            Traits: none
+         Resource 'stores' (arg=bytes) quantity=
+            Binary Op +
+               LHS
+                  Binary Op *
+                     LHS
+                        Int: 70
+                     RHS
+                        Real: 1e-09
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: bytes
+                     RHS
+                        Binary Op *
+                           LHS
+                              Int: 32
+                           RHS
+                              Real: 1e+09
+            Traits: none
+         Conflict: loads,stores
+      cache: 'mycache'
+         Property 'capacity'=
+            Binary Op *
+               LHS
+                  Int: 16
+               RHS
+                  Real: 1000
+      link: 'mybus'
+         Resource 'intracomm' (arg=bytes) quantity=
+            Binary Op /
+               LHS
+                  Ident: bytes
+               RHS
+                  Binary Op *
+                     LHS
+                        Int: 12
+                     RHS
+                        Real: 1e+09
+            Traits: none
+      socket: 'mysocket'
+         Contains: core: mycore
+            Of quantity: 
+               Int: 1
+         Contains: memory: mymem
+         Contains: cache: mycache
+         Contains: link: mybus
+      node: 'mynode'
+         Contains: socket: mysocket
+            Of quantity: 
+               Int: 1
+      machine: 'simple'
+         Contains: node: mynode
+            Of quantity: 
+               Int: 1

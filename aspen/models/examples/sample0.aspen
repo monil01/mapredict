@@ -1,0 +1,30 @@
+model testsample
+{
+  // This should total around 1e6 total flops,
+  // no matter what nsamples is.  However,
+  // we're repeatedly sampling from a uniform
+  // distribution, so the smaller nsamples,
+  // the bigger the variance.  (See central
+  // limit theorem.)  E.g. with nsamples==1
+  // expect a value anywhere between 0 and 2e6,
+  // and with nsamples=500, values will generally
+  // be within a few percent of 1e6 flops.
+  param nsamples = 500
+
+  kernel k1
+  {
+    sample x from uniform(0,1)
+    execute [1000]
+    {
+      flops [2000*x/nsamples] as sp, fmad, simd
+    }
+ }
+
+  kernel main
+  {
+    iterate [nsamples]
+    {
+      call k1
+    }
+  }
+}

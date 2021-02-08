@@ -1,0 +1,38 @@
+# Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
+@VARIABLES@
+
+CPPFLAGS+=-I../aspen $(JAVA_CPPFLAGS)
+LDFLAGS+=-L../lib -laspen
+
+LIBRARY=lib/libaspenjni.so
+
+JSRC=\
+ aspen/AppModel.java \
+ aspen/Expression.java \
+ aspen/MachModel.java \
+ aspen/MachComponent.java \
+ aspen/Aspen.java
+OBJ=aspenjni.o
+
+HDR=$(JSRC:.java=.h)
+CLASS=$(JSRC:.java=.class)
+
+all: $(CLASS) $(LIBRARY) 
+
+$(OBJ): $(HDR)
+
+$(LIBRARY):
+
+.class.h:
+	$(JAVAH) -o $@ aspen.`basename $< | cut -d. -f1`
+
+.java.class:
+	$(JAVAC) $<
+
+test:
+	$(JAVAC) Test.java
+	$(JRE) -Djava.library.path=`pwd`/lib Test
+
+CLEAN_FILES=$(HDR) $(CLASS) Test.class
+
+@TARGETS@

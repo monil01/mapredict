@@ -1,0 +1,13 @@
+model simple
+{
+  param value = 1
+
+  kernel main
+  {
+    execute
+    {
+      flops [20]
+      loads [5] of size [2]
+    }   
+  }
+}

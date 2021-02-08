@@ -1,0 +1,14 @@
+# Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
+@VARIABLES@
+
+CPPFLAGS+=-I../aspen $(BOOST_CPPFLAGS) $(PYTHON_CPPFLAGS)
+LDFLAGS+=$(PYTHON_EXTRA_LDFLAGS) $(BOOST_LDFLAGS) $(BOOST_LIBS) $(PYTHON_LDFLAGS) -L../lib -laspen
+
+LIBRARY=aspen.so
+
+OBJ=aspenpy.o
+
+all: $(LIBRARY)
+
+
+@TARGETS@

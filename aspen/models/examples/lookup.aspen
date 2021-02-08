@@ -1,0 +1,11 @@
+model lookup_test
+{
+  param n = 10.0
+  param runtimes[] = { 10, 20.33, 43.103, 56.99 }
+  param sizes[] = { 100, 200, 400, 450 }
+  param value = lookup(runtimes, sizes, n)
+  kernel main
+  {
+    execute { flops [value] }
+  }
+}

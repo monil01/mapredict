@@ -1,0 +1,100 @@
+// Model for an NVIDIA Tesla P100 (Pascal-based GPU)
+// This model treats a streaming multiprocessor (SMX) as a core.
+// And models the scratchpad (not register file) as the cache.
+//
+// References:
+//   Tesla P100 GPU accelerators overview
+//     https://images.nvidia.com/content/pdf/tesla/whitepaper/pascal-architecture-whitepaper.pdf
+//
+//   CUDA Programming Guide 8.0
+//
+// 64 CUDA core / SMX
+// P100 has 56 SMX and 3584 CUDA cores (56 * 64 = 3584)
+// 5.3 Double Precision TFLOP/s (peak)
+// 10.6 Single Precision TFLOP/s (peak)
+// 
+
+
+// Core Parameters
+param kNumCores = 56 // total #SMX's - 56 per
+param kCoreClock = 1480 * mega in 100 * mega .. 2000 * mega // 1328 MHz (1480 MHz in Boost mode)
+param kSIMD = 32
+param kNumWarps = 2
+
+// HBM2 Parameters (need to update)
+param hbm2Clock = 715 * mega  in 100 * mega .. 4000 * mega // effective
+param hbm2Width = 512
+param eccPenalty = 1 // No ECC penalty on HBM2
+param hbm2BW = hbm2Clock * hbm2Width * eccPenalty * 2
+param hbm2Lat = 50 * nano / kSIMD / kNumWarps / 128 ///\todo; DIVING BY FSIMD IS A HACK!!
+param hbm2Cap = 16 * giga
+
+// Power
+param fIdle = 30 //need to update
+param fTDP = 300
+
+socket nvidia_p100 {
+   core [kNumCores] pascalCore 
+   memory hbm2
+   cache pascalSP
+   link pcie
+
+   static power [fIdle]
+}
+
+core pascalCore {
+   resource flops(number) [number / kCoreClock / kNumWarps * 0.2934633170379938]
+     with dp   [base * 2], 
+          simd [base / kSIMD], 
+          fmad [base / 2],
+          sin  [base * 18],
+          integer  [base / kSIMD]
+     dynamic power [(fTDP - fIdle) / kNumCores]
+}
+
+memory hbm2 {
+   property capacity  [hbm2Cap] 
+   
+   ///\todo: stride used to be ddr3BW/2.  I can only assume
+   /// it should have been "base*2" (which I'm now using), or else
+   /// the full expression ddr3Lat + numBytes / (ddr2BW/2).
+   ///\todo: random used to be 3*giga.  I'm not sure the 
+   /// intent, so I'm using base*8 instead.
+   resource loads(numBytes)  [hbm2Lat * 0.044170375675710374 + (numBytes / (hbm2BW * 6.109628906976168))]
+     with stride [base * 1.2 * 0.84], random[base * 1.5 * 0.5014658632774078]
+     dynamic power [fTDP - fIdle]
+
+   resource stores(numBytes) [hbm2Lat * 0.5995526905872588 + (numBytes / (hbm2BW * 1.5132687938255989))]
+     with stride [base * 1.2 * 0.84], random[base * 1.5 * 0.6353284143571488]
+     dynamic power [fTDP - fIdle]
+
+   conflict loads, stores
+   ///\todo: having loads/stores conflict with flops drastically
+   /// improved the accuracy of the predictions for a matmul example:
+   //conflict loads, flops
+}
+
+// Pascal Scratchpad cache (need to update)
+cache pascalSP {
+  // bw = 1030 GB/s aggregate / 56 SM's
+  // Shared memory bandwidth:
+  // 
+  property capacity [40 * kilo]
+  property latency [0]
+  property bandwidth [2000 * giga / 56]
+}
+
+link pcie {
+  property latency [5 * micro]
+  property bandwidth [6 * giga]
+   
+  ///\todo: We should be able to use the above properties here, as follows:
+  //resource intracomm(bytes) [latency + (bytes/bandwidth)]
+  //resource intracomm(bytes) [5*micro + (bytes/(6*giga))]
+
+  // Jeremy, 2013-09-09: measured latency is nothing like 5 us.
+  // Using SHOC on my workstation: PCIe v3 to GTX680 is 15 us (pinned or not)
+  //                               PCIe v2 to C2050  is 30 us (pinned or not)
+  //                               and, oddly, the 9500GT is only about 15 us as well....
+  resource intracomm(bytes) [15*micro + (bytes/(6*giga))]
+}

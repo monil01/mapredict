@@ -1,0 +1,50 @@
+// Machine Model for TSUBAME2.5 supercomputer
+// 1408 thin nodes, 24 medium nodes, 10 fat nodes
+//
+// Thin node:
+//   HP Proliant SL390s G7
+//   CPU: Intel Westmere-EP Xeon 5670 2.93 GHz (6 cores) x 2
+//   GPU: NVIDIA Tesla K20X
+//   Memory: 55.8 GB (52GiB)
+//
+// Medium node:
+//   HP Proliant DL580 G7
+//   CPU: Intel Nehalem-Ex 2.0 GHz (8 cores) x 4
+//   GPU: NVIDIA Tesla S1070/S2070
+//   Memory: 128 GB
+//
+// Fat node:
+//   HP Proliant DL580 G7
+//   CPU: Intel Nehalem-Ex 2.0 GHz (8 cores) x 4
+//   GPU: NVIDIA Tesla S1070
+//   Memory: 274 GB (256GiB) / 549 GB (512 GiB)
+
+
+param t2ThinNodes = 1408
+param t2JoulesPerByte = 20 * nano
+
+// Machine TODOs:
+// Add pstate syntax: 
+// pstate stateName [static = 200W, fpClock = 100mhz, joulesPerFlop = 23] 
+
+include memory/ddr3_1333.aspen
+include interconnects/qdrInfiniband.aspen
+include sockets/intel_xeon_x5670.aspen
+include sockets/nvidia_k20x.aspen
+
+machine TSUBAME25 {
+  // Properties
+  node [t2ThinNodes] sl390
+  interconnect qdrInfiniband
+  //derived property bisectionBW //< TODO: uncomment this
+  
+  // Resources
+  resource bbw(msgVolume) [msgVolume / bisectionBW]
+    dynamic power [msgVolume * t2JoulesPerByte]
+}
+
+node sl390 {
+   socket [2] intel_xeon_x5670
+   socket [3] nvidia_k20x
+}
+

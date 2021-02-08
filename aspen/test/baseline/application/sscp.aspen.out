@@ -1,0 +1,1426 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Application Model -----
+App model sscp:
+   Globals:
+      Identifier imgWidth = 
+         Int: 57018
+      Identifier imgHeight = 
+         Int: 57018
+      Identifier upSampledImgH = 
+         Binary Op *
+            LHS
+               Ident: imgHeight
+            RHS
+               Int: 2
+      Identifier upSampledImgW = 
+         Binary Op *
+            LHS
+               Ident: imgWidth
+            RHS
+               Int: 2
+      Identifier tilingFactor = 
+         Int: 32
+      Identifier numTiles = 
+         Binary Op ^
+            LHS
+               Ident: tilingFactor
+            RHS
+               Int: 2
+      Identifier wordSize = 
+         Int: 8
+      Identifier imgSize = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Ident: imgWidth
+                  RHS
+                     Ident: imgHeight
+            RHS
+               Ident: wordSize
+      Identifier upSampledImgSize = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Ident: upSampledImgW
+                  RHS
+                     Ident: upSampledImgH
+            RHS
+               Ident: wordSize
+      Identifier pulsesPerImage = 
+         Int: 96763
+      Identifier pulsesPerSecond = 
+         Int: 2809
+      Identifier samplesPerPulse = 
+         Int: 80636
+      Identifier pulsesAfterSpotlight = 
+         Binary Op /
+            LHS
+               Ident: pulsesPerSecond
+            RHS
+               Ident: tilingFactor
+      Identifier samplesPerTF = 
+         Binary Op /
+            LHS
+               Ident: samplesPerPulse
+            RHS
+               Ident: tilingFactor
+      Identifier registrationPoints = 
+         Int: 928799
+      Identifier regNeighborhood = 
+         Int: 31
+      Identifier regNeighborhoodR = 
+         Int: 16
+      Identifier ccdNeighborhood = 
+         Int: 5
+      Identifier cfarNeighborhood = 
+         Int: 25
+      Identifier alarmRate = 
+         Real: 0.5
+      Data backProjectBuffer:
+         As:
+            Call Array with 2 args:
+               Int: 35
+               Binary Op /
+                  LHS
+                     Ident: upSampledImgSize
+                  RHS
+                     Int: 35
+      Data accumBufferA:
+         As:
+            Call Matrix with 3 args:
+               Ident: upSampledImgW
+               Ident: upSampledImgH
+               Ident: wordSize
+      Data accumBufferB:
+         As:
+            Call Matrix with 3 args:
+               Ident: upSampledImgW
+               Ident: upSampledImgH
+               Ident: wordSize
+      Data imgRingBuffer:
+         As:
+            Call Array with 2 args:
+               Int: 35
+               Ident: upSampledImgSize
+      Identifier orbitTime = 
+         Int: 15
+      Data orbitSet:
+         As:
+            Call Array with 2 args:
+               Binary Op *
+                  LHS
+                     Ident: orbitTime
+                  RHS
+                     Int: 60
+               Ident: imgSize
+      Import digitalSpotlight from ''digispot.aspen'' with 5 args:
+         Identifier tilingFactor = 
+            Ident: tilingFactor
+         Identifier pulsesPerSecond = 
+            Ident: pulsesPerSecond
+         Identifier pulsesAfterSpotlight = 
+            Ident: pulsesAfterSpotlight
+         Identifier samplesPerPulse = 
+            Ident: samplesPerPulse
+         Identifier wordSize = 
+            Ident: wordSize
+      Import backprojection from ''backprojection.aspen'' with 5 args:
+         Identifier imgWidth = 
+            Ident: upSampledImgW
+         Identifier imgHeight = 
+            Ident: upSampledImgH
+         Identifier wordSize = 
+            Ident: wordSize
+         Identifier tilingFactor = 
+            Ident: tilingFactor
+         Identifier pulsesPerSecond = 
+            Ident: pulsesPerSecond
+      Import registration from ''registration.aspen'' with 6 args:
+         Identifier nControlPoints = 
+            Ident: registrationPoints
+         Identifier neighborhood = 
+            Ident: regNeighborhood
+         Identifier neighborhoodRange = 
+            Ident: regNeighborhoodR
+         Identifier wordSize = 
+            Ident: wordSize
+         Identifier imgWidth = 
+            Ident: upSampledImgW
+         Identifier imgHeight = 
+            Ident: upSampledImgH
+      Import ccd from ''ccd.aspen'' with 4 args:
+         Identifier tileEdge = 
+            Ident: ccdNeighborhood
+         Identifier imgWidth = 
+            Ident: imgWidth
+         Identifier imgHeight = 
+            Ident: imgHeight
+         Identifier wordSize = 
+            Ident: wordSize
+      Import cfar from ''cfar.aspen'' with 5 args:
+         Identifier ccdNeighborhood = 
+            Ident: ccdNeighborhood
+         Identifier cfarNeighborhood = 
+            Ident: cfarNeighborhood
+         Identifier imgWidth = 
+            Ident: imgWidth
+         Identifier imgHeight = 
+            Ident: imgHeight
+         Identifier alarmRate = 
+            Ident: alarmRate
+      Identifier digitalSpotlight.tilingFactor = 
+         Ident: tilingFactor
+      Identifier digitalSpotlight.pulsesPerSecond = 
+         Ident: pulsesPerSecond
+      Identifier digitalSpotlight.pulsesAfterSpotlight = 
+         Ident: pulsesAfterSpotlight
+      Identifier digitalSpotlight.samplesPerPulse = 
+         Ident: samplesPerPulse
+      Identifier digitalSpotlight.samplesPerTF = 
+         Binary Op /
+            LHS
+               Ident: digitalSpotlight.samplesPerPulse
+            RHS
+               Ident: digitalSpotlight.tilingFactor
+      Identifier digitalSpotlight.wordSize = 
+         Ident: wordSize
+      Import fft1d from ''../tiling/1D_FFT.aspen'' with 3 args:
+         Identifier numberOfFFTs = 
+            Ident: digitalSpotlight.pulsesPerSecond
+         Identifier n = 
+            Ident: digitalSpotlight.samplesPerPulse
+         Identifier wordSize = 
+            Ident: digitalSpotlight.wordSize
+      Identifier digitalSpotlight.fft1d.numberOfFFTs = 
+         Ident: digitalSpotlight.pulsesPerSecond
+      Identifier digitalSpotlight.fft1d.n = 
+         Ident: digitalSpotlight.samplesPerPulse
+      Identifier digitalSpotlight.fft1d.wordSize = 
+         Ident: digitalSpotlight.wordSize
+      Identifier digitalSpotlight.fft1d.a = 
+         Real: 6.3
+      Identifier digitalSpotlight.fft1d.Z = 
+         Binary Op *
+            LHS
+               Int: 24
+            RHS
+               Real: 1e+06
+      Data fftVolume:
+         Quantity:
+            Binary Op *
+               LHS
+                  Ident: digitalSpotlight.fft1d.n
+               RHS
+                  Ident: digitalSpotlight.fft1d.wordSize
+      Identifier backprojection.imgWidth = 
+         Ident: upSampledImgW
+      Identifier backprojection.imgHeight = 
+         Ident: upSampledImgH
+      Identifier backprojection.wordSize = 
+         Ident: wordSize
+      Identifier backprojection.tilingFactor = 
+         Ident: tilingFactor
+      Identifier backprojection.numTiles = 
+         Binary Op *
+            LHS
+               Ident: backprojection.tilingFactor
+            RHS
+               Ident: backprojection.tilingFactor
+      Identifier backprojection.pulsesPerSecond = 
+         Ident: pulsesPerSecond
+      Identifier backprojection.digiSpotInterPulses = 
+         Binary Op /
+            LHS
+               Ident: backprojection.pulsesPerSecond
+            RHS
+               Ident: backprojection.tilingFactor
+      Identifier registration.nControlPoints = 
+         Ident: registrationPoints
+      Identifier registration.neighborhood = 
+         Ident: regNeighborhood
+      Identifier registration.neighborhoodRange = 
+         Ident: regNeighborhoodR
+      Identifier registration.neighborhoodSize = 
+         Binary Op ^
+            LHS
+               Ident: registration.neighborhood
+            RHS
+               Int: 2
+      Identifier registration.pruneRate = 
+         Real: 1
+      Identifier registration.n = 
+         Call sqrt with 1 args:
+            Ident: registration.nControlPoints
+      Identifier registration.wordSize = 
+         Ident: wordSize
+      Identifier registration.imgWidth = 
+         Ident: upSampledImgW
+      Identifier registration.imgHeight = 
+         Ident: upSampledImgH
+      Identifier ccd.tileEdge = 
+         Ident: ccdNeighborhood
+      Identifier ccd.tileSize = 
+         Binary Op *
+            LHS
+               Ident: ccd.tileEdge
+            RHS
+               Ident: ccd.tileEdge
+      Identifier ccd.imgWidth = 
+         Ident: imgWidth
+      Identifier ccd.imgHeight = 
+         Ident: imgHeight
+      Identifier ccd.wordSize = 
+         Ident: wordSize
+      Identifier ccd.numXTiles = 
+         Binary Op -
+            LHS
+               Ident: ccd.imgWidth
+            RHS
+               Binary Op +
+                  LHS
+                     Ident: ccd.tileEdge
+                  RHS
+                     Int: 1
+      Identifier ccd.numYTiles = 
+         Binary Op -
+            LHS
+               Ident: ccd.imgHeight
+            RHS
+               Binary Op +
+                  LHS
+                     Ident: ccd.tileEdge
+                  RHS
+                     Int: 1
+      Identifier cfar.ccdNeighborhood = 
+         Ident: ccdNeighborhood
+      Identifier cfar.cfarNeighborhood = 
+         Ident: cfarNeighborhood
+      Identifier cfar.tileSize = 
+         Binary Op ^
+            LHS
+               Ident: cfar.cfarNeighborhood
+            RHS
+               Int: 2
+      Identifier cfar.imgWidth = 
+         Ident: imgWidth
+      Identifier cfar.imgHeight = 
+         Ident: imgHeight
+      Identifier cfar.numXTiles = 
+         Binary Op +
+            LHS
+               Binary Op -
+                  LHS
+                     Binary Op -
+                        LHS
+                           Ident: cfar.imgWidth
+                        RHS
+                           Ident: cfar.ccdNeighborhood
+                  RHS
+                     Ident: cfar.cfarNeighborhood
+            RHS
+               Int: 2
+      Identifier cfar.numYTiles = 
+         Binary Op +
+            LHS
+               Binary Op -
+                  LHS
+                     Binary Op -
+                        LHS
+                           Ident: cfar.imgHeight
+                        RHS
+                           Ident: cfar.ccdNeighborhood
+                  RHS
+                     Ident: cfar.cfarNeighborhood
+            RHS
+               Int: 2
+      Identifier cfar.alarmRate = 
+         Ident: alarmRate
+   Kernels:
+      Kernel main:
+         Control node '107': sequential:
+            Control node '103': map:
+               Quantity:
+                  Ident: numTiles
+               Control node '102': sequential:
+                  Control node '100': kernel call digitalSpotlight.main
+                  Control node '101': kernel call backprojection.main
+            Control node '104': kernel call registration.main
+            Control node '105': kernel call ccd.main
+            Control node '106': kernel call cfar.main
+      Kernel digitalSpotlight.distanceCalc:
+         Control node '109': sequential:
+            Execution Block (control node '108')
+               Parallelism:
+                  Ident: digitalSpotlight.pulsesPerSecond
+               Requires flops of quantity: 
+                  Int: 6
+                  As simd
+               Requires flops of quantity: 
+                  Int: 1
+                  As sqrt
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 3
+                     RHS
+                        Int: 4
+      Kernel digitalSpotlight.phaseShift:
+         Control node '111': sequential:
+            Execution Block (control node '110')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Ident: digitalSpotlight.pulsesPerSecond
+                     RHS
+                        Ident: digitalSpotlight.samplesPerPulse
+               Requires flops of quantity: 
+                  Int: 8
+                  As simd
+               Requires flops of quantity: 
+                  Int: 2
+                  As simd
+                  As fmad
+               Requires flops of quantity: 
+                  Int: 2
+                  As sincos
+                  As simd
+               Requires loads of quantity: 
+                  Int: 4
+               Requires loads of quantity: 
+                  Ident: digitalSpotlight.wordSize
+               Requires stores of quantity: 
+                  Ident: digitalSpotlight.wordSize
+      Kernel digitalSpotlight.rangeGating:
+         Control node '113': sequential:
+            Execution Block (control node '112')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Ident: digitalSpotlight.pulsesPerSecond
+                     RHS
+                        Binary Op /
+                           LHS
+                              Ident: digitalSpotlight.samplesPerTF
+                           RHS
+                              Int: 2
+               Requires flops of quantity: 
+                  Int: 4
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 2
+                     RHS
+                        Ident: digitalSpotlight.wordSize
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 2
+                     RHS
+                        Ident: digitalSpotlight.wordSize
+      Kernel digitalSpotlight.tmpCopyIn:
+         Control node '115': sequential:
+            Execution Block (control node '114')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Ident: digitalSpotlight.samplesPerTF
+                     RHS
+                        Ident: digitalSpotlight.pulsesPerSecond
+               Requires loads of quantity: 
+                  Ident: digitalSpotlight.wordSize
+               Requires stores of quantity: 
+                  Ident: digitalSpotlight.wordSize
+      Kernel digitalSpotlight.accumT:
+         Control node '117': sequential:
+            Execution Block (control node '116')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Ident: digitalSpotlight.samplesPerTF
+                     RHS
+                        Ident: digitalSpotlight.pulsesPerSecond
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 2
+                     RHS
+                        Int: 4
+               Requires flops of quantity: 
+                  Int: 2
+                  As simd
+      Kernel digitalSpotlight.sincInterP:
+         Control node '119': sequential:
+            Execution Block (control node '118')
+               Parallelism:
+                  Ident: digitalSpotlight.samplesPerTF
+               Requires flops of quantity: 
+                  Int: 4
+                  As simd
+      Kernel digitalSpotlight.shiftTimeVec:
+         Control node '121': sequential:
+            Execution Block (control node '120')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Ident: digitalSpotlight.samplesPerTF
+                     RHS
+                        Ident: digitalSpotlight.pulsesPerSecond
+               Requires flops of quantity: 
+                  Int: 1
+                  As simd
+               Requires loads of quantity: 
+                  Int: 4
+               Requires stores of quantity: 
+                  Int: 4
+      Kernel digitalSpotlight.timeSinc:
+         Control node '123': sequential:
+            Execution Block (control node '122')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Ident: digitalSpotlight.samplesPerTF
+                     RHS
+                        Binary Op /
+                           LHS
+                              Ident: digitalSpotlight.pulsesPerSecond
+                           RHS
+                              Ident: digitalSpotlight.tilingFactor
+               Requires flops of quantity: 
+                  Binary Op +
+                     LHS
+                        Binary Op +
+                           LHS
+                              Int: 4
+                           RHS
+                              Binary Op *
+                                 LHS
+                                    Int: 2
+                                 RHS
+                                    Ident: digitalSpotlight.pulsesPerSecond
+                     RHS
+                        Int: 3
+                  As simd
+               Requires flops of quantity: 
+                  Binary Op +
+                     LHS
+                        Int: 1
+                     RHS
+                        Binary Op *
+                           LHS
+                              Int: 4
+                           RHS
+                              Ident: digitalSpotlight.pulsesPerSecond
+                  As simd
+                  As fmad
+               Requires flops of quantity: 
+                  Ident: digitalSpotlight.pulsesPerSecond
+                  As simd
+                  As sincos
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 2
+                           RHS
+                              Ident: digitalSpotlight.pulsesPerSecond
+                     RHS
+                        Ident: digitalSpotlight.wordSize
+      Kernel digitalSpotlight.tmpCopyOut:
+         Control node '125': sequential:
+            Execution Block (control node '124')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Ident: digitalSpotlight.samplesPerTF
+                     RHS
+                        Ident: digitalSpotlight.pulsesAfterSpotlight
+               Requires loads of quantity: 
+                  Ident: digitalSpotlight.wordSize
+               Requires stores of quantity: 
+                  Ident: digitalSpotlight.wordSize
+      Kernel digitalSpotlight.main:
+         Control node '136': sequential:
+            Control node '126': kernel call digitalSpotlight.distanceCalc
+            Control node '127': kernel call digitalSpotlight.phaseShift
+            Control node '128': kernel call digitalSpotlight.fft1d.main
+            Control node '129': kernel call digitalSpotlight.rangeGating
+            Control node '130': kernel call digitalSpotlight.tmpCopyIn
+            Control node '131': kernel call digitalSpotlight.accumT
+            Control node '132': kernel call digitalSpotlight.sincInterP
+            Control node '133': kernel call digitalSpotlight.shiftTimeVec
+            Control node '134': kernel call digitalSpotlight.timeSinc
+            Control node '135': kernel call digitalSpotlight.tmpCopyOut
+      Kernel digitalSpotlight.fft1d.fft:
+         Control node '138': sequential:
+            Execution Block (control node '137')
+               Parallelism:
+                  Ident: digitalSpotlight.fft1d.numberOfFFTs
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Real: 5
+                                 RHS
+                                    Ident: digitalSpotlight.fft1d.n
+                           RHS
+                              Call log2 with 1 args:
+                                 Ident: digitalSpotlight.fft1d.n
+                     RHS
+                        Real: 0.8
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Ident: digitalSpotlight.fft1d.n
+                                 RHS
+                                    Ident: digitalSpotlight.fft1d.wordSize
+                           RHS
+                              Ident: digitalSpotlight.fft1d.a
+                     RHS
+                        Call max with 2 args:
+                           Int: 1
+                           Binary Op /
+                              LHS
+                                 Call log with 1 args:
+                                    Binary Op *
+                                       LHS
+                                          Ident: digitalSpotlight.fft1d.n
+                                       RHS
+                                          Ident: digitalSpotlight.fft1d.wordSize
+                              RHS
+                                 Call log with 1 args:
+                                    Ident: digitalSpotlight.fft1d.Z
+                  To/From: fftVolume
+      Kernel digitalSpotlight.fft1d.main:
+         Control node '140': sequential:
+            Control node '139': kernel call digitalSpotlight.fft1d.fft
+      Kernel backprojection.backProjection:
+         Control node '142': sequential:
+            Execution Block (control node '141')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Binary Op /
+                           LHS
+                              Ident: backprojection.imgWidth
+                           RHS
+                              Ident: backprojection.numTiles
+                     RHS
+                        Binary Op /
+                           LHS
+                              Ident: backprojection.imgHeight
+                           RHS
+                              Ident: backprojection.numTiles
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: backprojection.digiSpotInterPulses
+                     RHS
+                        Binary Op +
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Int: 6
+                                 RHS
+                                    Int: 4
+                           RHS
+                              Binary Op *
+                                 LHS
+                                    Int: 2
+                                 RHS
+                                    Ident: backprojection.wordSize
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: backprojection.digiSpotInterPulses
+                     RHS
+                        Ident: backprojection.wordSize
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: backprojection.digiSpotInterPulses
+                     RHS
+                        Int: 17
+                  As simd
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: backprojection.digiSpotInterPulses
+                     RHS
+                        Int: 12
+                  As simd
+                  As fmad
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: backprojection.digiSpotInterPulses
+                     RHS
+                        Int: 1
+                  As simd
+                  As sqrt
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: backprojection.digiSpotInterPulses
+                     RHS
+                        Int: 2
+                  As simd
+                  As sincos
+      Kernel backprojection.main:
+         Control node '144': sequential:
+            Control node '143': kernel call backprojection.backProjection
+      Kernel registration.prune:
+         Control node '146': sequential:
+            Execution Block (control node '145')
+               Parallelism:
+                  Ident: registration.nControlPoints
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op +
+                           LHS
+                              Binary Op +
+                                 LHS
+                                    Int: 1
+                                 RHS
+                                    Int: 1
+                           RHS
+                              Int: 6
+                     RHS
+                        Int: 4
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: registration.neighborhoodSize
+                     RHS
+                        Ident: registration.wordSize
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: registration.neighborhoodSize
+                     RHS
+                        Binary Op +
+                           LHS
+                              Int: 2
+                           RHS
+                              Int: 2
+                  As simd
+               Requires flops of quantity: 
+                  Int: 2
+                  As simd
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op ^
+                                 LHS
+                                    Binary Op -
+                                       LHS
+                                          Ident: registration.neighborhood
+                                       RHS
+                                          Int: 1
+                                 RHS
+                                    Int: 2
+                           RHS
+                              Binary Op ^
+                                 LHS
+                                    Ident: registration.neighborhoodRange
+                                 RHS
+                                    Int: 2
+                     RHS
+                        Int: 2
+                  As simd
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op ^
+                                 LHS
+                                    Binary Op -
+                                       LHS
+                                          Ident: registration.neighborhood
+                                       RHS
+                                          Int: 1
+                                 RHS
+                                    Int: 2
+                           RHS
+                              Binary Op ^
+                                 LHS
+                                    Ident: registration.neighborhoodRange
+                                 RHS
+                                    Int: 2
+                     RHS
+                        Ident: registration.wordSize
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op ^
+                           LHS
+                              Ident: registration.neighborhoodRange
+                           RHS
+                              Int: 2
+                     RHS
+                        Int: 4
+                  As simd
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op ^
+                                 LHS
+                                    Ident: registration.neighborhoodRange
+                                 RHS
+                                    Int: 2
+                           RHS
+                              Ident: registration.neighborhoodSize
+                     RHS
+                        Int: 2
+                  As simd
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op ^
+                                 LHS
+                                    Ident: registration.neighborhoodRange
+                                 RHS
+                                    Int: 2
+                           RHS
+                              Ident: registration.neighborhoodSize
+                     RHS
+                        Int: 16
+                  As simd
+                  As fmad
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op ^
+                           LHS
+                              Ident: registration.neighborhoodRange
+                           RHS
+                              Int: 2
+                     RHS
+                        Int: 3
+                  As simd
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op ^
+                           LHS
+                              Ident: registration.neighborhoodRange
+                           RHS
+                              Int: 2
+                     RHS
+                        Int: 1
+                  As simd
+                  As sqrt
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op ^
+                           LHS
+                              Ident: registration.neighborhoodRange
+                           RHS
+                              Int: 2
+                     RHS
+                        Int: 2
+                  As simd
+                  As fmad
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op ^
+                                 LHS
+                                    Ident: registration.neighborhoodRange
+                                 RHS
+                                    Int: 2
+                           RHS
+                              Int: 3
+                     RHS
+                        Int: 4
+      Kernel registration.accum:
+         Control node '148': sequential:
+            Execution Block (control node '147')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Ident: registration.nControlPoints
+                     RHS
+                        Ident: registration.pruneRate
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 6
+                           RHS
+                              Int: 3
+                     RHS
+                        Int: 4
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 6
+                     RHS
+                        Int: 4
+                  As simd
+                  As fmad
+      Kernel registration.interpolate:
+         Control node '150': sequential:
+            Execution Block (control node '149')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Ident: registration.imgHeight
+                     RHS
+                        Ident: registration.imgWidth
+               Requires flops of quantity: 
+                  Int: 7
+                  As simd
+               Requires flops of quantity: 
+                  Int: 20
+                  As simd
+                  As fmad
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 12
+                     RHS
+                        Int: 4
+               Requires loads of quantity: 
+                  Ident: registration.wordSize
+               Requires flops of quantity: 
+                  Int: 5
+                  As simd
+               Requires flops of quantity: 
+                  Int: 16
+                  As simd
+                  As fmad
+               Requires stores of quantity: 
+                  Ident: registration.wordSize
+      Kernel registration.main:
+         Control node '154': sequential:
+            Control node '151': kernel call registration.prune
+            Control node '152': kernel call registration.accum
+            Control node '153': kernel call registration.interpolate
+      Kernel ccd.ccd:
+         Control node '156': sequential:
+            Execution Block (control node '155')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Ident: ccd.numXTiles
+                     RHS
+                        Ident: ccd.numYTiles
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 2
+                           RHS
+                              Ident: ccd.tileSize
+                     RHS
+                        Ident: ccd.wordSize
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 4
+                     RHS
+                        Ident: ccd.tileSize
+                  As simd
+               Requires flops of quantity: 
+                  Int: 4
+                  As simd
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 4
+                     RHS
+                        Ident: ccd.tileSize
+                  As simd
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 16
+                     RHS
+                        Ident: ccd.tileSize
+                  As simd
+                  As fmad
+               Requires flops of quantity: 
+                  Int: 1
+                  As simd
+                  As sqrt
+               Requires flops of quantity: 
+                  Int: 2
+                  As simd
+                  As fmad
+               Requires flops of quantity: 
+                  Int: 3
+                  As simd
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 3
+                     RHS
+                        Int: 4
+      Kernel ccd.main:
+         Control node '158': sequential:
+            Control node '157': kernel call ccd.ccd
+      Kernel cfar.cfar:
+         Control node '160': sequential:
+            Execution Block (control node '159')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Ident: cfar.numXTiles
+                     RHS
+                        Ident: cfar.numYTiles
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: cfar.tileSize
+                     RHS
+                        Int: 4
+               Requires flops of quantity: 
+                  Binary Op +
+                     LHS
+                        Int: 5
+                     RHS
+                        Ident: cfar.tileSize
+                  As simd
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 3
+                           RHS
+                              Int: 4
+                     RHS
+                        Ident: cfar.alarmRate
+      Kernel cfar.main:
+         Control node '162': sequential:
+            Control node '161': kernel call cfar.cfar
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = ((numTiles*(digitalSpotlight.main + backprojection.main)) + registration.main + ccd.main + cfar.main)
+
+>> Raw expression without variable expansion:
+flops    = ((numTiles*((((digitalSpotlight.pulsesPerSecond*(6 + 1)) + ((digitalSpotlight.pulsesPerSecond*digitalSpotlight.samplesPerPulse)*((8 + 2) + 2)) + (digitalSpotlight.fft1d.numberOfFFTs*(((5*digitalSpotlight.fft1d.n)*(log(digitalSpotlight.fft1d.n)/log(2)))*0.8)) + ((digitalSpotlight.pulsesPerSecond*(digitalSpotlight.samplesPerTF / 2))*4) + 0 + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*2) + (digitalSpotlight.samplesPerTF*4) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*1) + ((digitalSpotlight.samplesPerTF*(digitalSpotlight.pulsesPerSecond / digitalSpotlight.tilingFactor))*((((4 + 2*digitalSpotlight.pulsesPerSecond) + 3) + (1 + 4*digitalSpotlight.pulsesPerSecond)) + digitalSpotlight.pulsesPerSecond)) + 0)) + (((backprojection.imgWidth / backprojection.numTiles)*(backprojection.imgHeight / backprojection.numTiles))*(((backprojection.digiSpotInterPulses*17 + backprojection.digiSpotInterPulses*12) + backprojection.digiSpotInterPulses*1) + backprojection.digiSpotInterPulses*2)))) + (((registration.nControlPoints*((((((((registration.neighborhoodSize*(2 + 2) + 2) + ((registration.neighborhood - 1)^2*registration.neighborhoodRange^2)*2) + registration.neighborhoodRange^2*4) + (registration.neighborhoodRange^2*registration.neighborhoodSize)*2) + (registration.neighborhoodRange^2*registration.neighborhoodSize)*16) + registration.neighborhoodRange^2*3) + registration.neighborhoodRange^2*1) + registration.neighborhoodRange^2*2)) + ((registration.nControlPoints*registration.pruneRate)*(6*4)) + ((registration.imgHeight*registration.imgWidth)*(((7 + 20) + 5) + 16)))) + ((ccd.numXTiles*ccd.numYTiles)*((((((4*ccd.tileSize + 4) + 4*ccd.tileSize) + 16*ccd.tileSize) + 1) + 2) + 3)) + ((cfar.numXTiles*cfar.numYTiles)*(5 + cfar.tileSize)))
+messages = ((numTiles*(((0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0)) + 0)) + ((0 + 0 + 0)) + 0 + 0)
+loads    = ((numTiles*((((digitalSpotlight.pulsesPerSecond*(3*4)) + ((digitalSpotlight.pulsesPerSecond*digitalSpotlight.samplesPerPulse)*(4 + digitalSpotlight.wordSize)) + (digitalSpotlight.fft1d.numberOfFFTs*(((digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize)*digitalSpotlight.fft1d.a)*max(1, (log(digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize)) / (log(digitalSpotlight.fft1d.Z))))) + ((digitalSpotlight.pulsesPerSecond*(digitalSpotlight.samplesPerTF / 2))*(2*digitalSpotlight.wordSize)) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*digitalSpotlight.wordSize) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*(2*4)) + 0 + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*4) + ((digitalSpotlight.samplesPerTF*(digitalSpotlight.pulsesPerSecond / digitalSpotlight.tilingFactor))*((2*digitalSpotlight.pulsesPerSecond)*digitalSpotlight.wordSize)) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesAfterSpotlight)*digitalSpotlight.wordSize))) + (((backprojection.imgWidth / backprojection.numTiles)*(backprojection.imgHeight / backprojection.numTiles))*(backprojection.digiSpotInterPulses*(6*4 + 2*backprojection.wordSize))))) + (((registration.nControlPoints*(registration.neighborhoodSize*registration.wordSize)) + ((registration.nControlPoints*registration.pruneRate)*((6*3)*4)) + ((registration.imgHeight*registration.imgWidth)*(12*4 + registration.wordSize)))) + ((ccd.numXTiles*ccd.numYTiles)*((2*ccd.tileSize)*ccd.wordSize)) + ((cfar.numXTiles*cfar.numYTiles)*(cfar.tileSize*4)))
+stores   = ((numTiles*(((0 + ((digitalSpotlight.pulsesPerSecond*digitalSpotlight.samplesPerPulse)*digitalSpotlight.wordSize) + 0 + ((digitalSpotlight.pulsesPerSecond*(digitalSpotlight.samplesPerTF / 2))*(2*digitalSpotlight.wordSize)) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*digitalSpotlight.wordSize) + 0 + 0 + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*4) + 0 + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesAfterSpotlight)*digitalSpotlight.wordSize))) + (((backprojection.imgWidth / backprojection.numTiles)*(backprojection.imgHeight / backprojection.numTiles))*(backprojection.digiSpotInterPulses*backprojection.wordSize)))) + (((registration.nControlPoints*((((1 + 1) + 6)*4 + ((registration.neighborhood - 1)^2*registration.neighborhoodRange^2)*registration.wordSize) + (registration.neighborhoodRange^2*3)*4)) + 0 + ((registration.imgHeight*registration.imgWidth)*registration.wordSize))) + ((ccd.numXTiles*ccd.numYTiles)*(3*4)) + ((cfar.numXTiles*cfar.numYTiles)*((3*4)*cfar.alarmRate)))
+
+>> Raw expression with variable expansion:
+flops    = ((32^2*((((2809*(6 + 1)) + ((2809*80636)*((8 + 2) + 2)) + (2809*(((5*80636)*(log(80636)/log(2)))*0.8)) + ((2809*((80636 / 32) / 2))*4) + 0 + (((80636 / 32)*2809)*2) + ((80636 / 32)*4) + (((80636 / 32)*2809)*1) + (((80636 / 32)*(2809 / 32))*((((4 + 2*2809) + 3) + (1 + 4*2809)) + 2809)) + 0)) + ((((57018*2) / (32*32))*((57018*2) / (32*32)))*((((2809 / 32)*17 + (2809 / 32)*12) + (2809 / 32)*1) + (2809 / 32)*2)))) + (((928799*((((((((31^2*(2 + 2) + 2) + ((31 - 1)^2*16^2)*2) + 16^2*4) + (16^2*31^2)*2) + (16^2*31^2)*16) + 16^2*3) + 16^2*1) + 16^2*2)) + ((928799*1)*(6*4)) + (((57018*2)*(57018*2))*(((7 + 20) + 5) + 16)))) + (((57018 - (5 + 1))*(57018 - (5 + 1)))*((((((4*(5*5) + 4) + 4*(5*5)) + 16*(5*5)) + 1) + 2) + 3)) + (((((57018 - 5) - 25) + 2)*(((57018 - 5) - 25) + 2))*(5 + 25^2)))
+messages = ((32^2*(((0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0)) + 0)) + ((0 + 0 + 0)) + 0 + 0)
+loads    = ((32^2*((((2809*(3*4)) + ((2809*80636)*(4 + 8)) + (2809*(((80636*8)*6.3)*max(1, (log(80636*8)) / (log(24*1e+06))))) + ((2809*((80636 / 32) / 2))*(2*8)) + (((80636 / 32)*2809)*8) + (((80636 / 32)*2809)*(2*4)) + 0 + (((80636 / 32)*2809)*4) + (((80636 / 32)*(2809 / 32))*((2*2809)*8)) + (((80636 / 32)*(2809 / 32))*8))) + ((((57018*2) / (32*32))*((57018*2) / (32*32)))*((2809 / 32)*(6*4 + 2*8))))) + (((928799*(31^2*8)) + ((928799*1)*((6*3)*4)) + (((57018*2)*(57018*2))*(12*4 + 8)))) + (((57018 - (5 + 1))*(57018 - (5 + 1)))*((2*(5*5))*8)) + (((((57018 - 5) - 25) + 2)*(((57018 - 5) - 25) + 2))*(25^2*4)))
+stores   = ((32^2*(((0 + ((2809*80636)*8) + 0 + ((2809*((80636 / 32) / 2))*(2*8)) + (((80636 / 32)*2809)*8) + 0 + 0 + (((80636 / 32)*2809)*4) + 0 + (((80636 / 32)*(2809 / 32))*8))) + ((((57018*2) / (32*32))*((57018*2) / (32*32)))*((2809 / 32)*8)))) + (((928799*((((1 + 1) + 6)*4 + ((31 - 1)^2*16^2)*8) + (16^2*3)*4)) + 0 + (((57018*2)*(57018*2))*8))) + (((57018 - (5 + 1))*(57018 - (5 + 1)))*(3*4)) + (((((57018 - 5) - 25) + 2)*(((57018 - 5) - 25) + 2))*((3*4)*0.5)))
+
+>> as values, With parameters using default values
+flops    = 3.16328e+13
+messages = 0
+loads    = 3.5058e+13
+stores   = 3.88861e+12
+
+>> Simplification test:
+flops (noexp)       = ((numTiles*((((digitalSpotlight.pulsesPerSecond*(6 + 1)) + ((digitalSpotlight.pulsesPerSecond*digitalSpotlight.samplesPerPulse)*((8 + 2) + 2)) + (digitalSpotlight.fft1d.numberOfFFTs*(((5*digitalSpotlight.fft1d.n)*(log(digitalSpotlight.fft1d.n)/log(2)))*0.8)) + ((digitalSpotlight.pulsesPerSecond*(digitalSpotlight.samplesPerTF / 2))*4) + 0 + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*2) + (digitalSpotlight.samplesPerTF*4) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*1) + ((digitalSpotlight.samplesPerTF*(digitalSpotlight.pulsesPerSecond / digitalSpotlight.tilingFactor))*((((4 + 2*digitalSpotlight.pulsesPerSecond) + 3) + (1 + 4*digitalSpotlight.pulsesPerSecond)) + digitalSpotlight.pulsesPerSecond)) + 0)) + (((backprojection.imgWidth / backprojection.numTiles)*(backprojection.imgHeight / backprojection.numTiles))*(((backprojection.digiSpotInterPulses*17 + backprojection.digiSpotInterPulses*12) + backprojection.digiSpotInterPulses*1) + backprojection.digiSpotInterPulses*2)))) + (((registration.nControlPoints*((((((((registration.neighborhoodSize*(2 + 2) + 2) + ((registration.neighborhood - 1)^2*registration.neighborhoodRange^2)*2) + registration.neighborhoodRange^2*4) + (registration.neighborhoodRange^2*registration.neighborhoodSize)*2) + (registration.neighborhoodRange^2*registration.neighborhoodSize)*16) + registration.neighborhoodRange^2*3) + registration.neighborhoodRange^2*1) + registration.neighborhoodRange^2*2)) + ((registration.nControlPoints*registration.pruneRate)*(6*4)) + ((registration.imgHeight*registration.imgWidth)*(((7 + 20) + 5) + 16)))) + ((ccd.numXTiles*ccd.numYTiles)*((((((4*ccd.tileSize + 4) + 4*ccd.tileSize) + 16*ccd.tileSize) + 1) + 2) + 3)) + ((cfar.numXTiles*cfar.numYTiles)*(5 + cfar.tileSize)))
+flops (noexp,simpl) = ((((5 + cfar.tileSize) * cfar.numYTiles * cfar.numXTiles)) + (numTiles*((digitalSpotlight.samplesPerTF*(4 + (((digitalSpotlight.pulsesPerSecond / digitalSpotlight.tilingFactor) * ((8 + (digitalSpotlight.pulsesPerSecond*7))))))) + (((backprojection.imgWidth / backprojection.numTiles) * (backprojection.imgHeight / backprojection.numTiles) * 32 * backprojection.digiSpotInterPulses)) + (digitalSpotlight.pulsesPerSecond*(7 + (digitalSpotlight.samplesPerTF*5) + (digitalSpotlight.samplesPerPulse*(12)))) + (digitalSpotlight.fft1d.n*(((log(digitalSpotlight.fft1d.n)/log(2))) * 4 * digitalSpotlight.fft1d.numberOfFFTs)))) + (registration.nControlPoints*(2 + ((((registration.neighborhood - 1)^2) * (registration.neighborhoodRange^2) * 2)) + (registration.neighborhoodRange^2*4) + (registration.neighborhoodRange^2*3) + (registration.neighborhoodRange^2) + (registration.neighborhoodRange^2*2) + (registration.neighborhoodSize*(4 + (((registration.neighborhoodRange^2) * 2)) + (((registration.neighborhoodRange^2) * 16)))) + (registration.pruneRate*(24)))) + ((48 * registration.imgHeight * registration.imgWidth)) + (ccd.numYTiles*(((10 + (ccd.tileSize*24))) * ccd.numXTiles)))
+flops (exp)         = ((32^2*((((2809*(6 + 1)) + ((2809*80636)*((8 + 2) + 2)) + (2809*(((5*80636)*(log(80636)/log(2)))*0.8)) + ((2809*((80636 / 32) / 2))*4) + 0 + (((80636 / 32)*2809)*2) + ((80636 / 32)*4) + (((80636 / 32)*2809)*1) + (((80636 / 32)*(2809 / 32))*((((4 + 2*2809) + 3) + (1 + 4*2809)) + 2809)) + 0)) + ((((57018*2) / (32*32))*((57018*2) / (32*32)))*((((2809 / 32)*17 + (2809 / 32)*12) + (2809 / 32)*1) + (2809 / 32)*2)))) + (((928799*((((((((31^2*(2 + 2) + 2) + ((31 - 1)^2*16^2)*2) + 16^2*4) + (16^2*31^2)*2) + (16^2*31^2)*16) + 16^2*3) + 16^2*1) + 16^2*2)) + ((928799*1)*(6*4)) + (((57018*2)*(57018*2))*(((7 + 20) + 5) + 16)))) + (((57018 - (5 + 1))*(57018 - (5 + 1)))*((((((4*(5*5) + 4) + 4*(5*5)) + 16*(5*5)) + 1) + 2) + 3)) + (((((57018 - 5) - 25) + 2)*(((57018 - 5) - 25) + 2))*(5 + 25^2)))
+flops (exp,simpl)   = 3.16328e+13
+
+There are 0 parameters with ranges.
+
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 3.16328e+13
+Raw loads for kernel 'main' = 3.5058e+13
+Raw stores for kernel 'main' = 3.88861e+12
+Raw messages for kernel 'main' = 0
+
+Exclusive set size is 0
+Inclusive set size is digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize
+
+Calculating flops/byte intensity for kernel 'main':
+  = (((numTiles*((((digitalSpotlight.pulsesPerSecond*(6 + 1)) + ((digitalSpotlight.pulsesPerSecond*digitalSpotlight.samplesPerPulse)*((8 + 2) + 2)) + (digitalSpotlight.fft1d.numberOfFFTs*(((5*digitalSpotlight.fft1d.n)*(log(digitalSpotlight.fft1d.n)/log(2)))*0.8)) + ((digitalSpotlight.pulsesPerSecond*(digitalSpotlight.samplesPerTF / 2))*4) + 0 + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*2) + (digitalSpotlight.samplesPerTF*4) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*1) + ((digitalSpotlight.samplesPerTF*(digitalSpotlight.pulsesPerSecond / digitalSpotlight.tilingFactor))*((((4 + 2*digitalSpotlight.pulsesPerSecond) + 3) + (1 + 4*digitalSpotlight.pulsesPerSecond)) + digitalSpotlight.pulsesPerSecond)) + 0)) + (((backprojection.imgWidth / backprojection.numTiles)*(backprojection.imgHeight / backprojection.numTiles))*(((backprojection.digiSpotInterPulses*17 + backprojection.digiSpotInterPulses*12) + backprojection.digiSpotInterPulses*1) + backprojection.digiSpotInterPulses*2)))) + (((registration.nControlPoints*((((((((registration.neighborhoodSize*(2 + 2) + 2) + ((registration.neighborhood - 1)^2*registration.neighborhoodRange^2)*2) + registration.neighborhoodRange^2*4) + (registration.neighborhoodRange^2*registration.neighborhoodSize)*2) + (registration.neighborhoodRange^2*registration.neighborhoodSize)*16) + registration.neighborhoodRange^2*3) + registration.neighborhoodRange^2*1) + registration.neighborhoodRange^2*2)) + ((registration.nControlPoints*registration.pruneRate)*(6*4)) + ((registration.imgHeight*registration.imgWidth)*(((7 + 20) + 5) + 16)))) + ((ccd.numXTiles*ccd.numYTiles)*((((((4*ccd.tileSize + 4) + 4*ccd.tileSize) + 16*ccd.tileSize) + 1) + 2) + 3)) + ((cfar.numXTiles*cfar.numYTiles)*(5 + cfar.tileSize)))) / (((numTiles*((((digitalSpotlight.pulsesPerSecond*(3*4)) + ((digitalSpotlight.pulsesPerSecond*digitalSpotlight.samplesPerPulse)*((4 + digitalSpotlight.wordSize) + digitalSpotlight.wordSize)) + (digitalSpotlight.fft1d.numberOfFFTs*(((digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize)*digitalSpotlight.fft1d.a)*max(1, (log(digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize)) / (log(digitalSpotlight.fft1d.Z))))) + ((digitalSpotlight.pulsesPerSecond*(digitalSpotlight.samplesPerTF / 2))*(2*digitalSpotlight.wordSize + 2*digitalSpotlight.wordSize)) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*(digitalSpotlight.wordSize + digitalSpotlight.wordSize)) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*(2*4)) + 0 + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*(4 + 4)) + ((digitalSpotlight.samplesPerTF*(digitalSpotlight.pulsesPerSecond / digitalSpotlight.tilingFactor))*((2*digitalSpotlight.pulsesPerSecond)*digitalSpotlight.wordSize)) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesAfterSpotlight)*(digitalSpotlight.wordSize + digitalSpotlight.wordSize)))) + (((backprojection.imgWidth / backprojection.numTiles)*(backprojection.imgHeight / backprojection.numTiles))*(backprojection.digiSpotInterPulses*(6*4 + 2*backprojection.wordSize) + backprojection.digiSpotInterPulses*backprojection.wordSize)))) + (((registration.nControlPoints*(((((1 + 1) + 6)*4 + registration.neighborhoodSize*registration.wordSize) + ((registration.neighborhood - 1)^2*registration.neighborhoodRange^2)*registration.wordSize) + (registration.neighborhoodRange^2*3)*4)) + ((registration.nControlPoints*registration.pruneRate)*((6*3)*4)) + ((registration.imgHeight*registration.imgWidth)*((12*4 + registration.wordSize) + registration.wordSize)))) + ((ccd.numXTiles*ccd.numYTiles)*((2*ccd.tileSize)*ccd.wordSize + 3*4)) + ((cfar.numXTiles*cfar.numYTiles)*(cfar.tileSize*4 + (3*4)*cfar.alarmRate))))
+  expanding, but in terms of x:
+  = (((32^2*((((2809*(6 + 1)) + ((2809*80636)*((8 + 2) + 2)) + (2809*(((5*80636)*(log(80636)/log(2)))*0.8)) + ((2809*((80636 / 32) / 2))*4) + 0 + (((80636 / 32)*2809)*2) + ((80636 / 32)*4) + (((80636 / 32)*2809)*1) + (((80636 / 32)*(2809 / 32))*((((4 + 2*2809) + 3) + (1 + 4*2809)) + 2809)) + 0)) + ((((57018*2) / (32*32))*((57018*2) / (32*32)))*((((2809 / 32)*17 + (2809 / 32)*12) + (2809 / 32)*1) + (2809 / 32)*2)))) + (((928799*((((((((31^2*(2 + 2) + 2) + ((31 - 1)^2*16^2)*2) + 16^2*4) + (16^2*31^2)*2) + (16^2*31^2)*16) + 16^2*3) + 16^2*1) + 16^2*2)) + ((928799*1)*(6*4)) + (((57018*2)*(57018*2))*(((7 + 20) + 5) + 16)))) + (((57018 - (5 + 1))*(57018 - (5 + 1)))*((((((4*(5*5) + 4) + 4*(5*5)) + 16*(5*5)) + 1) + 2) + 3)) + (((((57018 - 5) - 25) + 2)*(((57018 - 5) - 25) + 2))*(5 + 25^2)))) / (((32^2*((((2809*(3*4)) + ((2809*80636)*((4 + 8) + 8)) + (2809*(((80636*8)*6.3)*max(1, (log(80636*8)) / (log(24*1e+06))))) + ((2809*((80636 / 32) / 2))*(2*8 + 2*8)) + (((80636 / 32)*2809)*(8 + 8)) + (((80636 / 32)*2809)*(2*4)) + 0 + (((80636 / 32)*2809)*(4 + 4)) + (((80636 / 32)*(2809 / 32))*((2*2809)*8)) + (((80636 / 32)*(2809 / 32))*(8 + 8)))) + ((((57018*2) / (32*32))*((57018*2) / (32*32)))*((2809 / 32)*(6*4 + 2*8) + (2809 / 32)*8)))) + (((928799*(((((1 + 1) + 6)*4 + 31^2*8) + ((31 - 1)^2*16^2)*8) + (16^2*3)*4)) + ((928799*1)*((6*3)*4)) + (((57018*2)*(57018*2))*((12*4 + 8) + 8)))) + (((57018 - (5 + 1))*(57018 - (5 + 1)))*((2*(5*5))*8 + 3*4)) + (((((57018 - 5) - 25) + 2)*(((57018 - 5) - 25) + 2))*(25^2*4 + (3*4)*0.5))))
+
+
+>> Kernel digitalSpotlight.distanceCalc
+
+Raw flops for kernel 'digitalSpotlight.distanceCalc' = 19663
+Raw loads for kernel 'digitalSpotlight.distanceCalc' = 33708
+Raw stores for kernel 'digitalSpotlight.distanceCalc' = 0
+Raw messages for kernel 'digitalSpotlight.distanceCalc' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.distanceCalc':
+  = (digitalSpotlight.pulsesPerSecond*(6 + 1)) / (digitalSpotlight.pulsesPerSecond*(3*4))
+  expanding, but in terms of x:
+  = (2809*(6 + 1)) / (2809*(3*4))
+
+
+>> Kernel digitalSpotlight.phaseShift
+
+Raw flops for kernel 'digitalSpotlight.phaseShift' = 2.71808e+09
+Raw loads for kernel 'digitalSpotlight.phaseShift' = 2.71808e+09
+Raw stores for kernel 'digitalSpotlight.phaseShift' = 1.81205e+09
+Raw messages for kernel 'digitalSpotlight.phaseShift' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.phaseShift':
+  = ((digitalSpotlight.pulsesPerSecond*digitalSpotlight.samplesPerPulse)*((8 + 2) + 2)) / ((digitalSpotlight.pulsesPerSecond*digitalSpotlight.samplesPerPulse)*((4 + digitalSpotlight.wordSize) + digitalSpotlight.wordSize))
+  expanding, but in terms of x:
+  = ((2809*80636)*((8 + 2) + 2)) / ((2809*80636)*((4 + 8) + 8))
+
+
+>> Kernel digitalSpotlight.rangeGating
+
+Raw flops for kernel 'digitalSpotlight.rangeGating' = 1.41567e+07
+Raw loads for kernel 'digitalSpotlight.rangeGating' = 5.66266e+07
+Raw stores for kernel 'digitalSpotlight.rangeGating' = 5.66266e+07
+Raw messages for kernel 'digitalSpotlight.rangeGating' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.rangeGating':
+  = ((digitalSpotlight.pulsesPerSecond*(digitalSpotlight.samplesPerTF / 2))*4) / ((digitalSpotlight.pulsesPerSecond*(digitalSpotlight.samplesPerTF / 2))*(2*digitalSpotlight.wordSize + 2*digitalSpotlight.wordSize))
+  expanding, but in terms of x:
+  = ((2809*((80636 / 32) / 2))*4) / ((2809*((80636 / 32) / 2))*(2*8 + 2*8))
+
+
+>> Kernel digitalSpotlight.tmpCopyIn
+
+Raw flops for kernel 'digitalSpotlight.tmpCopyIn' = 0
+Raw loads for kernel 'digitalSpotlight.tmpCopyIn' = 5.66266e+07
+Raw stores for kernel 'digitalSpotlight.tmpCopyIn' = 5.66266e+07
+Raw messages for kernel 'digitalSpotlight.tmpCopyIn' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.tmpCopyIn':
+  = 0 / ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*(digitalSpotlight.wordSize + digitalSpotlight.wordSize))
+  expanding, but in terms of x:
+  = 0 / (((80636 / 32)*2809)*(8 + 8))
+
+
+>> Kernel digitalSpotlight.accumT
+
+Raw flops for kernel 'digitalSpotlight.accumT' = 1.41567e+07
+Raw loads for kernel 'digitalSpotlight.accumT' = 5.66266e+07
+Raw stores for kernel 'digitalSpotlight.accumT' = 0
+Raw messages for kernel 'digitalSpotlight.accumT' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.accumT':
+  = ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*2) / ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*(2*4))
+  expanding, but in terms of x:
+  = (((80636 / 32)*2809)*2) / (((80636 / 32)*2809)*(2*4))
+
+
+>> Kernel digitalSpotlight.sincInterP
+
+Raw flops for kernel 'digitalSpotlight.sincInterP' = 10079.5
+Raw loads for kernel 'digitalSpotlight.sincInterP' = 0
+Raw stores for kernel 'digitalSpotlight.sincInterP' = 0
+Raw messages for kernel 'digitalSpotlight.sincInterP' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.sincInterP':
+  = (digitalSpotlight.samplesPerTF*4) / 0
+  expanding, but in terms of x:
+  = ((80636 / 32)*4) / 0
+
+
+>> Kernel digitalSpotlight.shiftTimeVec
+
+Raw flops for kernel 'digitalSpotlight.shiftTimeVec' = 7.07833e+06
+Raw loads for kernel 'digitalSpotlight.shiftTimeVec' = 2.83133e+07
+Raw stores for kernel 'digitalSpotlight.shiftTimeVec' = 2.83133e+07
+Raw messages for kernel 'digitalSpotlight.shiftTimeVec' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.shiftTimeVec':
+  = ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*1) / ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*(4 + 4))
+  expanding, but in terms of x:
+  = (((80636 / 32)*2809)*1) / (((80636 / 32)*2809)*(4 + 4))
+
+
+>> Kernel digitalSpotlight.timeSinc
+
+Raw flops for kernel 'digitalSpotlight.timeSinc' = 4.35118e+09
+Raw loads for kernel 'digitalSpotlight.timeSinc' = 9.94151e+09
+Raw stores for kernel 'digitalSpotlight.timeSinc' = 0
+Raw messages for kernel 'digitalSpotlight.timeSinc' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.timeSinc':
+  = ((digitalSpotlight.samplesPerTF*(digitalSpotlight.pulsesPerSecond / digitalSpotlight.tilingFactor))*((((4 + 2*digitalSpotlight.pulsesPerSecond) + 3) + (1 + 4*digitalSpotlight.pulsesPerSecond)) + digitalSpotlight.pulsesPerSecond)) / ((digitalSpotlight.samplesPerTF*(digitalSpotlight.pulsesPerSecond / digitalSpotlight.tilingFactor))*((2*digitalSpotlight.pulsesPerSecond)*digitalSpotlight.wordSize))
+  expanding, but in terms of x:
+  = (((80636 / 32)*(2809 / 32))*((((4 + 2*2809) + 3) + (1 + 4*2809)) + 2809)) / (((80636 / 32)*(2809 / 32))*((2*2809)*8))
+
+
+>> Kernel digitalSpotlight.tmpCopyOut
+
+Raw flops for kernel 'digitalSpotlight.tmpCopyOut' = 0
+Raw loads for kernel 'digitalSpotlight.tmpCopyOut' = 1.76958e+06
+Raw stores for kernel 'digitalSpotlight.tmpCopyOut' = 1.76958e+06
+Raw messages for kernel 'digitalSpotlight.tmpCopyOut' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.tmpCopyOut':
+  = 0 / ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesAfterSpotlight)*(digitalSpotlight.wordSize + digitalSpotlight.wordSize))
+  expanding, but in terms of x:
+  = 0 / (((80636 / 32)*(2809 / 32))*(8 + 8))
+
+
+>> Kernel digitalSpotlight.main
+
+Raw flops for kernel 'digitalSpotlight.main' = 2.18721e+10
+Raw loads for kernel 'digitalSpotlight.main' = 2.42755e+10
+Raw stores for kernel 'digitalSpotlight.main' = 1.95539e+09
+Raw messages for kernel 'digitalSpotlight.main' = 0
+
+Exclusive set size is 0
+Inclusive set size is digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.main':
+  = (((digitalSpotlight.pulsesPerSecond*(6 + 1)) + ((digitalSpotlight.pulsesPerSecond*digitalSpotlight.samplesPerPulse)*((8 + 2) + 2)) + (digitalSpotlight.fft1d.numberOfFFTs*(((5*digitalSpotlight.fft1d.n)*(log(digitalSpotlight.fft1d.n)/log(2)))*0.8)) + ((digitalSpotlight.pulsesPerSecond*(digitalSpotlight.samplesPerTF / 2))*4) + 0 + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*2) + (digitalSpotlight.samplesPerTF*4) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*1) + ((digitalSpotlight.samplesPerTF*(digitalSpotlight.pulsesPerSecond / digitalSpotlight.tilingFactor))*((((4 + 2*digitalSpotlight.pulsesPerSecond) + 3) + (1 + 4*digitalSpotlight.pulsesPerSecond)) + digitalSpotlight.pulsesPerSecond)) + 0)) / (((digitalSpotlight.pulsesPerSecond*(3*4)) + ((digitalSpotlight.pulsesPerSecond*digitalSpotlight.samplesPerPulse)*((4 + digitalSpotlight.wordSize) + digitalSpotlight.wordSize)) + (digitalSpotlight.fft1d.numberOfFFTs*(((digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize)*digitalSpotlight.fft1d.a)*max(1, (log(digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize)) / (log(digitalSpotlight.fft1d.Z))))) + ((digitalSpotlight.pulsesPerSecond*(digitalSpotlight.samplesPerTF / 2))*(2*digitalSpotlight.wordSize + 2*digitalSpotlight.wordSize)) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*(digitalSpotlight.wordSize + digitalSpotlight.wordSize)) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*(2*4)) + 0 + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesPerSecond)*(4 + 4)) + ((digitalSpotlight.samplesPerTF*(digitalSpotlight.pulsesPerSecond / digitalSpotlight.tilingFactor))*((2*digitalSpotlight.pulsesPerSecond)*digitalSpotlight.wordSize)) + ((digitalSpotlight.samplesPerTF*digitalSpotlight.pulsesAfterSpotlight)*(digitalSpotlight.wordSize + digitalSpotlight.wordSize))))
+  expanding, but in terms of x:
+  = (((2809*(6 + 1)) + ((2809*80636)*((8 + 2) + 2)) + (2809*(((5*80636)*(log(80636)/log(2)))*0.8)) + ((2809*((80636 / 32) / 2))*4) + 0 + (((80636 / 32)*2809)*2) + ((80636 / 32)*4) + (((80636 / 32)*2809)*1) + (((80636 / 32)*(2809 / 32))*((((4 + 2*2809) + 3) + (1 + 4*2809)) + 2809)) + 0)) / (((2809*(3*4)) + ((2809*80636)*((4 + 8) + 8)) + (2809*(((80636*8)*6.3)*max(1, (log(80636*8)) / (log(24*1e+06))))) + ((2809*((80636 / 32) / 2))*(2*8 + 2*8)) + (((80636 / 32)*2809)*(8 + 8)) + (((80636 / 32)*2809)*(2*4)) + 0 + (((80636 / 32)*2809)*(4 + 4)) + (((80636 / 32)*(2809 / 32))*((2*2809)*8)) + (((80636 / 32)*(2809 / 32))*(8 + 8))))
+
+
+>> Kernel digitalSpotlight.fft1d.fft
+
+Raw flops for kernel 'digitalSpotlight.fft1d.fft' = 1.47674e+10
+Raw loads for kernel 'digitalSpotlight.fft1d.fft' = 1.14159e+10
+Raw stores for kernel 'digitalSpotlight.fft1d.fft' = 0
+Raw messages for kernel 'digitalSpotlight.fft1d.fft' = 0
+
+Exclusive set size is digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize
+Inclusive set size is digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.fft1d.fft':
+  = (digitalSpotlight.fft1d.numberOfFFTs*(((5*digitalSpotlight.fft1d.n)*(log(digitalSpotlight.fft1d.n)/log(2)))*0.8)) / (digitalSpotlight.fft1d.numberOfFFTs*(((digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize)*digitalSpotlight.fft1d.a)*max(1, (log(digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize)) / (log(digitalSpotlight.fft1d.Z)))))
+  expanding, but in terms of x:
+  = (2809*(((5*80636)*(log(80636)/log(2)))*0.8)) / (2809*(((80636*8)*6.3)*max(1, (log(80636*8)) / (log(24*1e+06)))))
+
+
+>> Kernel digitalSpotlight.fft1d.main
+
+Raw flops for kernel 'digitalSpotlight.fft1d.main' = 1.47674e+10
+Raw loads for kernel 'digitalSpotlight.fft1d.main' = 1.14159e+10
+Raw stores for kernel 'digitalSpotlight.fft1d.main' = 0
+Raw messages for kernel 'digitalSpotlight.fft1d.main' = 0
+
+Exclusive set size is 0
+Inclusive set size is digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize
+
+Calculating flops/byte intensity for kernel 'digitalSpotlight.fft1d.main':
+  = (digitalSpotlight.fft1d.numberOfFFTs*(((5*digitalSpotlight.fft1d.n)*(log(digitalSpotlight.fft1d.n)/log(2)))*0.8)) / (digitalSpotlight.fft1d.numberOfFFTs*(((digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize)*digitalSpotlight.fft1d.a)*max(1, (log(digitalSpotlight.fft1d.n*digitalSpotlight.fft1d.wordSize)) / (log(digitalSpotlight.fft1d.Z)))))
+  expanding, but in terms of x:
+  = (2809*(((5*80636)*(log(80636)/log(2)))*0.8)) / (2809*(((80636*8)*6.3)*max(1, (log(80636*8)) / (log(24*1e+06)))))
+
+
+>> Kernel backprojection.backProjection
+
+Raw flops for kernel 'backprojection.backProjection' = 3.48366e+07
+Raw loads for kernel 'backprojection.backProjection' = 4.35458e+07
+Raw stores for kernel 'backprojection.backProjection' = 8.70915e+06
+Raw messages for kernel 'backprojection.backProjection' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'backprojection.backProjection':
+  = (((backprojection.imgWidth / backprojection.numTiles)*(backprojection.imgHeight / backprojection.numTiles))*(((backprojection.digiSpotInterPulses*17 + backprojection.digiSpotInterPulses*12) + backprojection.digiSpotInterPulses*1) + backprojection.digiSpotInterPulses*2)) / (((backprojection.imgWidth / backprojection.numTiles)*(backprojection.imgHeight / backprojection.numTiles))*(backprojection.digiSpotInterPulses*(6*4 + 2*backprojection.wordSize) + backprojection.digiSpotInterPulses*backprojection.wordSize))
+  expanding, but in terms of x:
+  = ((((57018*2) / (32*32))*((57018*2) / (32*32)))*((((2809 / 32)*17 + (2809 / 32)*12) + (2809 / 32)*1) + (2809 / 32)*2)) / ((((57018*2) / (32*32))*((57018*2) / (32*32)))*((2809 / 32)*(6*4 + 2*8) + (2809 / 32)*8))
+
+
+>> Kernel backprojection.main
+
+Raw flops for kernel 'backprojection.main' = 3.48366e+07
+Raw loads for kernel 'backprojection.main' = 4.35458e+07
+Raw stores for kernel 'backprojection.main' = 8.70915e+06
+Raw messages for kernel 'backprojection.main' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'backprojection.main':
+  = (((backprojection.imgWidth / backprojection.numTiles)*(backprojection.imgHeight / backprojection.numTiles))*(((backprojection.digiSpotInterPulses*17 + backprojection.digiSpotInterPulses*12) + backprojection.digiSpotInterPulses*1) + backprojection.digiSpotInterPulses*2)) / (((backprojection.imgWidth / backprojection.numTiles)*(backprojection.imgHeight / backprojection.numTiles))*(backprojection.digiSpotInterPulses*(6*4 + 2*backprojection.wordSize) + backprojection.digiSpotInterPulses*backprojection.wordSize))
+  expanding, but in terms of x:
+  = ((((57018*2) / (32*32))*((57018*2) / (32*32)))*((((2809 / 32)*17 + (2809 / 32)*12) + (2809 / 32)*1) + (2809 / 32)*2)) / ((((57018*2) / (32*32))*((57018*2) / (32*32)))*((2809 / 32)*(6*4 + 2*8) + (2809 / 32)*8))
+
+
+>> Kernel registration.prune
+
+Raw flops for kernel 'registration.prune' = 4.54693e+12
+Raw loads for kernel 'registration.prune' = 7.14061e+09
+Raw stores for kernel 'registration.prune' = 1.71485e+12
+Raw messages for kernel 'registration.prune' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'registration.prune':
+  = (registration.nControlPoints*((((((((registration.neighborhoodSize*(2 + 2) + 2) + ((registration.neighborhood - 1)^2*registration.neighborhoodRange^2)*2) + registration.neighborhoodRange^2*4) + (registration.neighborhoodRange^2*registration.neighborhoodSize)*2) + (registration.neighborhoodRange^2*registration.neighborhoodSize)*16) + registration.neighborhoodRange^2*3) + registration.neighborhoodRange^2*1) + registration.neighborhoodRange^2*2)) / (registration.nControlPoints*(((((1 + 1) + 6)*4 + registration.neighborhoodSize*registration.wordSize) + ((registration.neighborhood - 1)^2*registration.neighborhoodRange^2)*registration.wordSize) + (registration.neighborhoodRange^2*3)*4))
+  expanding, but in terms of x:
+  = (928799*((((((((31^2*(2 + 2) + 2) + ((31 - 1)^2*16^2)*2) + 16^2*4) + (16^2*31^2)*2) + (16^2*31^2)*16) + 16^2*3) + 16^2*1) + 16^2*2)) / (928799*(((((1 + 1) + 6)*4 + 31^2*8) + ((31 - 1)^2*16^2)*8) + (16^2*3)*4))
+
+
+>> Kernel registration.accum
+
+Raw flops for kernel 'registration.accum' = 2.22912e+07
+Raw loads for kernel 'registration.accum' = 6.68735e+07
+Raw stores for kernel 'registration.accum' = 0
+Raw messages for kernel 'registration.accum' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'registration.accum':
+  = ((registration.nControlPoints*registration.pruneRate)*(6*4)) / ((registration.nControlPoints*registration.pruneRate)*((6*3)*4))
+  expanding, but in terms of x:
+  = ((928799*1)*(6*4)) / ((928799*1)*((6*3)*4))
+
+
+>> Kernel registration.interpolate
+
+Raw flops for kernel 'registration.interpolate' = 6.24202e+11
+Raw loads for kernel 'registration.interpolate' = 7.28236e+11
+Raw stores for kernel 'registration.interpolate' = 1.04034e+11
+Raw messages for kernel 'registration.interpolate' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'registration.interpolate':
+  = ((registration.imgHeight*registration.imgWidth)*(((7 + 20) + 5) + 16)) / ((registration.imgHeight*registration.imgWidth)*((12*4 + registration.wordSize) + registration.wordSize))
+  expanding, but in terms of x:
+  = (((57018*2)*(57018*2))*(((7 + 20) + 5) + 16)) / (((57018*2)*(57018*2))*((12*4 + 8) + 8))
+
+
+>> Kernel registration.main
+
+Raw flops for kernel 'registration.main' = 5.17115e+12
+Raw loads for kernel 'registration.main' = 7.35443e+11
+Raw stores for kernel 'registration.main' = 1.81888e+12
+Raw messages for kernel 'registration.main' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'registration.main':
+  = (((registration.nControlPoints*((((((((registration.neighborhoodSize*(2 + 2) + 2) + ((registration.neighborhood - 1)^2*registration.neighborhoodRange^2)*2) + registration.neighborhoodRange^2*4) + (registration.neighborhoodRange^2*registration.neighborhoodSize)*2) + (registration.neighborhoodRange^2*registration.neighborhoodSize)*16) + registration.neighborhoodRange^2*3) + registration.neighborhoodRange^2*1) + registration.neighborhoodRange^2*2)) + ((registration.nControlPoints*registration.pruneRate)*(6*4)) + ((registration.imgHeight*registration.imgWidth)*(((7 + 20) + 5) + 16)))) / (((registration.nControlPoints*(((((1 + 1) + 6)*4 + registration.neighborhoodSize*registration.wordSize) + ((registration.neighborhood - 1)^2*registration.neighborhoodRange^2)*registration.wordSize) + (registration.neighborhoodRange^2*3)*4)) + ((registration.nControlPoints*registration.pruneRate)*((6*3)*4)) + ((registration.imgHeight*registration.imgWidth)*((12*4 + registration.wordSize) + registration.wordSize))))
+  expanding, but in terms of x:
+  = (((928799*((((((((31^2*(2 + 2) + 2) + ((31 - 1)^2*16^2)*2) + 16^2*4) + (16^2*31^2)*2) + (16^2*31^2)*16) + 16^2*3) + 16^2*1) + 16^2*2)) + ((928799*1)*(6*4)) + (((57018*2)*(57018*2))*(((7 + 20) + 5) + 16)))) / (((928799*(((((1 + 1) + 6)*4 + 31^2*8) + ((31 - 1)^2*16^2)*8) + (16^2*3)*4)) + ((928799*1)*((6*3)*4)) + (((57018*2)*(57018*2))*((12*4 + 8) + 8))))
+
+
+>> Kernel ccd.ccd
+
+Raw flops for kernel 'ccd.ccd' = 1.98272e+12
+Raw loads for kernel 'ccd.ccd' = 1.30015e+12
+Raw stores for kernel 'ccd.ccd' = 3.90044e+10
+Raw messages for kernel 'ccd.ccd' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'ccd.ccd':
+  = ((ccd.numXTiles*ccd.numYTiles)*((((((4*ccd.tileSize + 4) + 4*ccd.tileSize) + 16*ccd.tileSize) + 1) + 2) + 3)) / ((ccd.numXTiles*ccd.numYTiles)*((2*ccd.tileSize)*ccd.wordSize + 3*4))
+  expanding, but in terms of x:
+  = (((57018 - (5 + 1))*(57018 - (5 + 1)))*((((((4*(5*5) + 4) + 4*(5*5)) + 16*(5*5)) + 1) + 2) + 3)) / (((57018 - (5 + 1))*(57018 - (5 + 1)))*((2*(5*5))*8 + 3*4))
+
+
+>> Kernel ccd.main
+
+Raw flops for kernel 'ccd.main' = 1.98272e+12
+Raw loads for kernel 'ccd.main' = 1.30015e+12
+Raw stores for kernel 'ccd.main' = 3.90044e+10
+Raw messages for kernel 'ccd.main' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'ccd.main':
+  = ((ccd.numXTiles*ccd.numYTiles)*((((((4*ccd.tileSize + 4) + 4*ccd.tileSize) + 16*ccd.tileSize) + 1) + 2) + 3)) / ((ccd.numXTiles*ccd.numYTiles)*((2*ccd.tileSize)*ccd.wordSize + 3*4))
+  expanding, but in terms of x:
+  = (((57018 - (5 + 1))*(57018 - (5 + 1)))*((((((4*(5*5) + 4) + 4*(5*5)) + 16*(5*5)) + 1) + 2) + 3)) / (((57018 - (5 + 1))*(57018 - (5 + 1)))*((2*(5*5))*8 + 3*4))
+
+
+>> Kernel cfar.cfar
+
+Raw flops for kernel 'cfar.cfar' = 2.04615e+12
+Raw loads for kernel 'cfar.cfar' = 8.11965e+12
+Raw stores for kernel 'cfar.cfar' = 1.94872e+10
+Raw messages for kernel 'cfar.cfar' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'cfar.cfar':
+  = ((cfar.numXTiles*cfar.numYTiles)*(5 + cfar.tileSize)) / ((cfar.numXTiles*cfar.numYTiles)*(cfar.tileSize*4 + (3*4)*cfar.alarmRate))
+  expanding, but in terms of x:
+  = (((((57018 - 5) - 25) + 2)*(((57018 - 5) - 25) + 2))*(5 + 25^2)) / (((((57018 - 5) - 25) + 2)*(((57018 - 5) - 25) + 2))*(25^2*4 + (3*4)*0.5))
+
+
+>> Kernel cfar.main
+
+Raw flops for kernel 'cfar.main' = 2.04615e+12
+Raw loads for kernel 'cfar.main' = 8.11965e+12
+Raw stores for kernel 'cfar.main' = 1.94872e+10
+Raw messages for kernel 'cfar.main' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'cfar.main':
+  = ((cfar.numXTiles*cfar.numYTiles)*(5 + cfar.tileSize)) / ((cfar.numXTiles*cfar.numYTiles)*(cfar.tileSize*4 + (3*4)*cfar.alarmRate))
+  expanding, but in terms of x:
+  = (((((57018 - 5) - 25) + 2)*(((57018 - 5) - 25) + 2))*(5 + 25^2)) / (((((57018 - 5) - 25) + 2)*(((57018 - 5) - 25) + 2))*(25^2*4 + (3*4)*0.5))

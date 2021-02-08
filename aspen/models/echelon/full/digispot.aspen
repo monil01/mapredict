@@ -1,0 +1,120 @@
+// Echelon CP #1 -- SSCP
+// Digital Spotlighting
+
+model digitalSpotlight {
+ 
+  param tilingFactor = 32  
+  // AKA P1 in code
+  param pulsesPerSecond = 2809
+  // AKA P2 in code
+  param pulsesAfterSpotlight = pulsesPerSecond / tilingFactor  
+  // AKA S1 in code
+  param samplesPerPulse = 80636
+  // AKA S2 in code
+  param samplesPerTF = samplesPerPulse / tilingFactor
+  param wordSize = 8
+  
+  // Import FFT Model
+  import fft1d from "../tiling/1D_FFT.aspen" with
+    numberOfFFTs = pulsesPerSecond, n = samplesPerPulse, wordSize = wordSize
+  
+  kernel distanceCalc {
+  execute [pulsesPerSecond]
+  {
+    flops [6] as simd
+    flops [1] as sqrt, simd
+    loads [3 * 4] // scalar loads
+  }
+  }
+  
+  kernel phaseShift {
+  execute [pulsesPerSecond * samplesPerPulse]
+  {
+    flops [8] as simd
+    flops [2] as simd, fmad
+    flops [2] as sincos, simd
+    loads [4] // from freqVec
+    loads [wordSize] // from "X2"
+    stores [wordSize] // to temp array.
+  }
+  }
+  
+  kernel rangeGating {
+  execute [pulsesPerSecond * (samplesPerTF / 2)]
+  {
+    flops  [4] as simd
+    // these loads are in cache if temp (size: samplesPerPulse words) is small enough
+    loads  [2 * wordSize] 
+    stores [2 * wordSize]
+  }
+  }
+   
+  kernel tmpCopyIn {
+  execute [samplesPerTF * pulsesPerSecond]
+  {
+    loads [wordSize]
+    stores [wordSize]
+  }
+  }
+
+  // SINC_INTERP BEGIN
+  kernel accumT {
+  execute [samplesPerTF * pulsesPerSecond]
+  {
+    loads [2 * 4]
+    flops [2] as simd
+  }
+  }
+ 
+ kernel sincInterP {
+  execute [samplesPerTF]
+  {
+  flops [4] as simd
+  }
+ }
+ 
+ kernel shiftTimeVec {
+  execute [samplesPerTF * pulsesPerSecond]
+  {
+   flops [1] as simd
+   // Could probably be cached if tmp var is small enough.
+   loads [4]
+   stores [4]
+  }
+ }
+ 
+ kernel timeSinc {
+  execute [samplesPerTF * (pulsesPerSecond / tilingFactor)]
+  {
+   flops [4 + (2 * pulsesPerSecond) + 3] as simd
+   flops [1 + (4 * pulsesPerSecond)] as simd, fmad
+   flops [pulsesPerSecond]           as simd, sincos
+   loads [2 * pulsesPerSecond * wordSize] // cached if Y + temp is small enough
+  }
+ }
+ // SINC_INTERP END
+ kernel tmpCopyOut {
+  execute [samplesPerTF * pulsesAfterSpotlight]
+  {
+    loads [wordSize]
+    stores [wordSize]
+  }
+  }
+   
+  // NB: allocates [samplesPerPulse * wordSize] temporaries for fftw
+  kernel main {
+    call distanceCalc
+    call phaseShift
+    call fft1d.main // P1 1D ffts on S1 data. 
+    call rangeGating
+    call tmpCopyIn
+    // "sinc_interp" in code
+    call accumT 
+    call sincInterP 
+    call shiftTimeVec 
+    call timeSinc
+    // end "sinc_interp"
+    call tmpCopyOut
+  }
+  
+}

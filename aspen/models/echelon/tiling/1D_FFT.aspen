@@ -1,0 +1,29 @@
+// 1D_FFT.aspen
+
+// Models doing multiple 1D FFTs in parallel, with each
+// individual FFT treated as a single unit of work.
+
+model fft1d {
+
+param numberOfFFTs = 1
+param n = 1024      // Number of points in FFT
+param wordSize = 8  // single complex words
+param a = 6.3       // constant for cache miss calculation
+
+param Z = 24 * mega // Cache Capacity
+
+data fftVolume [n * wordSize]
+
+kernel fft {
+  execute [numberOfFFTs]
+  {
+	flops [5.0 * n * log2(n) * 0.8] as simd
+	loads [ (n*wordSize) * a * max(1, log(n*wordSize)/log(Z))] from fftVolume
+  }
+}
+
+kernel main {
+	call fft
+}
+
+}

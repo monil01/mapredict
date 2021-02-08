@@ -1,0 +1,18 @@
+model testsample
+{
+  param nsamples = 1
+  param samplecdf[] = {0.75, 0.80, 0.90, 1.00}
+  param flopcounts[] = {1, 2, 3, 4}
+  param zero = 0
+  param one = 1
+
+  kernel main
+  {
+    sample x from cdf(samplecdf)
+    //sample x from uniform(zero,one)
+    iterate [nsamples]
+    {
+       execute [1000] { flops [1000 * (flopcounts[x])] }
+    }
+  }
+}

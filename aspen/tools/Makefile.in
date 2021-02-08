@@ -1,0 +1,9 @@
+# Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
+@VARIABLES@
+
+SUBDIRS_COMMON=analysis prediction
+SUBDIRS_NLOPT=modeling
+
+all: $(SUBDIRS)
+
+@TARGETS@

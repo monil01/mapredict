@@ -1,0 +1,18 @@
+// Machine Model for Keeneland Initial Delivery System (KIDS)
+param nnodes = 6400
+
+include memory/ddr3_1600.aspen
+include interconnects/fdrInfiniband.aspen
+include sockets/intel_xeon_e5_2680.aspen
+
+machine Stampede {
+  // Properties
+  node [nnodes] stampedeNode
+  interconnect fdrInfiniband
+  //derived property bisectionBW //< TODO: uncomment this 
+}
+
+node stampedeNode {
+   socket [2] intel_xeon_e5_2680
+}
+

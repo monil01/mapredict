@@ -1,0 +1,177 @@
+
+$accept: BEGIN $end
+
+BEGIN  =  MACH
+       |  APP
+
+MACH  =  MACHCONTENT
+
+MACHCONTENT  =  GLOBALSTMT
+             |  COMPONENT
+             |  MACHCONTENT GLOBALSTMT
+             |  MACHCONTENT COMPONENT
+
+COMPONENT  =  <identifier> <identifier> "{"  COMPONENTSTATEMENTS "}" 
+
+COMPONENTSTATEMENTS  =  COMPONENTSTMT
+                     |  COMPONENTSTATEMENTS COMPONENTSTMT
+
+COMPONENTSTMT  =  PROPERTY
+               |  RESOURCE
+               |  POWER
+               |  CONFLICT
+               |  SUBCOMPONENT
+
+SUBCOMPONENT  =  <identifier> <identifier>
+              |  <identifier> QUANTITY <identifier>
+
+PROPERTY  =  "property"  <identifier> QUANTITY
+          |  "property"  <identifier>
+
+CONFLICT  =  "conflict"  <identifier> ","  <identifier>
+
+RESOURCE  =  "resource"  <identifier> "("  <identifier> ")"  QUANTITY "with"  TRAITDEFINITIONS
+          |  "resource"  <identifier> "("  <identifier> ")"  QUANTITY
+
+TRAITDEFINITIONS  =  <identifier> QUANTITY
+                  |  <identifier> "("  <identifier> ")"  QUANTITY
+                  |  TRAITDEFINITIONS ","  <identifier> QUANTITY
+                  |  TRAITDEFINITIONS ","  <identifier> "("  <identifier> ")"  QUANTITY
+
+POWER  =  "static"  "power"  QUANTITY
+       |  "dynamic"  "power"  QUANTITY
+
+APP  =  "model"  <identifier> "{"  GLOBALSTATEMENTS KERNELS "}" 
+
+KERNELS  =  KERNEL
+         |  KERNELS KERNEL
+
+KERNEL  =  "kernel"  <identifier> "{"  KERNELSTATEMENTS "}" 
+        |  "kernel"  <identifier> "("  VARDECLLIST ")"  "{"  KERNELSTATEMENTS "}" 
+
+IDENT  =  <identifier>
+
+VALUE  =  <integer>
+       |  <real>
+
+CONSTANT  =  <si_prefix>
+
+GLOBALSTATEMENTS  =  GLOBALSTMT
+                  |  GLOBALSTATEMENTS GLOBALSTMT
+
+KERNELSTATEMENTS  =  KERNELSTMT
+                  |  KERNELSTATEMENTS KERNELSTMT
+
+EXECSTATEMENTS  =  EXECSTMT
+                |  EXECSTATEMENTS EXECSTMT
+
+GLOBALSTMT  =  IMPORTSTMT
+            |  PARAMSTMT
+            |  DATASTMT
+
+KERNELSTMT  =  "execute"  (<string> | <empty>) "{"  EXECSTATEMENTS "}" 
+            |  "execute"  QUANTITY (<string> | <empty>) "{"  EXECSTATEMENTS "}" 
+            |  CONTROLSTMT
+
+EXECSTMT  =  <identifier> QUANTITY TOFROM (TRAITLIST | <empty>)
+          |  <identifier> QUANTITY "of"  "size"  QUANTITY TOFROM (TRAITLIST | <empty>)
+
+PARAMSTMT  =  "param"  <identifier> "="  EXPR
+           |  "param"  <identifier> "="  EXPR "in"  EXPR ".."  EXPR
+           |  "param"  <identifier> "="  EXPR "in"  <identifier>
+           |  "param"  <identifier> "["  "]"  "="  "{"  VALUELIST "}" 
+           |  "enum"  <identifier> "{"  IDENTLIST "}" 
+
+VALUELIST  =  <integer>
+           |  <real>
+           |  VALUELIST ","  <integer>
+           |  VALUELIST ","  <real>
+
+IDENTLIST  =  <identifier>
+           |  IDENTLIST ","  <identifier>
+
+SAMPLESTMT  =  "sample"  <identifier> "from"  FUNCTIONCALL
+
+DATASTMT  =  "data"  <identifier> "as"  FUNCTIONCALL
+          |  "data"  <identifier> QUANTITY
+
+IMPORTSTMT  =  "import"  <identifier> "from"  <string>
+            |  "import"  <identifier> "from"  <string> "with"  NAMEDARGUMENTS
+
+KERNELCALL  =  "call"  <identifier>
+            |  "call"  <identifier> "("  ARGUMENTS ")" 
+            |  "call"  <identifier> "."  <identifier>
+            |  "call"  <identifier> "."  <identifier> "("  ARGUMENTS ")" 
+
+COMPARISON  =  COMPARISON "and"  COMPARISON
+            |  COMPARISON "or"  COMPARISON
+            |  EXPR "=="  EXPR
+            |  EXPR "!="  EXPR
+            |  EXPR "<"  EXPR
+            |  EXPR ">"  EXPR
+            |  EXPR "<="  EXPR
+            |  EXPR ">="  EXPR
+
+IFTHENCONTROL  =  "if"  "("  COMPARISON ")"  "{"  KERNELSTATEMENTS "}" 
+               |  "if"  "("  COMPARISON ")"  "{"  KERNELSTATEMENTS "}"  "else"  "{"  KERNELSTATEMENTS "}" 
+               |  "if"  "("  COMPARISON ")"  "{"  KERNELSTATEMENTS "}"  "else"  IFTHENCONTROL
+
+CASEITEMS  =  QUANTITY "{"  KERNELSTATEMENTS "}" 
+           |  CASEITEMS QUANTITY "{"  KERNELSTATEMENTS "}" 
+
+PROBABILITYCONTROL  =  "probability"  "{"  CASEITEMS "}" 
+                    |  "probability"  "{"  CASEITEMS "else"  "{"  KERNELSTATEMENTS "}"  "}" 
+
+SWITCHCONTROL  =  "switch"  "("  <identifier> ")"  "{"  CASEITEMS "}" 
+               |  "switch"  "("  <identifier> ")"  "{"  CASEITEMS "else"  "{"  KERNELSTATEMENTS "}"  "}" 
+
+CONTROLSTMT  =  KERNELCALL
+             |  SAMPLESTMT
+             |  "par"  (<string> | <empty>) "{"  KERNELSTATEMENTS "}" 
+             |  "seq"  (<string> | <empty>) "{"  KERNELSTATEMENTS "}" 
+             |  "iterate"  (<identifier> | <empty>) QUANTITY (<string> | <empty>) "{"  KERNELSTATEMENTS "}" 
+             |  "map"  (<identifier> | <empty>) QUANTITY (<string> | <empty>) "{"  KERNELSTATEMENTS "}" 
+             |  IFTHENCONTROL
+             |  PROBABILITYCONTROL
+             |  SWITCHCONTROL
+
+TOFROM  =  <empty>
+        |  "to"  <identifier>
+        |  "from"  <identifier>
+
+TRAITLIST  =  TRAIT
+           |  TRAITLIST ","  TRAIT
+
+TRAIT  =  <identifier>
+       |  <identifier> "("  EXPR ")" 
+
+VARDECLLIST  =  VARDECL
+             |  VARDECLLIST ","  VARDECL
+
+VARDECL  =  "data"  <identifier>
+         |  "param"  <identifier>
+
+QUANTITY  =  "["  EXPR "]" 
+
+EXPR  =  VALUE
+      |  CONSTANT
+      |  IDENT
+      |  <identifier> "["  EXPR "]" 
+      |  "("  EXPR ")" 
+      |  EXPR "+"  EXPR
+      |  EXPR "-"  EXPR
+      |  EXPR "*"  EXPR
+      |  EXPR "/"  EXPR
+      |  EXPR "^"  EXPR
+      |  "-"  EXPR
+      |  FUNCTIONCALL
+
+FUNCTIONCALL  =  <identifier> "("  ARGUMENTS ")" 
+
+ARGUMENTS  =  <empty>
+           |  EXPR
+           |  ARGUMENTS ","  EXPR
+
+NAMEDARGUMENTS  =  <identifier> "="  EXPR
+                |  NAMEDARGUMENTS ","  <identifier> "="  EXPR
+

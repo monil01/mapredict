@@ -1,0 +1,28 @@
+// 1D_FFT.aspen
+
+model fft1d {
+
+// Dimensions of cubic 3D Volume
+param n = 8192
+param wordSize = 16 // double complex
+param a = 6.3 // constant for cache miss calculation, see TR 5.1.2
+
+param P = 16
+param Z = 2.1 * mega
+
+data fftVolume [n * wordSize]
+
+// Local 1D FFT using theoretical bound on FLOPs
+   kernel fft {
+      execute [P] "myloop"
+      {
+	 flops [(5 * (n/P) * log2(n/P))] as dp, simd, fmad
+	 loads [ ((n/P*wordSize)) * a * max(1, log((n/P)*wordSize)/log(Z))] from fftVolume
+      }
+}
+
+kernel main {
+	call fft
+}
+
+}

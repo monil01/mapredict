@@ -1,0 +1,19 @@
+model model1
+{
+   import model2 from "import6_b.aspen" with n=2*n
+   import model3 from "import6_c.aspen" with n=n
+
+   param n = 10
+
+   kernel k1
+   {
+      execute { flops [n] }
+   }
+
+   kernel main
+   {
+      call k1
+      call model2.k2
+      call model3.k3
+   }
+}

@@ -1,0 +1,36 @@
+// Core Parameters
+param apuNumCores = 5
+param apuCoreClock = 600 * mega
+param apuSIMD = 80
+
+// Power
+param apuIdle = 10
+param apuTDP = 100
+
+socket amd_a8_3850_gpu {
+   core [apuNumCores] llanoGpuCore
+   memory ddr3
+   cache llanoSP
+   link no_pcie
+
+   static power [apuIdle]
+}
+
+core llanoGpuCore {
+   resource flops(number) [number / apuCoreClock]
+     with dp   [base * 2], 
+          simd [base / apuSIMD], 
+          fmad [base / 2],
+          sin  [base * 18]
+     dynamic power [(apuTDP - apuIdle) / apuNumCores]
+}
+
+// Scratchpad cache
+cache llanoSP {
+   property capacity [32 * kilo]
+   property latency [0]
+}
+
+link no_pcie {
+  resource intracomm(bytes) [0 + (bytes/(32*giga))]
+}

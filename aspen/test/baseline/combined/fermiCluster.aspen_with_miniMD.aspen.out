@@ -1,0 +1,928 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Machine Model -----
+Machine model:
+   Globals:
+      Identifier fcNodes = 
+         Int: 1
+      Identifier fcJoulesPerByte = 
+         Binary Op *
+            LHS
+               Int: 20
+            RHS
+               Real: 1e-09
+      Identifier qdrLatency = 
+         Binary Op *
+            LHS
+               Real: 1.07
+            RHS
+               Real: 1e-06
+      Identifier qdrBW = 
+         Binary Op *
+            LHS
+               Int: 4
+            RHS
+               Real: 1e+09
+      Identifier fNumCores = 
+         Int: 16
+      Identifier fCoreClock = 
+         Range:
+            Default value:
+               Binary Op *
+                  LHS
+                     Int: 1300
+                  RHS
+                     Real: 1e+06
+            Minimum value:
+               Binary Op *
+                  LHS
+                     Int: 100
+                  RHS
+                     Real: 1e+06
+            Maximum value:
+               Binary Op *
+                  LHS
+                     Int: 2000
+                  RHS
+                     Real: 1e+06
+      Identifier fSIMD = 
+         Int: 32
+      Identifier gddr5Clock = 
+         Range:
+            Default value:
+               Binary Op *
+                  LHS
+                     Int: 3700
+                  RHS
+                     Real: 1e+06
+            Minimum value:
+               Binary Op *
+                  LHS
+                     Int: 100
+                  RHS
+                     Real: 1e+06
+            Maximum value:
+               Binary Op *
+                  LHS
+                     Int: 4000
+                  RHS
+                     Real: 1e+06
+      Identifier gddr5Width = 
+         Int: 48
+      Identifier eccPenalty = 
+         Real: 0.75
+      Identifier gddr5BW = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Ident: gddr5Clock
+                  RHS
+                     Ident: gddr5Width
+            RHS
+               Ident: eccPenalty
+      Identifier gddr5Lat = 
+         Binary Op /
+            LHS
+               Binary Op *
+                  LHS
+                     Int: 50
+                  RHS
+                     Real: 1e-09
+            RHS
+               Ident: fSIMD
+      Identifier gddr5Cap = 
+         Binary Op *
+            LHS
+               Int: 6
+            RHS
+               Real: 1e+09
+      Identifier pcieBW = 
+         Binary Op *
+            LHS
+               Int: 6
+            RHS
+               Real: 1e+09
+      Identifier pcieLat = 
+         Binary Op *
+            LHS
+               Int: 15
+            RHS
+               Real: 1e-06
+      Identifier fIdle = 
+         Int: 30
+      Identifier fTDP = 
+         Int: 250
+   Components:
+      interconnect: 'qdrInfiniband'
+         Property 'fatTree'=
+         Resource 'messages' (arg=msgsize) quantity=
+            Binary Op +
+               LHS
+                  Ident: qdrLatency
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: msgsize
+                     RHS
+                        Ident: qdrBW
+            Trait 'separate' (arg=nMessages): quantity=
+                  Binary Op *
+                     LHS
+                        Ident: nMessages
+                     RHS
+                        Ident: base
+      socket: 'nvidia_m2090'
+         Contains: core: fermiCore
+            Of quantity: 
+               Ident: fNumCores
+         Contains: memory: gddr5
+         Contains: cache: fermiSP
+         Contains: link: pcie
+         Static power: 
+            Ident: fIdle
+         Dynamic power: undefined
+      core: 'fermiCore'
+         Resource 'flops' (arg=number) quantity=
+            Binary Op /
+               LHS
+                  Ident: number
+               RHS
+                  Ident: fCoreClock
+            Trait 'dp': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'simd': quantity=
+                  Binary Op /
+                     LHS
+                        Ident: base
+                     RHS
+                        Ident: fSIMD
+            Trait 'fmad': quantity=
+                  Binary Op /
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'sin': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 18
+         Static power: undefined
+         Dynamic power: 
+            Binary Op /
+               LHS
+                  Binary Op -
+                     LHS
+                        Ident: fTDP
+                     RHS
+                        Ident: fIdle
+               RHS
+                  Ident: fNumCores
+      memory: 'gddr5'
+         Property 'capacity'=
+            Ident: gddr5Cap
+         Resource 'loads' (arg=numBytes) quantity=
+            Binary Op +
+               LHS
+                  Ident: gddr5Lat
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: numBytes
+                     RHS
+                        Ident: gddr5BW
+            Trait 'stride': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'random': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 8
+         Resource 'stores' (arg=numBytes) quantity=
+            Binary Op +
+               LHS
+                  Ident: gddr5Lat
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: numBytes
+                     RHS
+                        Ident: gddr5BW
+            Trait 'stride': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'random': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 8
+         Static power: undefined
+         Dynamic power: 
+            Binary Op -
+               LHS
+                  Ident: fTDP
+               RHS
+                  Ident: fIdle
+         Conflict: loads,stores
+         Conflict: loads,flops
+      cache: 'fermiSP'
+         Property 'capacity'=
+            Binary Op *
+               LHS
+                  Int: 48
+               RHS
+                  Real: 1000
+         Property 'latency'=
+            Int: 0
+         Property 'bandwidth'=
+            Binary Op /
+               LHS
+                  Binary Op *
+                     LHS
+                        Int: 1177
+                     RHS
+                        Real: 1e+09
+               RHS
+                  Int: 16
+      link: 'pcie'
+         Resource 'intracomm' (arg=bytes) quantity=
+            Binary Op +
+               LHS
+                  Ident: pcieLat
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: bytes
+                     RHS
+                        Ident: pcieBW
+            Traits: none
+      machine: 'fermiCluster'
+         Contains: node: genericFermi
+            Of quantity: 
+               Ident: fcNodes
+         Contains: interconnect: qdrInfiniband
+         Resource 'bbw' (arg=msgVolume) quantity=
+            Binary Op /
+               LHS
+                  Ident: msgVolume
+               RHS
+                  Ident: bisectionBW
+            Traits: none
+         Static power: undefined
+         Dynamic power: 
+            Binary Op *
+               LHS
+                  Ident: msgVolume
+               RHS
+                  Ident: fcJoulesPerByte
+      node: 'genericFermi'
+         Contains: socket: nvidia_m2090
+            Of quantity: 
+               Int: 1
+----- Main Application Model -----
+App model miniMD:
+   Globals:
+      Identifier nAtom = 
+         Int: 100000
+      Identifier nTimeSteps = 
+         Int: 100
+      Identifier wordSize = 
+         Int: 4
+      Identifier boxX = 
+         Int: 10
+      Identifier boxY = 
+         Int: 10
+      Identifier boxZ = 
+         Int: 10
+      Identifier cutoff = 
+         Real: 2.5
+      Identifier cellVolume = 
+         Binary Op ^
+            LHS
+               Ident: cutoff
+            RHS
+               Int: 3
+      Identifier nCellsX = 
+         Binary Op /
+            LHS
+               Ident: boxX
+            RHS
+               Ident: cutoff
+      Identifier nCellsY = 
+         Binary Op /
+            LHS
+               Ident: boxY
+            RHS
+               Ident: cutoff
+      Identifier nCellsZ = 
+         Binary Op /
+            LHS
+               Ident: boxZ
+            RHS
+               Ident: cutoff
+      Identifier P = 
+         Int: 8
+      Identifier P_X = 
+         Int: 2
+      Identifier P_Y = 
+         Int: 2
+      Identifier P_Z = 
+         Int: 2
+      Identifier CELLS_X = 
+         Int: 5
+      Identifier CELLS_Y = 
+         Int: 5
+      Identifier CELLS_Z = 
+         Int: 5
+      Identifier atomDensity = 
+         Binary Op /
+            LHS
+               Ident: nAtom
+            RHS
+               Binary Op *
+                  LHS
+                     Binary Op *
+                        LHS
+                           Ident: boxX
+                        RHS
+                           Ident: boxY
+                  RHS
+                     Ident: boxZ
+      Identifier atomsPerCell = 
+         Binary Op *
+            LHS
+               Ident: cellVolume
+            RHS
+               Ident: atomDensity
+      Identifier avgNeighbors = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Binary Op *
+                        LHS
+                           Binary Op /
+                              LHS
+                                 Int: 4
+                              RHS
+                                 Int: 3
+                        RHS
+                           Real: 3.14
+                  RHS
+                     Ident: cellVolume
+            RHS
+               Ident: atomDensity
+      Identifier varSizePerCell = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Ident: atomsPerCell
+                  RHS
+                     Int: 3
+            RHS
+               Ident: wordSize
+      Data position:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Binary Op *
+                  LHS
+                     Binary Op *
+                        LHS
+                           Ident: wordSize
+                        RHS
+                           Int: 3
+                  RHS
+                     Int: 2
+      Data velocity:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Binary Op *
+                  LHS
+                     Ident: wordSize
+                  RHS
+                     Int: 3
+      Data forces:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Binary Op *
+                  LHS
+                     Ident: wordSize
+                  RHS
+                     Int: 3
+      Data neighborList:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Binary Op *
+                  LHS
+                     Ident: avgNeighbors
+                  RHS
+                     Ident: wordSize
+   Kernels:
+      Kernel accelerate:
+         Control node '101': sequential:
+            Execution Block (control node '100')
+               Parallelism:
+                  Ident: nAtom
+               Requires flops of quantity: 
+                  Int: 2
+                  As fmad
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: forces
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: velocity
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: velocity
+      Kernel push:
+         Control node '103': sequential:
+            Execution Block (control node '102')
+               Parallelism:
+                  Ident: nAtom
+               Requires flops of quantity: 
+                  Int: 2
+                  As fmad
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: position
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: velocity
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: position
+      Kernel exchange:
+         Control node '105': sequential:
+            Execution Block (control node '104')
+               Parallelism:
+                  Ident: P
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Int: 2
+                                 RHS
+                                    Ident: CELLS_Y
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+               Requires messages of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Int: 2
+                                 RHS
+                                    Ident: CELLS_Y
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Int: 2
+                                 RHS
+                                    Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+               Requires messages of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Int: 2
+                                 RHS
+                                    Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Int: 2
+                                 RHS
+                                    Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Y
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+               Requires messages of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Int: 2
+                                 RHS
+                                    Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Y
+                     RHS
+                        Ident: varSizePerCell
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Int: 2
+                                 RHS
+                                    Ident: CELLS_Y
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Int: 2
+                                 RHS
+                                    Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Int: 2
+                                 RHS
+                                    Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Y
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+      Kernel buildNList:
+         Control node '107': sequential:
+            Execution Block (control node '106')
+               Parallelism:
+                  Ident: nAtom
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: varSizePerCell
+                     RHS
+                        Int: 27
+                  To/From: position
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Int: 27
+                     RHS
+                        Int: 8
+                  As simd
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: avgNeighbors
+                     RHS
+                        Ident: wordSize
+                  To/From: neighborList
+      Kernel ljForce:
+         Control node '109': sequential:
+            Execution Block (control node '108')
+               Parallelism:
+                  Ident: nAtom
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: avgNeighbors
+                     RHS
+                        Ident: wordSize
+                  To/From: neighborList
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: avgNeighbors
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+                  As random
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: avgNeighbors
+                     RHS
+                        Binary Op +
+                           LHS
+                              Int: 8
+                           RHS
+                              Int: 13
+                  As simd
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: forces
+      Kernel main:
+         Control node '118': sequential:
+            Control node '117': iterate:
+               Quantity:
+                  Ident: nTimeSteps
+               Control node '116': sequential:
+                  Control node '110': kernel call push
+                  Control node '111': kernel call accelerate
+                  Control node '112': kernel call exchange
+                  Control node '113': kernel call buildNList
+                  Control node '114': kernel call ljForce
+                  Control node '115': kernel call push
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = nTimeSteps*((push*2) + accelerate + exchange + buildNList + ljForce)
+
+>> Raw expression without variable expansion:
+flops    = nTimeSteps*((nAtom*2) + (nAtom*2) + 0 + (nAtom*((atomsPerCell*27)*8)) + (nAtom*(avgNeighbors*(8 + 13))) + (nAtom*2))
+messages = nTimeSteps*(0 + 0 + (P*((((2*CELLS_Y)*CELLS_Z)*varSizePerCell + ((2*CELLS_X)*CELLS_Z)*varSizePerCell) + ((2*CELLS_X)*CELLS_Y)*varSizePerCell)) + 0 + 0 + 0)
+loads    = nTimeSteps*((nAtom*(wordSize*3 + wordSize*3)) + (nAtom*(wordSize*3 + wordSize*3)) + (P*((((2*CELLS_Y)*CELLS_Z)*varSizePerCell + ((2*CELLS_X)*CELLS_Z)*varSizePerCell) + ((2*CELLS_X)*CELLS_Y)*varSizePerCell)) + (nAtom*(varSizePerCell*27)) + (nAtom*((3*wordSize + avgNeighbors*wordSize) + (avgNeighbors*3)*wordSize)) + (nAtom*(wordSize*3 + wordSize*3)))
+stores   = nTimeSteps*((nAtom*(wordSize*3)) + (nAtom*(wordSize*3)) + (P*((((2*CELLS_Y)*CELLS_Z)*varSizePerCell + ((2*CELLS_X)*CELLS_Z)*varSizePerCell) + ((2*CELLS_X)*CELLS_Y)*varSizePerCell)) + (nAtom*(avgNeighbors*wordSize)) + (nAtom*(3*wordSize)) + (nAtom*(wordSize*3)))
+
+>> Raw expression with variable expansion:
+flops    = 100*((100000*2) + (100000*2) + 0 + (100000*(((2.5^3*(100000 / ((10*10)*10)))*27)*8)) + (100000*(((((4 / 3)*3.14)*2.5^3)*(100000 / ((10*10)*10)))*(8 + 13))) + (100000*2))
+messages = 100*(0 + 0 + (8*((((2*5)*5)*(((2.5^3*(100000 / ((10*10)*10)))*3)*4) + ((2*5)*5)*(((2.5^3*(100000 / ((10*10)*10)))*3)*4)) + ((2*5)*5)*(((2.5^3*(100000 / ((10*10)*10)))*3)*4))) + 0 + 0 + 0)
+loads    = 100*((100000*(4*3 + 4*3)) + (100000*(4*3 + 4*3)) + (8*((((2*5)*5)*(((2.5^3*(100000 / ((10*10)*10)))*3)*4) + ((2*5)*5)*(((2.5^3*(100000 / ((10*10)*10)))*3)*4)) + ((2*5)*5)*(((2.5^3*(100000 / ((10*10)*10)))*3)*4))) + (100000*((((2.5^3*(100000 / ((10*10)*10)))*3)*4)*27)) + (100000*((3*4 + ((((4 / 3)*3.14)*2.5^3)*(100000 / ((10*10)*10)))*4) + (((((4 / 3)*3.14)*2.5^3)*(100000 / ((10*10)*10)))*3)*4)) + (100000*(4*3 + 4*3)))
+stores   = 100*((100000*(4*3)) + (100000*(4*3)) + (8*((((2*5)*5)*(((2.5^3*(100000 / ((10*10)*10)))*3)*4) + ((2*5)*5)*(((2.5^3*(100000 / ((10*10)*10)))*3)*4)) + ((2*5)*5)*(((2.5^3*(100000 / ((10*10)*10)))*3)*4))) + (100000*(((((4 / 3)*3.14)*2.5^3)*(100000 / ((10*10)*10)))*4)) + (100000*(3*4)) + (100000*(4*3)))
+
+>> as values, With parameters using default values
+flops    = 4.74881e+12
+messages = 2.25e+09
+loads    = 6.11226e+12
+stores   = 2.64397e+11
+
+>> Simplification test:
+flops (noexp)       = nTimeSteps*((nAtom*2) + (nAtom*2) + 0 + (nAtom*((atomsPerCell*27)*8)) + (nAtom*(avgNeighbors*(8 + 13))) + (nAtom*2))
+flops (noexp,simpl) = (nTimeSteps * nAtom * ((6 + ((21 * avgNeighbors)) + (atomsPerCell*(27 * 8)))))
+flops (exp)         = 100*((100000*2) + (100000*2) + 0 + (100000*(((2.5^3*(100000 / ((10*10)*10)))*27)*8)) + (100000*(((((4 / 3)*3.14)*2.5^3)*(100000 / ((10*10)*10)))*(8 + 13))) + (100000*2))
+flops (exp,simpl)   = 4.74881e+12
+
+There are 0 parameters with ranges.
+
+
+
+>> Kernel accelerate
+
+Raw flops for kernel 'accelerate' = 200000
+Raw loads for kernel 'accelerate' = 2.4e+06
+Raw stores for kernel 'accelerate' = 1.2e+06
+Raw messages for kernel 'accelerate' = 0
+
+Exclusive set size is nAtom*(wordSize*3) + nAtom*(wordSize*3)
+Inclusive set size is nAtom*(wordSize*3) + nAtom*(wordSize*3)
+
+Calculating flops/byte intensity for kernel 'accelerate':
+  = (nAtom*2) / (nAtom*((wordSize*3 + wordSize*3) + wordSize*3))
+  expanding, but in terms of x:
+  = (x*2) / (x*((4*3 + 4*3) + 4*3))
+
+
+>> Kernel push
+
+Raw flops for kernel 'push' = 200000
+Raw loads for kernel 'push' = 2.4e+06
+Raw stores for kernel 'push' = 1.2e+06
+Raw messages for kernel 'push' = 0
+
+Exclusive set size is nAtom*((wordSize*3)*2) + nAtom*(wordSize*3)
+Inclusive set size is nAtom*((wordSize*3)*2) + nAtom*(wordSize*3)
+
+Calculating flops/byte intensity for kernel 'push':
+  = (nAtom*2) / (nAtom*((wordSize*3 + wordSize*3) + wordSize*3))
+  expanding, but in terms of x:
+  = (x*2) / (x*((4*3 + 4*3) + 4*3))
+
+
+>> Kernel exchange
+
+Raw flops for kernel 'exchange' = 0
+Raw loads for kernel 'exchange' = 2.25e+07
+Raw stores for kernel 'exchange' = 2.25e+07
+Raw messages for kernel 'exchange' = 2.25e+07
+
+Exclusive set size is nAtom*((wordSize*3)*2)
+Inclusive set size is nAtom*((wordSize*3)*2)
+
+Calculating flops/byte intensity for kernel 'exchange':
+  = 0 / (P*(((((((2*CELLS_Y)*CELLS_Z)*varSizePerCell + ((2*CELLS_X)*CELLS_Z)*varSizePerCell) + ((2*CELLS_X)*CELLS_Y)*varSizePerCell) + ((2*CELLS_Y)*CELLS_Z)*varSizePerCell) + ((2*CELLS_X)*CELLS_Z)*varSizePerCell) + ((2*CELLS_X)*CELLS_Y)*varSizePerCell))
+  expanding, but in terms of x:
+  = 0 / (8*(((((((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4) + ((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + ((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + ((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + ((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + ((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)))
+
+
+>> Kernel buildNList
+
+Raw flops for kernel 'buildNList' = 3.375e+10
+Raw loads for kernel 'buildNList' = 5.0625e+10
+Raw stores for kernel 'buildNList' = 2.61667e+09
+Raw messages for kernel 'buildNList' = 0
+
+Exclusive set size is nAtom*(avgNeighbors*wordSize) + nAtom*((wordSize*3)*2)
+Inclusive set size is nAtom*(avgNeighbors*wordSize) + nAtom*((wordSize*3)*2)
+
+Calculating flops/byte intensity for kernel 'buildNList':
+  = (nAtom*((atomsPerCell*27)*8)) / (nAtom*(varSizePerCell*27 + avgNeighbors*wordSize))
+  expanding, but in terms of x:
+  = (x*(((2.5^3*(x / ((10*10)*10)))*27)*8)) / (x*((((2.5^3*(x / ((10*10)*10)))*3)*4)*27 + ((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*4))
+
+
+>> Kernel ljForce
+
+Raw flops for kernel 'ljForce' = 1.37375e+10
+Raw loads for kernel 'ljForce' = 1.04679e+10
+Raw stores for kernel 'ljForce' = 1.2e+06
+Raw messages for kernel 'ljForce' = 0
+
+Exclusive set size is (nAtom*(wordSize*3) + nAtom*(avgNeighbors*wordSize)) + nAtom*((wordSize*3)*2)
+Inclusive set size is (nAtom*(wordSize*3) + nAtom*(avgNeighbors*wordSize)) + nAtom*((wordSize*3)*2)
+
+Calculating flops/byte intensity for kernel 'ljForce':
+  = (nAtom*(avgNeighbors*(8 + 13))) / (nAtom*(((3*wordSize + avgNeighbors*wordSize) + (avgNeighbors*3)*wordSize) + 3*wordSize))
+  expanding, but in terms of x:
+  = (x*(((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*(8 + 13))) / (x*(((3*4 + ((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*4) + (((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*3)*4) + 3*4))
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 4.74881e+12
+Raw loads for kernel 'main' = 6.11226e+12
+Raw stores for kernel 'main' = 2.64397e+11
+Raw messages for kernel 'main' = 2.25e+09
+
+Exclusive set size is 0
+Inclusive set size is ((nAtom*(wordSize*3) + nAtom*(avgNeighbors*wordSize)) + nAtom*((wordSize*3)*2)) + nAtom*(wordSize*3)
+
+Calculating flops/byte intensity for kernel 'main':
+  = (nTimeSteps*((nAtom*2) + (nAtom*2) + 0 + (nAtom*((atomsPerCell*27)*8)) + (nAtom*(avgNeighbors*(8 + 13))) + (nAtom*2))) / (nTimeSteps*((nAtom*((wordSize*3 + wordSize*3) + wordSize*3)) + (nAtom*((wordSize*3 + wordSize*3) + wordSize*3)) + (P*(((((((2*CELLS_Y)*CELLS_Z)*varSizePerCell + ((2*CELLS_X)*CELLS_Z)*varSizePerCell) + ((2*CELLS_X)*CELLS_Y)*varSizePerCell) + ((2*CELLS_Y)*CELLS_Z)*varSizePerCell) + ((2*CELLS_X)*CELLS_Z)*varSizePerCell) + ((2*CELLS_X)*CELLS_Y)*varSizePerCell)) + (nAtom*(varSizePerCell*27 + avgNeighbors*wordSize)) + (nAtom*(((3*wordSize + avgNeighbors*wordSize) + (avgNeighbors*3)*wordSize) + 3*wordSize)) + (nAtom*((wordSize*3 + wordSize*3) + wordSize*3))))
+  expanding, but in terms of x:
+  = (100*((x*2) + (x*2) + 0 + (x*(((2.5^3*(x / ((10*10)*10)))*27)*8)) + (x*(((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*(8 + 13))) + (x*2))) / (100*((x*((4*3 + 4*3) + 4*3)) + (x*((4*3 + 4*3) + 4*3)) + (8*(((((((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4) + ((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + ((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + ((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + ((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + ((2*5)*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4))) + (x*((((2.5^3*(x / ((10*10)*10)))*3)*4)*27 + ((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*4)) + (x*(((3*4 + ((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*4) + (((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*3)*4) + 3*4)) + (x*((4*3 + 4*3) + 4*3))))
+
+ ------  Machine Analysis ------
+
+
+>> for socket type 'nvidia_m2090' <<
+  totalcores = ((1*fNumCores)*1)*fcNodes
+  totalcores = 16
+
+  peak sp gflops: 20.8
+  peak sp/simd gflops: 665.6
+  peak sp/simd/fmad gflops: 1331.2
+  peak dp gflops: 10.4
+  peak dp/simd gflops: 332.8
+  peak dp/simd/fmad gflops: 665.6
+  ...
+  peak bw in GB/sec: 133.2
+
+
+>> testing expressions
+  time to process 1e9 sp flops in sec: (((1e+09 / fCoreClock) / fNumCores) / 1) / fcNodes
+  time to process 1e9 sp flops in sec (expanded): (((1e+09 / (1300*1e+06)) / 16) / 1) / 1
+  time to process 1e9 sp/simd flops in sec: ((((1e+09 / fCoreClock) / fSIMD) / fNumCores) / 1) / fcNodes
+  time to process 1e9 sp/simd flops in sec (expanded): ((((1e+09 / (1300*1e+06)) / 32) / 16) / 1) / 1
+  time to read 1e9 bytes in sec: ((gddr5Lat + 1e+09 / gddr5BW) / 1) / fcNodes
+  time to read 1e9 bytes in sec (expanded): (((50*1e-09) / 32 + 1e+09 / (((3700*1e+06)*48)*0.75)) / 1) / 1
+
+ ------  Combined Analysis ------
+
+
+++Predicting runtime on kernel 'accelerate' for socket type nvidia_m2090
+run time (expression) = (((ceil(nAtom / (((1*fNumCores)*1)*fcNodes))*(((2 / fCoreClock) / 2) / fSIMD) + (ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW))) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW)))
+run time (value)      = 0.000495927
+run time (value2)     = 0.000495927
+app model data transfer time = ((pcieLat + (nAtom*(wordSize*3) + nAtom*(wordSize*3)) / pcieBW) / 1) / fcNodes
+
+
+++Predicting runtime on kernel 'push' for socket type nvidia_m2090
+run time (expression) = (((ceil(nAtom / (((1*fNumCores)*1)*fcNodes))*(((2 / fCoreClock) / 2) / fSIMD) + (ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW))) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW)))
+run time (value)      = 0.000495927
+run time (value2)     = 0.000495927
+app model data transfer time = ((pcieLat + (nAtom*((wordSize*3)*2) + nAtom*(wordSize*3)) / pcieBW) / 1) / fcNodes
+
+
+++Predicting runtime on kernel 'exchange' for socket type nvidia_m2090
+run time (expression) = ((max((ceil(P / 1)*(qdrLatency + (((2*CELLS_Y)*CELLS_Z)*varSizePerCell) / qdrBW) + ceil(P / 1)*(qdrLatency + (((2*CELLS_X)*CELLS_Z)*varSizePerCell) / qdrBW)) + ceil(P / 1)*(qdrLatency + (((2*CELLS_X)*CELLS_Y)*varSizePerCell) / qdrBW), ((ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_Y)*CELLS_Z)*varSizePerCell) / gddr5BW) + ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_X)*CELLS_Z)*varSizePerCell) / gddr5BW)) + ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_X)*CELLS_Y)*varSizePerCell) / gddr5BW)) + ((ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_Y)*CELLS_Z)*varSizePerCell) / gddr5BW) + ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_X)*CELLS_Z)*varSizePerCell) / gddr5BW)) + ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_X)*CELLS_Y)*varSizePerCell) / gddr5BW)))))
+run time (value)      = 0.00565068
+run time (value2)     = 0.00565068
+app model data transfer time = ((pcieLat + (nAtom*((wordSize*3)*2)) / pcieBW) / 1) / fcNodes
+
+
+++Predicting runtime on kernel 'buildNList' for socket type nvidia_m2090
+run time (expression) = (((ceil(nAtom / (((1*fNumCores)*1)*fcNodes))*((((atomsPerCell*27)*8) / fCoreClock) / fSIMD) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (varSizePerCell*27) / gddr5BW)) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (avgNeighbors*wordSize) / gddr5BW)))
+run time (value)      = 0.450731
+run time (value2)     = 0.450731
+app model data transfer time = ((pcieLat + (nAtom*(avgNeighbors*wordSize) + nAtom*((wordSize*3)*2)) / pcieBW) / 1) / fcNodes
+
+
+++Predicting runtime on kernel 'ljForce' for socket type nvidia_m2090
+run time (expression) = (((ceil(nAtom / (((1*fNumCores)*1)*fcNodes))*(((avgNeighbors*(8 + 13)) / fCoreClock) / fSIMD) + ((ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (3*wordSize) / gddr5BW) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (avgNeighbors*wordSize) / gddr5BW)) + ceil(nAtom / ((1*1)*fcNodes))*((gddr5Lat + ((avgNeighbors*3)*wordSize) / gddr5BW)*8))) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (3*wordSize) / gddr5BW)))
+run time (value)      = 0.513492
+run time (value2)     = 0.513492
+app model data transfer time = ((pcieLat + ((nAtom*(wordSize*3) + nAtom*(avgNeighbors*wordSize)) + nAtom*((wordSize*3)*2)) / pcieBW) / 1) / fcNodes
+
+
+++Predicting runtime on kernel 'main' for socket type nvidia_m2090
+run time (expression) = ((nTimeSteps*(((((ceil(nAtom / (((1*fNumCores)*1)*fcNodes))*(((2 / fCoreClock) / 2) / fSIMD) + (ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW))) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW)))) + ((((ceil(nAtom / (((1*fNumCores)*1)*fcNodes))*(((avgNeighbors*(8 + 13)) / fCoreClock) / fSIMD) + ((ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (3*wordSize) / gddr5BW) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (avgNeighbors*wordSize) / gddr5BW)) + ceil(nAtom / ((1*1)*fcNodes))*((gddr5Lat + ((avgNeighbors*3)*wordSize) / gddr5BW)*8))) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (3*wordSize) / gddr5BW)))) + ((((ceil(nAtom / (((1*fNumCores)*1)*fcNodes))*((((atomsPerCell*27)*8) / fCoreClock) / fSIMD) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (varSizePerCell*27) / gddr5BW)) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (avgNeighbors*wordSize) / gddr5BW)))) + (((max((ceil(P / 1)*(qdrLatency + (((2*CELLS_Y)*CELLS_Z)*varSizePerCell) / qdrBW) + ceil(P / 1)*(qdrLatency + (((2*CELLS_X)*CELLS_Z)*varSizePerCell) / qdrBW)) + ceil(P / 1)*(qdrLatency + (((2*CELLS_X)*CELLS_Y)*varSizePerCell) / qdrBW), ((ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_Y)*CELLS_Z)*varSizePerCell) / gddr5BW) + ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_X)*CELLS_Z)*varSizePerCell) / gddr5BW)) + ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_X)*CELLS_Y)*varSizePerCell) / gddr5BW)) + ((ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_Y)*CELLS_Z)*varSizePerCell) / gddr5BW) + ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_X)*CELLS_Z)*varSizePerCell) / gddr5BW)) + ceil(P / ((1*1)*fcNodes))*(gddr5Lat + (((2*CELLS_X)*CELLS_Y)*varSizePerCell) / gddr5BW)))))) + ((((ceil(nAtom / (((1*fNumCores)*1)*fcNodes))*(((2 / fCoreClock) / 2) / fSIMD) + (ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW))) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW)))) + ((((ceil(nAtom / (((1*fNumCores)*1)*fcNodes))*(((2 / fCoreClock) / 2) / fSIMD) + (ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW))) + ceil(nAtom / ((1*1)*fcNodes))*(gddr5Lat + (wordSize*3) / gddr5BW)))))))
+run time (value)      = 97.1361
+run time (value2)     = 97.1361
+app model data transfer time = ((pcieLat + (((nAtom*(wordSize*3) + nAtom*(avgNeighbors*wordSize)) + nAtom*((wordSize*3)*2)) + nAtom*(wordSize*3)) / pcieBW) / 1) / fcNodes

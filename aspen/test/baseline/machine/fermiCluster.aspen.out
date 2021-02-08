@@ -1,0 +1,325 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Machine Model -----
+Machine model:
+   Globals:
+      Identifier fcNodes = 
+         Int: 1
+      Identifier fcJoulesPerByte = 
+         Binary Op *
+            LHS
+               Int: 20
+            RHS
+               Real: 1e-09
+      Identifier qdrLatency = 
+         Binary Op *
+            LHS
+               Real: 1.07
+            RHS
+               Real: 1e-06
+      Identifier qdrBW = 
+         Binary Op *
+            LHS
+               Int: 4
+            RHS
+               Real: 1e+09
+      Identifier fNumCores = 
+         Int: 16
+      Identifier fCoreClock = 
+         Range:
+            Default value:
+               Binary Op *
+                  LHS
+                     Int: 1300
+                  RHS
+                     Real: 1e+06
+            Minimum value:
+               Binary Op *
+                  LHS
+                     Int: 100
+                  RHS
+                     Real: 1e+06
+            Maximum value:
+               Binary Op *
+                  LHS
+                     Int: 2000
+                  RHS
+                     Real: 1e+06
+      Identifier fSIMD = 
+         Int: 32
+      Identifier gddr5Clock = 
+         Range:
+            Default value:
+               Binary Op *
+                  LHS
+                     Int: 3700
+                  RHS
+                     Real: 1e+06
+            Minimum value:
+               Binary Op *
+                  LHS
+                     Int: 100
+                  RHS
+                     Real: 1e+06
+            Maximum value:
+               Binary Op *
+                  LHS
+                     Int: 4000
+                  RHS
+                     Real: 1e+06
+      Identifier gddr5Width = 
+         Int: 48
+      Identifier eccPenalty = 
+         Real: 0.75
+      Identifier gddr5BW = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Ident: gddr5Clock
+                  RHS
+                     Ident: gddr5Width
+            RHS
+               Ident: eccPenalty
+      Identifier gddr5Lat = 
+         Binary Op /
+            LHS
+               Binary Op *
+                  LHS
+                     Int: 50
+                  RHS
+                     Real: 1e-09
+            RHS
+               Ident: fSIMD
+      Identifier gddr5Cap = 
+         Binary Op *
+            LHS
+               Int: 6
+            RHS
+               Real: 1e+09
+      Identifier pcieBW = 
+         Binary Op *
+            LHS
+               Int: 6
+            RHS
+               Real: 1e+09
+      Identifier pcieLat = 
+         Binary Op *
+            LHS
+               Int: 15
+            RHS
+               Real: 1e-06
+      Identifier fIdle = 
+         Int: 30
+      Identifier fTDP = 
+         Int: 250
+   Components:
+      interconnect: 'qdrInfiniband'
+         Property 'fatTree'=
+         Resource 'messages' (arg=msgsize) quantity=
+            Binary Op +
+               LHS
+                  Ident: qdrLatency
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: msgsize
+                     RHS
+                        Ident: qdrBW
+            Trait 'separate' (arg=nMessages): quantity=
+                  Binary Op *
+                     LHS
+                        Ident: nMessages
+                     RHS
+                        Ident: base
+      socket: 'nvidia_m2090'
+         Contains: core: fermiCore
+            Of quantity: 
+               Ident: fNumCores
+         Contains: memory: gddr5
+         Contains: cache: fermiSP
+         Contains: link: pcie
+         Static power: 
+            Ident: fIdle
+         Dynamic power: undefined
+      core: 'fermiCore'
+         Resource 'flops' (arg=number) quantity=
+            Binary Op /
+               LHS
+                  Ident: number
+               RHS
+                  Ident: fCoreClock
+            Trait 'dp': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'simd': quantity=
+                  Binary Op /
+                     LHS
+                        Ident: base
+                     RHS
+                        Ident: fSIMD
+            Trait 'fmad': quantity=
+                  Binary Op /
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'sin': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 18
+         Static power: undefined
+         Dynamic power: 
+            Binary Op /
+               LHS
+                  Binary Op -
+                     LHS
+                        Ident: fTDP
+                     RHS
+                        Ident: fIdle
+               RHS
+                  Ident: fNumCores
+      memory: 'gddr5'
+         Property 'capacity'=
+            Ident: gddr5Cap
+         Resource 'loads' (arg=numBytes) quantity=
+            Binary Op +
+               LHS
+                  Ident: gddr5Lat
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: numBytes
+                     RHS
+                        Ident: gddr5BW
+            Trait 'stride': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'random': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 8
+         Resource 'stores' (arg=numBytes) quantity=
+            Binary Op +
+               LHS
+                  Ident: gddr5Lat
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: numBytes
+                     RHS
+                        Ident: gddr5BW
+            Trait 'stride': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'random': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 8
+         Static power: undefined
+         Dynamic power: 
+            Binary Op -
+               LHS
+                  Ident: fTDP
+               RHS
+                  Ident: fIdle
+         Conflict: loads,stores
+         Conflict: loads,flops
+      cache: 'fermiSP'
+         Property 'capacity'=
+            Binary Op *
+               LHS
+                  Int: 48
+               RHS
+                  Real: 1000
+         Property 'latency'=
+            Int: 0
+         Property 'bandwidth'=
+            Binary Op /
+               LHS
+                  Binary Op *
+                     LHS
+                        Int: 1177
+                     RHS
+                        Real: 1e+09
+               RHS
+                  Int: 16
+      link: 'pcie'
+         Resource 'intracomm' (arg=bytes) quantity=
+            Binary Op +
+               LHS
+                  Ident: pcieLat
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: bytes
+                     RHS
+                        Ident: pcieBW
+            Traits: none
+      machine: 'fermiCluster'
+         Contains: node: genericFermi
+            Of quantity: 
+               Ident: fcNodes
+         Contains: interconnect: qdrInfiniband
+         Resource 'bbw' (arg=msgVolume) quantity=
+            Binary Op /
+               LHS
+                  Ident: msgVolume
+               RHS
+                  Ident: bisectionBW
+            Traits: none
+         Static power: undefined
+         Dynamic power: 
+            Binary Op *
+               LHS
+                  Ident: msgVolume
+               RHS
+                  Ident: fcJoulesPerByte
+      node: 'genericFermi'
+         Contains: socket: nvidia_m2090
+            Of quantity: 
+               Int: 1
+
+-----------------------------------------------------
+
+
+ ------  Machine Analysis ------
+
+
+>> for socket type 'nvidia_m2090' <<
+  totalcores = ((1*fNumCores)*1)*fcNodes
+  totalcores = 16
+
+  peak sp gflops: 20.8
+  peak sp/simd gflops: 665.6
+  peak sp/simd/fmad gflops: 1331.2
+  peak dp gflops: 10.4
+  peak dp/simd gflops: 332.8
+  peak dp/simd/fmad gflops: 665.6
+  ...
+  peak bw in GB/sec: 133.2
+
+
+>> testing expressions
+  time to process 1e9 sp flops in sec: (((1e+09 / fCoreClock) / fNumCores) / 1) / fcNodes
+  time to process 1e9 sp flops in sec (expanded): (((1e+09 / (1300*1e+06)) / 16) / 1) / 1
+  time to process 1e9 sp/simd flops in sec: ((((1e+09 / fCoreClock) / fSIMD) / fNumCores) / 1) / fcNodes
+  time to process 1e9 sp/simd flops in sec (expanded): ((((1e+09 / (1300*1e+06)) / 32) / 16) / 1) / 1
+  time to read 1e9 bytes in sec: ((gddr5Lat + 1e+09 / gddr5BW) / 1) / fcNodes
+  time to read 1e9 bytes in sec (expanded): (((50*1e-09) / 32 + 1e+09 / (((3700*1e+06)*48)*0.75)) / 1) / 1

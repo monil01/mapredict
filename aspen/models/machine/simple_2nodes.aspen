@@ -1,0 +1,42 @@
+param CORECLOCK = 1.0 * giga
+param MEMCLOCK = 1.0 * giga
+param NUMCORES = 4
+param MEMWIDTH = 4
+param BANDWIDTH = 1.0 * giga
+
+machine SimpleMachine
+{
+  node [2] SimpleNode
+  interconnect SimpleInterconnect
+}
+
+interconnect SimpleInterconnect
+{
+  resource messages(numBytes) [numBytes / BANDWIDTH]   
+}
+
+node SimpleNode
+{
+   socket [1] SimpleCPU
+}
+
+socket SimpleCPU
+{
+   core [4] SimpleCore
+   memory SimpleMem
+}
+
+core SimpleCore
+{
+   resource flops(number) [number / CORECLOCK] 
+       with dp [base * 2]
+}
+
+memory SimpleMem
+{
+   resource loads(numBytes) [numBytes / (MEMWIDTH*MEMCLOCK)]
+   resource stores(numBytes) [numBytes / (MEMWIDTH*MEMCLOCK)]
+
+   conflict loads, stores
+}
+

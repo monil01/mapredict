@@ -1,0 +1,768 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Machine Model -----
+Machine model:
+   Globals:
+      Identifier klNodes = 
+         Int: 120
+      Identifier klJoulesPerByte = 
+         Binary Op *
+            LHS
+               Int: 20
+            RHS
+               Real: 1e-09
+      Identifier ddr3MemClock = 
+         Binary Op *
+            LHS
+               Int: 1066
+            RHS
+               Real: 1e+06
+      Identifier ddr3Cap = 
+         Binary Op *
+            LHS
+               Int: 12
+            RHS
+               Real: 1e+09
+      Identifier ddr3Channels = 
+         Int: 3
+      Identifier ddr3BW = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Ident: ddr3MemClock
+                  RHS
+                     Ident: ddr3Channels
+            RHS
+               Int: 8
+      Identifier ddr3Lat = 
+         Binary Op /
+            LHS
+               Binary Op *
+                  LHS
+                     Int: 10
+                  RHS
+                     Real: 1e-09
+            RHS
+               Ident: wmSIMD
+      Identifier qdrLatency = 
+         Binary Op *
+            LHS
+               Real: 1.07
+            RHS
+               Real: 1e-06
+      Identifier qdrBW = 
+         Binary Op *
+            LHS
+               Int: 4
+            RHS
+               Real: 1e+09
+      Identifier wmNumCores = 
+         Int: 6
+      Identifier wmCoreClock = 
+         Binary Op *
+            LHS
+               Real: 2.8
+            RHS
+               Real: 1e+09
+      Identifier wmIssueRate = 
+         Binary Op *
+            LHS
+               Ident: wmCoreClock
+            RHS
+               Int: 2
+      Identifier wmSIMD = 
+         Int: 4
+      Identifier wmCacheCap = 
+         Binary Op *
+            LHS
+               Int: 12
+            RHS
+               Real: 1e+06
+      Identifier wmCacheLat = 
+         Binary Op *
+            LHS
+               Binary Op /
+                  LHS
+                     Int: 1
+                  RHS
+                     Ident: wmCoreClock
+            RHS
+               Int: 48
+      Identifier wmCacheBW = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Ident: wmNumCores
+                  RHS
+                     Int: 96
+            RHS
+               Real: 1e+09
+      Identifier wmTDP = 
+         Int: 90
+      Identifier wmIdle = 
+         Int: 10
+      Identifier fNumCores = 
+         Int: 16
+      Identifier fCoreClock = 
+         Range:
+            Default value:
+               Binary Op *
+                  LHS
+                     Int: 1300
+                  RHS
+                     Real: 1e+06
+            Minimum value:
+               Binary Op *
+                  LHS
+                     Int: 100
+                  RHS
+                     Real: 1e+06
+            Maximum value:
+               Binary Op *
+                  LHS
+                     Int: 2000
+                  RHS
+                     Real: 1e+06
+      Identifier fSIMD = 
+         Int: 32
+      Identifier gddr5Clock = 
+         Range:
+            Default value:
+               Binary Op *
+                  LHS
+                     Int: 3700
+                  RHS
+                     Real: 1e+06
+            Minimum value:
+               Binary Op *
+                  LHS
+                     Int: 100
+                  RHS
+                     Real: 1e+06
+            Maximum value:
+               Binary Op *
+                  LHS
+                     Int: 4000
+                  RHS
+                     Real: 1e+06
+      Identifier gddr5Width = 
+         Int: 48
+      Identifier eccPenalty = 
+         Real: 0.75
+      Identifier gddr5BW = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Ident: gddr5Clock
+                  RHS
+                     Ident: gddr5Width
+            RHS
+               Ident: eccPenalty
+      Identifier gddr5Lat = 
+         Binary Op /
+            LHS
+               Binary Op *
+                  LHS
+                     Int: 50
+                  RHS
+                     Real: 1e-09
+            RHS
+               Ident: fSIMD
+      Identifier gddr5Cap = 
+         Binary Op *
+            LHS
+               Int: 6
+            RHS
+               Real: 1e+09
+      Identifier pcieBW = 
+         Binary Op *
+            LHS
+               Int: 6
+            RHS
+               Real: 1e+09
+      Identifier pcieLat = 
+         Binary Op *
+            LHS
+               Int: 15
+            RHS
+               Real: 1e-06
+      Identifier fIdle = 
+         Int: 30
+      Identifier fTDP = 
+         Int: 250
+   Components:
+      memory: 'ddr3'
+         Property 'capacity'=
+            Ident: ddr3Cap
+         Resource 'loads' (arg=numBytes) quantity=
+            Binary Op +
+               LHS
+                  Ident: ddr3Lat
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: numBytes
+                     RHS
+                        Ident: ddr3BW
+            Trait 'stride': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'random': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 8
+         Resource 'stores' (arg=numBytes) quantity=
+            Binary Op +
+               LHS
+                  Ident: ddr3Lat
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: numBytes
+                     RHS
+                        Ident: ddr3BW
+            Trait 'stride': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'random': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 8
+         Static power: undefined
+         Dynamic power: 
+            Binary Op -
+               LHS
+                  Ident: wmTDP
+               RHS
+                  Ident: wmIdle
+         Conflict: loads,stores
+      interconnect: 'qdrInfiniband'
+         Property 'fatTree'=
+         Resource 'messages' (arg=msgsize) quantity=
+            Binary Op +
+               LHS
+                  Ident: qdrLatency
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: msgsize
+                     RHS
+                        Ident: qdrBW
+            Trait 'separate' (arg=nMessages): quantity=
+                  Binary Op *
+                     LHS
+                        Ident: nMessages
+                     RHS
+                        Ident: base
+      socket: 'intel_xeon_x5660'
+         Contains: core: westmereCore
+            Of quantity: 
+               Ident: wmNumCores
+         Contains: memory: ddr3
+         Contains: cache: wmCache
+         Contains: link: qpi
+         Static power: 
+            Ident: wmIdle
+         Dynamic power: undefined
+      core: 'westmereCore'
+         Resource 'flops' (arg=number) quantity=
+            Binary Op /
+               LHS
+                  Ident: number
+               RHS
+                  Ident: wmIssueRate
+            Trait 'dp': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'simd': quantity=
+                  Binary Op /
+                     LHS
+                        Ident: base
+                     RHS
+                        Ident: wmSIMD
+            Trait 'fmad': quantity=
+                  Ident: base
+            Trait 'sin': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 18
+         Resource 'intops' (arg=number) quantity=
+            Binary Op /
+               LHS
+                  Ident: number
+               RHS
+                  Ident: wmIssueRate
+            Traits: none
+         Static power: undefined
+         Dynamic power: 
+            Binary Op /
+               LHS
+                  Binary Op -
+                     LHS
+                        Ident: wmTDP
+                     RHS
+                        Ident: wmIdle
+               RHS
+                  Ident: wmNumCores
+      cache: 'wmCache'
+         Property 'capacity'=
+            Ident: wmCacheCap
+      link: 'qpi'
+         Resource 'intracomm' (arg=bytes) quantity=
+            Binary Op +
+               LHS
+                  Real: 1e-06
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: bytes
+                     RHS
+                        Binary Op *
+                           LHS
+                              Real: 12.5
+                           RHS
+                              Real: 1e+09
+            Traits: none
+      socket: 'nvidia_m2090'
+         Contains: core: fermiCore
+            Of quantity: 
+               Ident: fNumCores
+         Contains: memory: gddr5
+         Contains: cache: fermiSP
+         Contains: link: pcie
+         Static power: 
+            Ident: fIdle
+         Dynamic power: undefined
+      core: 'fermiCore'
+         Resource 'flops' (arg=number) quantity=
+            Binary Op /
+               LHS
+                  Ident: number
+               RHS
+                  Ident: fCoreClock
+            Trait 'dp': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'simd': quantity=
+                  Binary Op /
+                     LHS
+                        Ident: base
+                     RHS
+                        Ident: fSIMD
+            Trait 'fmad': quantity=
+                  Binary Op /
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'sin': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 18
+         Static power: undefined
+         Dynamic power: 
+            Binary Op /
+               LHS
+                  Binary Op -
+                     LHS
+                        Ident: fTDP
+                     RHS
+                        Ident: fIdle
+               RHS
+                  Ident: fNumCores
+      memory: 'gddr5'
+         Property 'capacity'=
+            Ident: gddr5Cap
+         Resource 'loads' (arg=numBytes) quantity=
+            Binary Op +
+               LHS
+                  Ident: gddr5Lat
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: numBytes
+                     RHS
+                        Ident: gddr5BW
+            Trait 'stride': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'random': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 8
+         Resource 'stores' (arg=numBytes) quantity=
+            Binary Op +
+               LHS
+                  Ident: gddr5Lat
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: numBytes
+                     RHS
+                        Ident: gddr5BW
+            Trait 'stride': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 2
+            Trait 'random': quantity=
+                  Binary Op *
+                     LHS
+                        Ident: base
+                     RHS
+                        Int: 8
+         Static power: undefined
+         Dynamic power: 
+            Binary Op -
+               LHS
+                  Ident: fTDP
+               RHS
+                  Ident: fIdle
+         Conflict: loads,stores
+         Conflict: loads,flops
+      cache: 'fermiSP'
+         Property 'capacity'=
+            Binary Op *
+               LHS
+                  Int: 48
+               RHS
+                  Real: 1000
+         Property 'latency'=
+            Int: 0
+         Property 'bandwidth'=
+            Binary Op /
+               LHS
+                  Binary Op *
+                     LHS
+                        Int: 1177
+                     RHS
+                        Real: 1e+09
+               RHS
+                  Int: 16
+      link: 'pcie'
+         Resource 'intracomm' (arg=bytes) quantity=
+            Binary Op +
+               LHS
+                  Ident: pcieLat
+               RHS
+                  Binary Op /
+                     LHS
+                        Ident: bytes
+                     RHS
+                        Ident: pcieBW
+            Traits: none
+      machine: 'Keeneland'
+         Contains: node: sl390
+            Of quantity: 
+               Ident: klNodes
+         Contains: interconnect: qdrInfiniband
+         Resource 'bbw' (arg=msgVolume) quantity=
+            Binary Op /
+               LHS
+                  Ident: msgVolume
+               RHS
+                  Ident: bisectionBW
+            Traits: none
+         Static power: undefined
+         Dynamic power: 
+            Binary Op *
+               LHS
+                  Ident: msgVolume
+               RHS
+                  Ident: klJoulesPerByte
+      node: 'sl390'
+         Contains: socket: intel_xeon_x5660
+            Of quantity: 
+               Int: 2
+         Contains: socket: nvidia_m2090
+            Of quantity: 
+               Int: 3
+----- Main Application Model -----
+App model matmul:
+   Globals:
+      Identifier n = 
+         Int: 1000
+      Identifier nTimes = 
+         Int: 5
+      Identifier wordSize = 
+         Int: 4
+      Data matA:
+         As:
+            Call Matrix with 3 args:
+               Ident: n
+               Ident: n
+               Ident: wordSize
+      Data matB:
+         As:
+            Call Matrix with 3 args:
+               Ident: n
+               Ident: n
+               Ident: wordSize
+      Data matC:
+         As:
+            Call Matrix with 3 args:
+               Ident: n
+               Ident: n
+               Ident: wordSize
+   Kernels:
+      Kernel matmul:
+         Control node '101': sequential:
+            Execution Block (name='mainblock2') (control node '100')
+               Parallelism:
+                  Int: 1
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 2
+                     RHS
+                        Binary Op ^
+                           LHS
+                              Ident: n
+                           RHS
+                              Int: 3
+                  As sp
+                  As fmad
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op ^
+                           LHS
+                              Ident: n
+                           RHS
+                              Int: 2
+                     RHS
+                        Ident: wordSize
+                  Where count is: 
+                     Binary Op ^
+                        LHS
+                           Ident: n
+                        RHS
+                           Int: 2
+                  And size is: 
+                     Ident: wordSize
+                  To/From: matA
+                  As stride with value:
+                     Binary Op *
+                        LHS
+                           Ident: n
+                        RHS
+                           Ident: wordSize
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op ^
+                           LHS
+                              Ident: n
+                           RHS
+                              Int: 2
+                     RHS
+                        Ident: wordSize
+                  Where count is: 
+                     Binary Op ^
+                        LHS
+                           Ident: n
+                        RHS
+                           Int: 2
+                  And size is: 
+                     Ident: wordSize
+                  To/From: matB
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op ^
+                           LHS
+                              Ident: n
+                           RHS
+                              Int: 2
+                     RHS
+                        Ident: wordSize
+                  Where count is: 
+                     Binary Op ^
+                        LHS
+                           Ident: n
+                        RHS
+                           Int: 2
+                  And size is: 
+                     Ident: wordSize
+                  To/From: matC
+      Kernel main:
+         Control node '104': sequential:
+            Control node '103': iterate:
+               Quantity:
+                  Ident: nTimes
+               Control node '102': kernel call matmul
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = nTimes*matmul
+
+>> Raw expression without variable expansion:
+flops    = nTimes*(1*(2*n^3))
+messages = nTimes*0
+loads    = nTimes*(1*(n^2*wordSize + n^2*wordSize))
+stores   = nTimes*(1*(n^2*wordSize))
+
+>> Raw expression with variable expansion:
+flops    = 5*(1*(2*1000^3))
+messages = 5*0
+loads    = 5*(1*(1000^2*4 + 1000^2*4))
+stores   = 5*(1*(1000^2*4))
+
+>> as values, With parameters using default values
+flops    = 1e+10
+messages = 0
+loads    = 4e+07
+stores   = 2e+07
+
+>> Simplification test:
+flops (noexp)       = nTimes*(1*(2*n^3))
+flops (noexp,simpl) = (nTimes * 2 * (n^3))
+flops (exp)         = 5*(1*(2*1000^3))
+flops (exp,simpl)   = 1e+10
+
+There are 0 parameters with ranges.
+
+
+
+>> Kernel matmul
+
+Raw flops for kernel 'matmul' = 2e+09
+Raw loads for kernel 'matmul' = 8e+06
+Raw stores for kernel 'matmul' = 4e+06
+Raw messages for kernel 'matmul' = 0
+
+Exclusive set size is ((n*n)*wordSize + (n*n)*wordSize) + (n*n)*wordSize
+Inclusive set size is ((n*n)*wordSize + (n*n)*wordSize) + (n*n)*wordSize
+
+Calculating flops/byte intensity for kernel 'matmul':
+  = (1*(2*n^3)) / (1*((n^2*wordSize + n^2*wordSize) + n^2*wordSize))
+  expanding, but in terms of x:
+  = (1*(2*1000^3)) / (1*((1000^2*4 + 1000^2*4) + 1000^2*4))
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 1e+10
+Raw loads for kernel 'main' = 4e+07
+Raw stores for kernel 'main' = 2e+07
+Raw messages for kernel 'main' = 0
+
+Exclusive set size is 0
+Inclusive set size is ((n*n)*wordSize + (n*n)*wordSize) + (n*n)*wordSize
+
+Calculating flops/byte intensity for kernel 'main':
+  = (nTimes*(1*(2*n^3))) / (nTimes*(1*((n^2*wordSize + n^2*wordSize) + n^2*wordSize)))
+  expanding, but in terms of x:
+  = (5*(1*(2*1000^3))) / (5*(1*((1000^2*4 + 1000^2*4) + 1000^2*4)))
+
+ ------  Machine Analysis ------
+
+
+>> for socket type 'intel_xeon_x5660' <<
+  totalcores = ((1*wmNumCores)*2)*klNodes
+  totalcores = 1440
+
+  peak sp gflops: 8064
+  peak sp/simd gflops: 32256
+  peak sp/simd/fmad gflops: 32256
+  peak dp gflops: 4032
+  peak dp/simd gflops: 16128
+  peak dp/simd/fmad gflops: 16128
+  ...
+  peak bw in GB/sec: 6140.16
+
+
+>> testing expressions
+  time to process 1e9 sp flops in sec: (((1e+09 / wmIssueRate) / wmNumCores) / 2) / klNodes
+  time to process 1e9 sp flops in sec (expanded): (((1e+09 / ((2.8*1e+09)*2)) / 6) / 2) / 120
+  time to process 1e9 sp/simd flops in sec: ((((1e+09 / wmIssueRate) / wmSIMD) / wmNumCores) / 2) / klNodes
+  time to process 1e9 sp/simd flops in sec (expanded): ((((1e+09 / ((2.8*1e+09)*2)) / 4) / 6) / 2) / 120
+  time to read 1e9 bytes in sec: ((ddr3Lat + 1e+09 / ddr3BW) / 2) / klNodes
+  time to read 1e9 bytes in sec (expanded): (((10*1e-09) / 4 + 1e+09 / (((1066*1e+06)*3)*8)) / 2) / 120
+
+
+>> for socket type 'nvidia_m2090' <<
+  totalcores = ((1*fNumCores)*3)*klNodes
+  totalcores = 5760
+
+  peak sp gflops: 7488
+  peak sp/simd gflops: 239616
+  peak sp/simd/fmad gflops: 479232
+  peak dp gflops: 3744
+  peak dp/simd gflops: 119808
+  peak dp/simd/fmad gflops: 239616
+  ...
+  peak bw in GB/sec: 47952
+
+
+>> testing expressions
+  time to process 1e9 sp flops in sec: (((1e+09 / fCoreClock) / fNumCores) / 3) / klNodes
+  time to process 1e9 sp flops in sec (expanded): (((1e+09 / (1300*1e+06)) / 16) / 3) / 120
+  time to process 1e9 sp/simd flops in sec: ((((1e+09 / fCoreClock) / fSIMD) / fNumCores) / 3) / klNodes
+  time to process 1e9 sp/simd flops in sec (expanded): ((((1e+09 / (1300*1e+06)) / 32) / 16) / 3) / 120
+  time to read 1e9 bytes in sec: ((gddr5Lat + 1e+09 / gddr5BW) / 3) / klNodes
+  time to read 1e9 bytes in sec (expanded): (((50*1e-09) / 32 + 1e+09 / (((3700*1e+06)*48)*0.75)) / 3) / 120
+
+ ------  Combined Analysis ------
+
+
+++Predicting runtime on kernel 'matmul' for socket type intel_xeon_x5660
+run time (expression) = ((max(ceil(1 / (((1*wmNumCores)*2)*klNodes))*(((2*n^3) / wmIssueRate) / wmSIMD), (ceil(1 / ((1*2)*klNodes))*((ddr3Lat + (n^2*wordSize) / ddr3BW)*2) + ceil(1 / ((1*2)*klNodes))*(ddr3Lat + (n^2*wordSize) / ddr3BW)) + ceil(1 / ((1*2)*klNodes))*(ddr3Lat + (n^2*wordSize) / ddr3BW))))
+run time (value)      = 0.0892857
+run time (value2)     = 0.0892857
+app model data transfer time = ((1e-06 + (((n*n)*wordSize + (n*n)*wordSize) + (n*n)*wordSize) / (12.5*1e+09)) / 2) / klNodes
+
+
+++Predicting runtime on kernel 'main' for socket type intel_xeon_x5660
+run time (expression) = ((nTimes*((max(ceil(1 / (((1*wmNumCores)*2)*klNodes))*(((2*n^3) / wmIssueRate) / wmSIMD), (ceil(1 / ((1*2)*klNodes))*((ddr3Lat + (n^2*wordSize) / ddr3BW)*2) + ceil(1 / ((1*2)*klNodes))*(ddr3Lat + (n^2*wordSize) / ddr3BW)) + ceil(1 / ((1*2)*klNodes))*(ddr3Lat + (n^2*wordSize) / ddr3BW))))))
+run time (value)      = 0.446429
+run time (value2)     = 0.446429
+app model data transfer time = ((1e-06 + (((n*n)*wordSize + (n*n)*wordSize) + (n*n)*wordSize) / (12.5*1e+09)) / 2) / klNodes
+
+
+++Predicting runtime on kernel 'matmul' for socket type nvidia_m2090
+run time (expression) = (((ceil(1 / (((1*fNumCores)*3)*klNodes))*((((2*n^3) / fCoreClock) / 2) / fSIMD) + (ceil(1 / ((1*3)*klNodes))*((gddr5Lat + (n^2*wordSize) / gddr5BW)*2) + ceil(1 / ((1*3)*klNodes))*(gddr5Lat + (n^2*wordSize) / gddr5BW))) + ceil(1 / ((1*3)*klNodes))*(gddr5Lat + (n^2*wordSize) / gddr5BW)))
+run time (value)      = 0.0241586
+run time (value2)     = 0.0241586
+app model data transfer time = ((pcieLat + (((n*n)*wordSize + (n*n)*wordSize) + (n*n)*wordSize) / pcieBW) / 3) / klNodes
+
+
+++Predicting runtime on kernel 'main' for socket type nvidia_m2090
+run time (expression) = ((nTimes*(((ceil(1 / (((1*fNumCores)*3)*klNodes))*((((2*n^3) / fCoreClock) / 2) / fSIMD) + (ceil(1 / ((1*3)*klNodes))*((gddr5Lat + (n^2*wordSize) / gddr5BW)*2) + ceil(1 / ((1*3)*klNodes))*(gddr5Lat + (n^2*wordSize) / gddr5BW))) + ceil(1 / ((1*3)*klNodes))*(gddr5Lat + (n^2*wordSize) / gddr5BW)))))
+run time (value)      = 0.120793
+run time (value2)     = 0.120793
+app model data transfer time = ((pcieLat + (((n*n)*wordSize + (n*n)*wordSize) + (n*n)*wordSize) / pcieBW) / 3) / klNodes

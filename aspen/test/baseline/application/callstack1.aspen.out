@@ -1,0 +1,81 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Application Model -----
+App model model0:
+   Globals:
+      Identifier n = 
+         Int: 1
+   Kernels:
+      Kernel stuff:
+         Args:
+            Type=param name=x
+         Control node '101': sequential:
+            Execution Block (control node '100')
+               Requires flops of quantity: 
+                  Ident: n
+               Requires loads of quantity: 
+                  Ident: x
+      Kernel main:
+         Control node '105': sequential:
+            Control node '102': kernel call stuff with 1 args:
+               Int: 1
+            Control node '103': kernel call stuff with 1 args:
+               Ident: n
+            Control node '104': kernel call stuff with 1 args:
+               Int: 2
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = stuff*3
+
+>> Raw expression without variable expansion:
+flops    = ((1*n) + (1*n) + (1*n))
+messages = ((0) + (0) + (0))
+loads    = ((1*1) + (1*n) + (1*2))
+stores   = ((0) + (0) + (0))
+
+>> Raw expression with variable expansion:
+flops    = ((1*1) + (1*1) + (1*1))
+messages = (0 + 0 + 0)
+loads    = ((1*1) + (1*1) + (1*2))
+stores   = (0 + 0 + 0)
+
+>> as values, With parameters using default values
+flops    = 3
+messages = 0
+loads    = 4
+stores   = 0
+
+>> Simplification test:
+flops (noexp)       = ((1*n) + (1*n) + (1*n))
+flops (noexp,simpl) = ((1*n) + (1*n) + (1*n))
+flops (exp)         = ((1*1) + (1*1) + (1*1))
+flops (exp,simpl)   = 3
+
+There are 0 parameters with ranges.
+
+
+
+>> Kernel stuff
+
+Raw flops for kernel 'stuff' = 1
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 3
+Raw loads for kernel 'main' = 4
+Raw stores for kernel 'main' = 0
+Raw messages for kernel 'main' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'main':
+  = (((1*n) + (1*n) + (1*n))) / (((1*1) + (1*n) + (1*2)))
+  expanding, but in terms of x:
+  = (((1*1) + (1*1) + (1*1))) / (((1*1) + (1*1) + (1*2)))

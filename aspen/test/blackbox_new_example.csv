@@ -1,0 +1,3 @@
+measurement,type,natoms,machine,socket
+100000000,flops,10,../models/machine/simple.aspen,SimpleCPU
+0.380,runtime,19,../models/machine/simple.aspen,SimpleCPU

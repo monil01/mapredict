@@ -1,0 +1,34 @@
+// Echelon CP #1 - SSCP
+// Backprojection Kernel
+
+model backprojection {
+  
+  param imgWidth = 114036
+  param imgHeight = 114036
+  param wordSize = 8
+  param tilingFactor = 32
+  param numTiles = tilingFactor * tilingFactor    
+  
+  //param s3 = s2 = intermediate number of simulated pulses during digi spotlight
+  param pulsesPerSecond = 2809
+  param digiSpotInterPulses = pulsesPerSecond / tilingFactor
+  
+  kernel backProjection {
+  execute [(imgWidth / numTiles) * (imgHeight / numTiles)]
+  {
+    // Distance Calc + Sampling
+    loads [digiSpotInterPulses * ((6 * 4) + (2 * wordSize))]
+    stores [digiSpotInterPulses * wordSize]
+    // 32 total flops per pulse, broken down as follows
+    flops [digiSpotInterPulses * 17] as simd
+    flops [digiSpotInterPulses * 12] as simd, fmad
+    flops [digiSpotInterPulses * 1] as simd, sqrt
+    flops [digiSpotInterPulses * 2] as simd, sincos    
+  }
+  }
+  
+  kernel main {
+    call backProjection
+  }
+  
+}

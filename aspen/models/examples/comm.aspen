@@ -1,0 +1,23 @@
+model NN3D {
+    param n = 23
+    param q = 45
+    param word = 8
+
+    kernel a
+    {
+        execute { flops [1e6] }
+        // allreduce
+        execute { comm [1] of size [word] as allreduce, min }
+        // phase 0x02
+        execute { comm [q] of size [3*word] as nn3d, face }
+        // phase 0x04
+        execute { comm [n] of size [3*word] as nn3d, nodal }
+        // phase 0x08
+        execute { comm [n] of size [6*word] as nn3d, nwave, nodal }
+    }
+
+    kernel main
+    {
+        iterate [10] { call a }
+    }   
+}

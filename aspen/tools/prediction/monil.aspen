@@ -1,0 +1,16 @@
+// Machine Model with 1 fermi and 1 westmere socket on 1 node
+
+include memory/ddr3_1066.aspen
+include sockets/intel_xeon_x5660.aspen
+include sockets/nvidia_k80.aspen
+//include sockets/nvidia_m2090.aspen
+
+machine SimpleNode {
+  node [1] SIMPLE
+}
+
+node SIMPLE {
+   socket [1] intel_xeon_x5660 
+   socket [1] nvidia_k80
+}
+

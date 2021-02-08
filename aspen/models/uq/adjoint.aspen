@@ -1,0 +1,64 @@
+model adjointuq
+{
+  param wordsize = 8
+
+  param nx = 1000
+  param ny = 1000
+  param nz = 1000
+  param n = nx*ny*nz
+
+  param nTimeSteps = 100
+  param chunkSize = sqrt(nTimeSteps) in 1 .. nTimeSteps
+  param numChunks = ceil(nTimeSteps / chunkSize)
+
+  data x [n * wordsize]
+  data allx [(numChunks + chunkSize) * n * wordsize]
+  data bufferx [chunkSize * n * wordsize]
+
+  kernel timestep
+  {
+    execute { flops [1] } ///< placeholder
+    //call matvec
+    //call vecadd
+  }
+
+  kernel forward
+  {
+    iterate [numChunks] 
+    {
+      iterate [chunkSize]
+      {
+        call timestep
+      }
+      execute { stores [n*wordsize] to allx }
+    }
+  }
+
+  kernel adjoint
+  {
+    iterate [numChunks] 
+    {
+      iterate [chunkSize]
+      {
+        call timestep
+        execute { stores [n*wordsize] to bufferx }
+      }
+      iterate [chunkSize]
+      {
+        execute { loads [n*wordsize] from bufferx }
+        // in theory, this can be different from forward
+        // timestep, but for now assume adjoint is the same
+        call timestep
+      }
+
+      execute { stores [n*wordsize] to allx }
+    }
+  }
+
+  kernel main
+  {
+    call forward
+    call adjoint
+  }
+
+}

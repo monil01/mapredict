@@ -1,0 +1,73 @@
+// Echelon SSCP
+// Affine Registration Kernel
+
+model registration {
+  
+ param nControlPoints = 928799 
+ param neighborhood = 31
+ param neighborhoodRange = 16
+ param neighborhoodSize = neighborhood ^ 2
+ // Inverse, 1.0 = keep all points, 0 = prune all
+ param pruneRate = 1.0
+ param n = sqrt(nControlPoints) 
+ param wordSize = 8
+ 
+ param imgWidth = 57018
+ param imgHeight = 57018
+ 
+ kernel prune {
+  execute [ nControlPoints ]
+  {
+    // Init Fx, Fy, A
+    stores [(1 + 1 + 6) * 4] // to init Fx, Fy, A (cached)    
+    
+    // Corr_2D, neighborhood loop
+    loads [neighborhoodSize * wordSize] // from curImage
+    flops [neighborhoodSize * (2+2)] as simd // on mu,f
+    // Corr_2D body
+    flops [2] as simd // mu again
+    // Corr_2D Quad loop nest
+    flops [((neighborhood - 1) ^ 2) * (neighborhoodRange^2) * 2] as simd
+    stores [((neighborhood - 1) ^ 2) * (neighborhoodRange^2) * wordSize] // to g
+    flops [(neighborhoodRange^2) * 4] as simd
+    
+    flops [(neighborhoodRange^2) * neighborhoodSize * 2] as simd
+    flops [(neighborhoodRange^2) * neighborhoodSize * 16] as simd, fmad
+    
+    flops [(neighborhoodRange^2) * 3] as simd // update rho
+    flops [(neighborhoodRange^2) * 1] as simd, sqrt // update rho
+    flops [(neighborhoodRange^2) * 2] as simd, fmad // update rho
+    stores [(neighborhoodRange^2) * 3 * 4] // update pt
+    // End Corr_2D
+  }
+ }
+ 
+ kernel accum  {
+  execute [nControlPoints * pruneRate]
+  {
+   loads [6 * 3 * 4] //A, Fx, Fy
+   flops [6 * 4] as simd, fmad
+  }
+ }
+ 
+ kernel interpolate {
+  execute [imgHeight * imgWidth]
+  {
+   flops [7] as simd
+   flops [20] as simd, fmad
+   loads [12 * 4] // wxc, wcy
+   
+   loads [wordSize] // curImage
+   flops [5] as simd
+   flops [16] as simd, fmad
+   stores [wordSize] // output
+  }
+ }
+ 
+ kernel main {
+   call prune
+   call accum
+   call interpolate
+ }
+ 
+}

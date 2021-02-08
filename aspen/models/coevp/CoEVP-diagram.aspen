@@ -1,0 +1,119 @@
+model CoEVP
+{
+  param numTimeSteps = 10
+  param unknown = 1
+
+  // ----------------------------------------------------------------------
+  // ----------------------------------------------------------------------
+  kernel C1_integrate_coarse_scale
+  {
+    call K1_init_kinematic
+    call K2_integrate_kinematic
+    call K3_compute_pressure
+    call K4_solve_stretch_tensor
+    call K7_compute_cauchy_stress
+  }
+
+  kernel C2_deviatoric_cauchy_stress
+  {
+    execute { flops [0] }
+  }
+
+  // ----------------------------------------------------------------------
+  // ----------------------------------------------------------------------
+  kernel K1_init_kinematic
+  {
+    // initialize kinematic quantities
+    execute { flops [0] }
+  }
+  kernel K2_integrate_kinematic
+  {
+    // integrate kinematic system to t[n+1]
+    execute { flops [0] }
+  }
+  kernel K3_compute_pressure
+  {
+    // compute pressure p[n+1]
+    execute { flops [0] }
+  }
+  kernel K4_solve_stretch_tensor
+  {
+    // solve for new stretch tensor V'[n+1] via Newton iteration
+    iterate [unknown]
+    {
+      call K5_residual_and_jacobian
+      call K6_solve_jacobian
+    }
+  }
+  kernel K5_residual_and_jacobian
+  {
+    // Evaluate the Newton residual and Jacobian at the current Newton iterate V'(k)[n+1]
+    call F1_compute_fine_scale
+  }
+  kernel K6_solve_jacobian
+  {
+    // Solve the Jacobian system for the Newton correction delta_V'(k)[n+1]
+    execute { flops [0] }
+  }
+  kernel K7_compute_cauchy_stress
+  {
+    // Compute Cauchy stress delta'[n+1]
+    execute { flops [0] }
+  }
+
+  // ----------------------------------------------------------------------
+  // ----------------------------------------------------------------------
+  kernel F1_compute_fine_scale
+  {
+    // Compute the fine-scale response f_y, its tau' derivative and update H={g}
+    call F2_query_models
+
+    if (mode == BUILTIN)
+    {
+      call F3_interpolate_models
+    }
+    else
+    {
+      call F4_vpfft
+    }
+
+    call F5_update_models
+    call F6_evaluate_derivative
+  }
+  kernel F2_query_models
+  {
+    // Query database for k nearest neighbor interpolation models
+    execute { flops [0] }
+  }
+  kernel F3_interpolate_models
+  {
+    // Use models to interpolate query, derivatives, and compute error estimate
+    execute { flops [0] }
+  }
+  kernel F4_vpfft
+  {
+    // Execute VPFFT
+    execute { flops [0] }
+  }
+  kernel F5_update_models
+  {
+    // Update existing or create new interpolation model
+    execute { flops [0] }
+  }
+  kernel F6_evaluate_derivative
+  {
+    // Evaluate interpolation model for derivative
+    execute { flops [0] }
+  }
+
+  // ----------------------------------------------------------------------
+  // ----------------------------------------------------------------------
+  kernel main
+  {
+    iterate [numTimeSteps]
+    {
+      call C1_integrate_coarse_scale
+      call C2_deviatoric_cauchy_stress
+    }
+  }
+}

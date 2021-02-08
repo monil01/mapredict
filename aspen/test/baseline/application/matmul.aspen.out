@@ -1,0 +1,184 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Application Model -----
+App model matmul:
+   Globals:
+      Identifier n = 
+         Int: 1000
+      Identifier nTimes = 
+         Int: 5
+      Identifier wordSize = 
+         Int: 4
+      Data matA:
+         As:
+            Call Matrix with 3 args:
+               Ident: n
+               Ident: n
+               Ident: wordSize
+      Data matB:
+         As:
+            Call Matrix with 3 args:
+               Ident: n
+               Ident: n
+               Ident: wordSize
+      Data matC:
+         As:
+            Call Matrix with 3 args:
+               Ident: n
+               Ident: n
+               Ident: wordSize
+   Kernels:
+      Kernel matmul:
+         Control node '101': sequential:
+            Execution Block (name='mainblock2') (control node '100')
+               Parallelism:
+                  Int: 1
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 2
+                     RHS
+                        Binary Op ^
+                           LHS
+                              Ident: n
+                           RHS
+                              Int: 3
+                  As sp
+                  As fmad
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op ^
+                           LHS
+                              Ident: n
+                           RHS
+                              Int: 2
+                     RHS
+                        Ident: wordSize
+                  Where count is: 
+                     Binary Op ^
+                        LHS
+                           Ident: n
+                        RHS
+                           Int: 2
+                  And size is: 
+                     Ident: wordSize
+                  To/From: matA
+                  As stride with value:
+                     Binary Op *
+                        LHS
+                           Ident: n
+                        RHS
+                           Ident: wordSize
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op ^
+                           LHS
+                              Ident: n
+                           RHS
+                              Int: 2
+                     RHS
+                        Ident: wordSize
+                  Where count is: 
+                     Binary Op ^
+                        LHS
+                           Ident: n
+                        RHS
+                           Int: 2
+                  And size is: 
+                     Ident: wordSize
+                  To/From: matB
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op ^
+                           LHS
+                              Ident: n
+                           RHS
+                              Int: 2
+                     RHS
+                        Ident: wordSize
+                  Where count is: 
+                     Binary Op ^
+                        LHS
+                           Ident: n
+                        RHS
+                           Int: 2
+                  And size is: 
+                     Ident: wordSize
+                  To/From: matC
+      Kernel main:
+         Control node '104': sequential:
+            Control node '103': iterate:
+               Quantity:
+                  Ident: nTimes
+               Control node '102': kernel call matmul
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = nTimes*matmul
+
+>> Raw expression without variable expansion:
+flops    = nTimes*(1*(2*n^3))
+messages = nTimes*0
+loads    = nTimes*(1*(n^2*wordSize + n^2*wordSize))
+stores   = nTimes*(1*(n^2*wordSize))
+
+>> Raw expression with variable expansion:
+flops    = 5*(1*(2*1000^3))
+messages = 5*0
+loads    = 5*(1*(1000^2*4 + 1000^2*4))
+stores   = 5*(1*(1000^2*4))
+
+>> as values, With parameters using default values
+flops    = 1e+10
+messages = 0
+loads    = 4e+07
+stores   = 2e+07
+
+>> Simplification test:
+flops (noexp)       = nTimes*(1*(2*n^3))
+flops (noexp,simpl) = (nTimes * 2 * (n^3))
+flops (exp)         = 5*(1*(2*1000^3))
+flops (exp,simpl)   = 1e+10
+
+There are 0 parameters with ranges.
+
+
+
+>> Kernel matmul
+
+Raw flops for kernel 'matmul' = 2e+09
+Raw loads for kernel 'matmul' = 8e+06
+Raw stores for kernel 'matmul' = 4e+06
+Raw messages for kernel 'matmul' = 0
+
+Exclusive set size is ((n*n)*wordSize + (n*n)*wordSize) + (n*n)*wordSize
+Inclusive set size is ((n*n)*wordSize + (n*n)*wordSize) + (n*n)*wordSize
+
+Calculating flops/byte intensity for kernel 'matmul':
+  = (1*(2*n^3)) / (1*((n^2*wordSize + n^2*wordSize) + n^2*wordSize))
+  expanding, but in terms of x:
+  = (1*(2*1000^3)) / (1*((1000^2*4 + 1000^2*4) + 1000^2*4))
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 1e+10
+Raw loads for kernel 'main' = 4e+07
+Raw stores for kernel 'main' = 2e+07
+Raw messages for kernel 'main' = 0
+
+Exclusive set size is 0
+Inclusive set size is ((n*n)*wordSize + (n*n)*wordSize) + (n*n)*wordSize
+
+Calculating flops/byte intensity for kernel 'main':
+  = (nTimes*(1*(2*n^3))) / (nTimes*(1*((n^2*wordSize + n^2*wordSize) + n^2*wordSize)))
+  expanding, but in terms of x:
+  = (5*(1*(2*1000^3))) / (5*(1*((1000^2*4 + 1000^2*4) + 1000^2*4)))

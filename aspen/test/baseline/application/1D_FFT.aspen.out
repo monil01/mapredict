@@ -1,0 +1,159 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Application Model -----
+App model fft1d:
+   Globals:
+      Identifier n = 
+         Int: 8192
+      Identifier wordSize = 
+         Int: 16
+      Identifier a = 
+         Real: 6.3
+      Identifier P = 
+         Int: 16
+      Identifier Z = 
+         Binary Op *
+            LHS
+               Real: 2.1
+            RHS
+               Real: 1e+06
+      Data fftVolume:
+         Quantity:
+            Binary Op *
+               LHS
+                  Ident: n
+               RHS
+                  Ident: wordSize
+   Kernels:
+      Kernel fft:
+         Control node '101': sequential:
+            Execution Block (name='myloop') (control node '100')
+               Parallelism:
+                  Ident: P
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 5
+                           RHS
+                              Binary Op /
+                                 LHS
+                                    Ident: n
+                                 RHS
+                                    Ident: P
+                     RHS
+                        Call log2 with 1 args:
+                           Binary Op /
+                              LHS
+                                 Ident: n
+                              RHS
+                                 Ident: P
+                  As dp
+                  As simd
+                  As fmad
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Binary Op /
+                                       LHS
+                                          Ident: n
+                                       RHS
+                                          Ident: P
+                                 RHS
+                                    Ident: wordSize
+                           RHS
+                              Ident: a
+                     RHS
+                        Call max with 2 args:
+                           Int: 1
+                           Binary Op /
+                              LHS
+                                 Call log with 1 args:
+                                    Binary Op *
+                                       LHS
+                                          Binary Op /
+                                             LHS
+                                                Ident: n
+                                             RHS
+                                                Ident: P
+                                       RHS
+                                          Ident: wordSize
+                              RHS
+                                 Call log with 1 args:
+                                    Ident: Z
+                  To/From: fftVolume
+      Kernel main:
+         Control node '103': sequential:
+            Control node '102': kernel call fft
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = fft
+
+>> Raw expression without variable expansion:
+flops    = P*((5*(n / P))*(log(n / P)/log(2)))
+messages = 0
+loads    = P*((((n / P)*wordSize)*a)*max(1, (log((n / P)*wordSize)) / (log(Z))))
+stores   = 0
+
+>> Raw expression with variable expansion:
+flops    = 16*((5*(8192 / 16))*(log(8192 / 16)/log(2)))
+messages = 0
+loads    = 16*((((8192 / 16)*16)*6.3)*max(1, (log((8192 / 16)*16)) / (log(2.1*1e+06))))
+stores   = 0
+
+>> as values, With parameters using default values
+flops    = 368640
+messages = 0
+loads    = 825754
+stores   = 0
+
+>> Simplification test:
+flops (noexp)       = P*((5*(n / P))*(log(n / P)/log(2)))
+flops (noexp,simpl) = (P * 5 * (n / P) * ((log(n / P)/log(2))))
+flops (exp)         = 16*((5*(8192 / 16))*(log(8192 / 16)/log(2)))
+flops (exp,simpl)   = 368640
+
+There are 0 parameters with ranges.
+
+
+
+>> Kernel fft
+
+Raw flops for kernel 'fft' = 368640
+Raw loads for kernel 'fft' = 825754
+Raw stores for kernel 'fft' = 0
+Raw messages for kernel 'fft' = 0
+
+Exclusive set size is n*wordSize
+Inclusive set size is n*wordSize
+
+Calculating flops/byte intensity for kernel 'fft':
+  = (P*((5*(n / P))*(log(n / P)/log(2)))) / (P*((((n / P)*wordSize)*a)*max(1, (log((n / P)*wordSize)) / (log(Z)))))
+  expanding, but in terms of x:
+  = (16*((5*(8192 / 16))*(log(8192 / 16)/log(2)))) / (16*((((8192 / 16)*16)*6.3)*max(1, (log((8192 / 16)*16)) / (log(2.1*1e+06)))))
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 368640
+Raw loads for kernel 'main' = 825754
+Raw stores for kernel 'main' = 0
+Raw messages for kernel 'main' = 0
+
+Exclusive set size is 0
+Inclusive set size is n*wordSize
+
+Calculating flops/byte intensity for kernel 'main':
+  = (P*((5*(n / P))*(log(n / P)/log(2)))) / (P*((((n / P)*wordSize)*a)*max(1, (log((n / P)*wordSize)) / (log(Z)))))
+  expanding, but in terms of x:
+  = (16*((5*(8192 / 16))*(log(8192 / 16)/log(2)))) / (16*((((8192 / 16)*16)*6.3)*max(1, (log((8192 / 16)*16)) / (log(2.1*1e+06)))))

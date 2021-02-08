@@ -1,0 +1,45 @@
+# Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
+@VARIABLES@
+
+CPPFLAGS+=-I$(TOPDIR)/aspen
+LIBS=-L$(TOPDIR)/lib -laspen
+LIBDEP=$(TOPDIR)/lib/libaspen.a
+
+TESTS=\
+ dual_tradeoff \
+ gprof \
+ mpigen \
+ newruntime \
+ runtime \
+ runtime_expression \
+ tradeoff
+
+OBJ=$(TESTS:=.o)
+
+all: $(TESTS)
+
+# programs
+
+dual_tradeoff: $(LIBDEP) dual_tradeoff.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+gprof: $(LIBDEP) gprof.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+mpigen: $(LIBDEP) mpigen.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+newruntime: $(LIBDEP) newruntime.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+runtime: $(LIBDEP) runtime.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+runtime_expression: $(LIBDEP) runtime_expression.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+tradeoff: $(LIBDEP) tradeoff.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+
+@TARGETS@

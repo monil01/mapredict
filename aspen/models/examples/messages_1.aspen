@@ -1,0 +1,15 @@
+model xfer
+{
+  param n = kilo in 1 .. mega
+
+  kernel parallel
+  {
+    execute [n]
+    {
+      messages [mega]
+    }
+  }
+
+  kernel main { call parallel() }
+
+}

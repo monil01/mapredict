@@ -1,0 +1,382 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Application Model -----
+App model fft3d:
+   Globals:
+      Identifier Z = 
+         Binary Op *
+            LHS
+               Int: 24
+            RHS
+               Real: 1e+06
+      Identifier L = 
+         Int: 128
+      Identifier n = 
+         Range:
+            Default value:
+               Int: 8192
+            Minimum value:
+               Int: 1000
+            Maximum value:
+               Int: 10000
+      Identifier wordSize = 
+         Int: 16
+      Identifier a = 
+         Real: 6.3
+      Data fftVolume:
+         Quantity:
+            Binary Op *
+               LHS
+                  Binary Op ^
+                     LHS
+                        Ident: n
+                     RHS
+                        Int: 3
+               RHS
+                  Ident: wordSize
+   Kernels:
+      Kernel shuffle:
+         Control node '101': sequential:
+            Execution Block (control node '100')
+               Parallelism:
+                  Binary Op ^
+                     LHS
+                        Ident: n
+                     RHS
+                        Int: 2
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: n
+                     RHS
+                        Ident: wordSize
+                  To/From: fftVolume
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: n
+                     RHS
+                        Ident: wordSize
+                  To/From: fftVolume
+      Kernel localFFT:
+         Control node '103': sequential:
+            Execution Block (control node '102')
+               Parallelism:
+                  Binary Op ^
+                     LHS
+                        Ident: n
+                     RHS
+                        Int: 2
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 5
+                           RHS
+                              Ident: n
+                     RHS
+                        Call log2 with 1 args:
+                           Ident: n
+                  As dp
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Ident: a
+                                 RHS
+                                    Ident: n
+                           RHS
+                              Call max with 2 args:
+                                 Int: 1
+                                 Binary Op /
+                                    LHS
+                                       Call log with 1 args:
+                                          Ident: n
+                                    RHS
+                                       Call log with 1 args:
+                                          Ident: Z
+                     RHS
+                        Ident: wordSize
+                  To/From: fftVolume
+      Kernel ibmFFT:
+         Control node '105': sequential:
+            Execution Block (control node '104')
+               Parallelism:
+                  Binary Op ^
+                     LHS
+                        Ident: n
+                     RHS
+                        Int: 2
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 8
+                           RHS
+                              Ident: n
+                     RHS
+                        Call log2 with 1 args:
+                           Ident: n
+                  As dp
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Ident: a
+                                 RHS
+                                    Binary Op +
+                                       LHS
+                                          Int: 1
+                                       RHS
+                                          Binary Op /
+                                             LHS
+                                                Ident: n
+                                             RHS
+                                                Ident: L
+                           RHS
+                              Binary Op +
+                                 LHS
+                                    Int: 1
+                                 RHS
+                                    Binary Op /
+                                       LHS
+                                          Call log with 1 args:
+                                             Ident: n
+                                       RHS
+                                          Call log with 1 args:
+                                             Ident: Z
+                     RHS
+                        Ident: wordSize
+                  To/From: fftVolume
+      Kernel bigO:
+         Control node '107': sequential:
+            Execution Block (control node '106')
+               Parallelism:
+                  Binary Op ^
+                     LHS
+                        Ident: n
+                     RHS
+                        Int: 2
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: n
+                     RHS
+                        Call log2 with 1 args:
+                           Ident: n
+                  As dp
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Ident: a
+                                 RHS
+                                    Binary Op +
+                                       LHS
+                                          Int: 1
+                                       RHS
+                                          Binary Op /
+                                             LHS
+                                                Ident: n
+                                             RHS
+                                                Ident: L
+                           RHS
+                              Binary Op +
+                                 LHS
+                                    Int: 1
+                                 RHS
+                                    Binary Op /
+                                       LHS
+                                          Call log with 1 args:
+                                             Ident: n
+                                       RHS
+                                          Call log with 1 args:
+                                             Ident: Z
+                     RHS
+                        Ident: wordSize
+                  To/From: fftVolume
+      Kernel exchange:
+         Control node '109': sequential:
+            Execution Block (control node '108')
+               Parallelism:
+                  Binary Op ^
+                     LHS
+                        Ident: n
+                     RHS
+                        Int: 2
+               Requires messages of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: n
+                     RHS
+                        Ident: wordSize
+      Kernel main:
+         Control node '117': sequential:
+            Control node '110': kernel call localFFT
+            Control node '111': kernel call shuffle
+            Control node '112': kernel call exchange
+            Control node '113': kernel call localFFT
+            Control node '114': kernel call shuffle
+            Control node '115': kernel call exchange
+            Control node '116': kernel call localFFT
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = ((shuffle*2) + (exchange*2) + (localFFT*3))
+
+>> Raw expression without variable expansion:
+flops    = ((n^2*((5*n)*(log(n)/log(2)))) + 0 + 0 + (n^2*((5*n)*(log(n)/log(2)))) + 0 + 0 + (n^2*((5*n)*(log(n)/log(2)))))
+messages = (0 + 0 + (n^2*(n*wordSize)) + 0 + 0 + (n^2*(n*wordSize)) + 0)
+loads    = ((n^2*(((a*n)*max(1, (log(n)) / (log(Z))))*wordSize)) + (n^2*(n*wordSize)) + 0 + (n^2*(((a*n)*max(1, (log(n)) / (log(Z))))*wordSize)) + (n^2*(n*wordSize)) + 0 + (n^2*(((a*n)*max(1, (log(n)) / (log(Z))))*wordSize)))
+stores   = (0 + (n^2*(n*wordSize)) + 0 + 0 + (n^2*(n*wordSize)) + 0 + 0)
+
+>> Raw expression with variable expansion:
+flops    = ((8192^2*((5*8192)*(log(8192)/log(2)))) + 0 + 0 + (8192^2*((5*8192)*(log(8192)/log(2)))) + 0 + 0 + (8192^2*((5*8192)*(log(8192)/log(2)))))
+messages = (0 + 0 + (8192^2*(8192*16)) + 0 + 0 + (8192^2*(8192*16)) + 0)
+loads    = ((8192^2*(((6.3*8192)*max(1, (log(8192)) / (log(24*1e+06))))*16)) + (8192^2*(8192*16)) + 0 + (8192^2*(((6.3*8192)*max(1, (log(8192)) / (log(24*1e+06))))*16)) + (8192^2*(8192*16)) + 0 + (8192^2*(((6.3*8192)*max(1, (log(8192)) / (log(24*1e+06))))*16)))
+stores   = (0 + (8192^2*(8192*16)) + 0 + 0 + (8192^2*(8192*16)) + 0 + 0)
+
+>> as values, With parameters using default values
+flops    = 1.07202e+14
+messages = 1.75922e+13
+loads    = 1.83838e+14
+stores   = 1.75922e+13
+
+>> Simplification test:
+flops (noexp)       = ((n^2*((5*n)*(log(n)/log(2)))) + 0 + 0 + (n^2*((5*n)*(log(n)/log(2)))) + 0 + 0 + (n^2*((5*n)*(log(n)/log(2)))))
+flops (noexp,simpl) = n*((((n^2) * 5 * ((log(n)/log(2))))) + (((n^2) * 5 * ((log(n)/log(2))))) + (((n^2) * 5 * ((log(n)/log(2))))))
+flops (exp)         = ((8192^2*((5*8192)*(log(8192)/log(2)))) + 0 + 0 + (8192^2*((5*8192)*(log(8192)/log(2)))) + 0 + 0 + (8192^2*((5*8192)*(log(8192)/log(2)))))
+flops (exp,simpl)   = 1.07202e+14
+
+There are 1 parameters with ranges.
+>> with parameter ''n'' set to its minimum of 1000:
+flops    = 1.49487e+11
+messages = 3.2e+10
+loads    = 3.344e+11
+stores   = 3.2e+10
+
+-> and now with ''n'' set to its maximum of 10000:
+flops    = 1.99316e+14
+messages = 3.2e+13
+loads    = 3.344e+14
+stores   = 3.2e+13
+
+>> Expression with parameter ''n'' left as a variable (named x) (and simplified):
+flops = ((x^2*((5*x)*(log(x)/log(2)))) + 0 + 0 + (x^2*((5*x)*(log(x)/log(2)))) + 0 + 0 + (x^2*((5*x)*(log(x)/log(2)))))
+flops = x*((((x^2) * 5 * ((log(x)/log(2))))) + (((x^2) * 5 * ((log(x)/log(2))))) + (((x^2) * 5 * ((log(x)/log(2))))))
+
+
+
+
+>> Kernel shuffle
+
+Raw flops for kernel 'shuffle' = 0
+Raw loads for kernel 'shuffle' = 8.79609e+12
+Raw stores for kernel 'shuffle' = 8.79609e+12
+Raw messages for kernel 'shuffle' = 0
+
+Exclusive set size is n^3*wordSize
+Inclusive set size is n^3*wordSize
+
+Calculating flops/byte intensity for kernel 'shuffle':
+  = 0 / (n^2*(n*wordSize + n*wordSize))
+  expanding, but in terms of x:
+  = 0 / (8192^2*(8192*16 + 8192*16))
+
+
+>> Kernel localFFT
+
+Raw flops for kernel 'localFFT' = 3.57341e+13
+Raw loads for kernel 'localFFT' = 5.54154e+13
+Raw stores for kernel 'localFFT' = 0
+Raw messages for kernel 'localFFT' = 0
+
+Exclusive set size is n^3*wordSize
+Inclusive set size is n^3*wordSize
+
+Calculating flops/byte intensity for kernel 'localFFT':
+  = (n^2*((5*n)*(log(n)/log(2)))) / (n^2*(((a*n)*max(1, (log(n)) / (log(Z))))*wordSize))
+  expanding, but in terms of x:
+  = (8192^2*((5*8192)*(log(8192)/log(2)))) / (8192^2*(((6.3*8192)*max(1, (log(8192)) / (log(24*1e+06))))*16))
+
+
+>> Kernel ibmFFT
+
+Raw flops for kernel 'ibmFFT' = 5.71746e+13
+Raw loads for kernel 'ibmFFT' = 6.72849e+11
+Raw stores for kernel 'ibmFFT' = 0
+Raw messages for kernel 'ibmFFT' = 0
+
+Exclusive set size is n^3*wordSize
+Inclusive set size is n^3*wordSize
+
+Calculating flops/byte intensity for kernel 'ibmFFT':
+  = (n^2*((8*n)*(log(n)/log(2)))) / (n^2*(((a*(1 + n / L))*(1 + (log(n)) / (log(Z))))*wordSize))
+  expanding, but in terms of x:
+  = (8192^2*((8*8192)*(log(8192)/log(2)))) / (8192^2*(((6.3*(1 + 8192 / 128))*(1 + (log(8192)) / (log(24*1e+06))))*16))
+
+
+>> Kernel bigO
+
+Raw flops for kernel 'bigO' = 7.14683e+12
+Raw loads for kernel 'bigO' = 6.72849e+11
+Raw stores for kernel 'bigO' = 0
+Raw messages for kernel 'bigO' = 0
+
+Exclusive set size is n^3*wordSize
+Inclusive set size is n^3*wordSize
+
+Calculating flops/byte intensity for kernel 'bigO':
+  = (n^2*(n*(log(n)/log(2)))) / (n^2*(((a*(1 + n / L))*(1 + (log(n)) / (log(Z))))*wordSize))
+  expanding, but in terms of x:
+  = (8192^2*(8192*(log(8192)/log(2)))) / (8192^2*(((6.3*(1 + 8192 / 128))*(1 + (log(8192)) / (log(24*1e+06))))*16))
+
+
+>> Kernel exchange
+
+Raw flops for kernel 'exchange' = 0
+Raw loads for kernel 'exchange' = 0
+Raw stores for kernel 'exchange' = 0
+Raw messages for kernel 'exchange' = 8.79609e+12
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'exchange':
+  = 0 / 0
+  expanding, but in terms of x:
+  = 0 / 0
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 1.07202e+14
+Raw loads for kernel 'main' = 1.83838e+14
+Raw stores for kernel 'main' = 1.75922e+13
+Raw messages for kernel 'main' = 1.75922e+13
+
+Exclusive set size is 0
+Inclusive set size is n^3*wordSize
+
+Calculating flops/byte intensity for kernel 'main':
+  = (((n^2*((5*n)*(log(n)/log(2)))) + 0 + 0 + (n^2*((5*n)*(log(n)/log(2)))) + 0 + 0 + (n^2*((5*n)*(log(n)/log(2)))))) / (((n^2*(((a*n)*max(1, (log(n)) / (log(Z))))*wordSize)) + (n^2*(n*wordSize + n*wordSize)) + 0 + (n^2*(((a*n)*max(1, (log(n)) / (log(Z))))*wordSize)) + (n^2*(n*wordSize + n*wordSize)) + 0 + (n^2*(((a*n)*max(1, (log(n)) / (log(Z))))*wordSize))))
+  expanding, but in terms of x:
+  = (((8192^2*((5*8192)*(log(8192)/log(2)))) + 0 + 0 + (8192^2*((5*8192)*(log(8192)/log(2)))) + 0 + 0 + (8192^2*((5*8192)*(log(8192)/log(2)))))) / (((8192^2*(((6.3*8192)*max(1, (log(8192)) / (log(24*1e+06))))*16)) + (8192^2*(8192*16 + 8192*16)) + 0 + (8192^2*(((6.3*8192)*max(1, (log(8192)) / (log(24*1e+06))))*16)) + (8192^2*(8192*16 + 8192*16)) + 0 + (8192^2*(((6.3*8192)*max(1, (log(8192)) / (log(24*1e+06))))*16))))

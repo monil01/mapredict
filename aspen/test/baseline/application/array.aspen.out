@@ -1,0 +1,157 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Application Model -----
+App model arraytest:
+   Globals:
+      Identifier index = 
+         Int: 1
+      Identifier indices = 
+         Array[4]: {5 0 9 100000}
+      Identifier numiters = 
+         Array[10]: {10 20 30 40 ... 70 80 90 100}
+   Kernels:
+      Kernel precedence:
+         Control node '101': sequential:
+            Execution Block (control node '100')
+               Requires flops of quantity: 
+                  Binary Op +
+                     LHS
+                        ArrayDeref:
+                           Array:
+                              Ident: numiters
+                           Index:
+                              ArrayDeref:
+                                 Array:
+                                    Ident: indices
+                                 Index:
+                                    Ident: index
+                     RHS
+                        Int: 1
+               Requires messages of quantity: 
+                  Binary Op +
+                     LHS
+                        ArrayDeref:
+                           Array:
+                              Ident: numiters
+                           Index:
+                              ArrayDeref:
+                                 Array:
+                                    Ident: indices
+                                 Index:
+                                    Ident: index
+                     RHS
+                        Int: 1
+               Requires loads of quantity: 
+                  ArrayDeref:
+                     Array:
+                        Ident: numiters
+                     Index:
+                        Binary Op +
+                           LHS
+                              ArrayDeref:
+                                 Array:
+                                    Ident: indices
+                                 Index:
+                                    Ident: index
+                           RHS
+                              Int: 1
+               Requires stores of quantity: 
+                  ArrayDeref:
+                     Array:
+                        Ident: numiters
+                     Index:
+                        ArrayDeref:
+                           Array:
+                              Ident: indices
+                           Index:
+                              Binary Op +
+                                 LHS
+                                    Ident: index
+                                 RHS
+                                    Int: 1
+      Kernel main:
+         Control node '103': sequential:
+            Execution Block (control node '102')
+               Requires flops of quantity: 
+                  ArrayDeref:
+                     Array:
+                        Ident: numiters
+                     Index:
+                        Ident: index
+               Requires loads of quantity: 
+                  ArrayDeref:
+                     Array:
+                        Ident: numiters
+                     Index:
+                        ArrayDeref:
+                           Array:
+                              Ident: indices
+                           Index:
+                              Ident: index
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = 0
+
+>> Raw expression without variable expansion:
+flops    = 1*numiters[index]
+messages = 0
+loads    = 1*numiters[indices[index]]
+stores   = 0
+
+>> Raw expression with variable expansion:
+flops    = 1*20
+messages = 0
+loads    = 1*10
+stores   = 0
+
+>> as values, With parameters using default values
+flops    = 20
+messages = 0
+loads    = 10
+stores   = 0
+
+>> Simplification test:
+flops (noexp)       = 1*numiters[index]
+flops (noexp,simpl) = numiters[index]
+flops (exp)         = 1*20
+flops (exp,simpl)   = 20
+
+There are 0 parameters with ranges.
+
+
+
+>> Kernel precedence
+
+Raw flops for kernel 'precedence' = 11
+Raw loads for kernel 'precedence' = 20
+Raw stores for kernel 'precedence' = 100
+Raw messages for kernel 'precedence' = 11
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'precedence':
+  = (1*(numiters[indices[index]] + 1)) / (1*(numiters[indices[index] + 1] + numiters[indices[index + 1]]))
+  expanding, but in terms of x:
+  = (1*(10 + 1)) / (1*(20 + 100))
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 20
+Raw loads for kernel 'main' = 10
+Raw stores for kernel 'main' = 0
+Raw messages for kernel 'main' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'main':
+  = (1*numiters[index]) / (1*numiters[indices[index]])
+  expanding, but in terms of x:
+  = (1*20) / (1*10)

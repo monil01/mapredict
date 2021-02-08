@@ -1,0 +1,57 @@
+// Model for an AMD a8_3850 Llano socket
+
+// Key values:
+// 4 cores / socket
+// 2.9GHz
+// sandra whetstone reports 35 GFLOPS for the a8_3850
+// linpack gets 31 GFLOPS
+// we'll assume an issue rate of 1 and 4-wide simd
+
+// A8 Core Parameters
+param a8NumCores = 4
+param a8CoreClock = 2.9 * giga
+param a8IssueRate = a8CoreClock
+param a8SIMD = 4
+param wmSIMD = a8SIMD ///\todo: HACK: we use wmSIMD in the ddr3 latency calculation
+
+// Cache
+param a8CacheCap = a8NumCores * 1 * mega // 1MB/core
+param a8CacheLat = (1 / a8CoreClock) * 24 // Sandra reports L2 at 24 Cycles for small block sizes: http://techreport.com/review/22932/amd-a10-4600m-trinity-apu-reviewed/5
+param a8CacheBW = a8NumCores * 30 * giga // estimated from same chart
+
+// Power
+// 100W TDP
+param a8TDP = 90
+param a8Idle = 10
+
+socket amd_a8_3850_cpu {
+   core [a8NumCores] llanoCore
+   memory ddr3
+   cache a8Cache
+   link ht
+
+   static power [a8Idle]
+}
+
+core llanoCore {
+  
+  resource flops(number) [number / a8IssueRate ] 
+    with dp   [base * 2],
+         simd [base / a8SIMD], 
+         fmad [base / 2],
+         sin  [base * 18]
+
+  dynamic power [(a8TDP - a8Idle) / a8NumCores]
+
+  resource intops(number) [ number / a8IssueRate ]
+}
+
+cache a8Cache {
+   property capacity  [a8CacheCap] 
+}
+
+link ht {
+   resource intracomm(bytes) [ micro + (bytes/(12.8*giga))]
+}
+
+

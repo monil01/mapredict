@@ -1,0 +1,24 @@
+model simple
+{
+  param value = 5
+
+  kernel onesample
+  {
+    probability
+    {
+      [0.8] { execute { flops [100] } }
+      [0.2] { execute { flops [200] } }
+    }
+  }
+  kernel twosamples
+  {
+    probability { [0.8] { execute { flops [100] } } }
+    probability { [0.2] { execute { flops [200] } } }
+  }
+
+  kernel main
+  {
+    call onesample
+    call twosamples
+  }
+}

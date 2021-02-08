@@ -1,0 +1,13 @@
+
+// Simple model for quad data rate (QDR) infiniband
+
+// Infiniband information
+param qdrLatency = 1.07 * micro
+param qdrBW = 4 * giga
+
+interconnect qdrInfiniband {
+   property fatTree
+   resource messages(msgsize) [qdrLatency + (msgsize/qdrBW)]
+     with separate(nMessages) [nMessages * base]
+}
+

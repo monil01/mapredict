@@ -1,0 +1,32 @@
+# Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
+@VARIABLES@
+
+CPPFLAGS+=-I../aspen
+LIBS=-L../lib -laspen
+LIBDEP=../lib/libaspen.a
+
+TESTS=\
+ basic_hardware \
+ basic_resource \
+ basic_runtime \
+ basic_walker
+
+OBJ=$(TESTS:=.o)
+
+all: $(TESTS)
+
+# programs
+
+basic_hardware: $(LIBDEP) basic_hardware.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+basic_resource: $(LIBDEP) basic_resource.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+basic_runtime: $(LIBDEP) basic_runtime.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+basic_walker: $(LIBDEP) basic_walker.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(@:=.o) -o $@ $(LIBS)
+
+@TARGETS@

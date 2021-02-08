@@ -1,0 +1,36 @@
+// Echelon CP 1 - SSCP
+// Constant False Alarm Rate (CFAR) Kernel
+
+model cfar {
+  
+  param ccdNeighborhood = 5 // 5x5
+  param cfarNeighborhood = 25 
+  param tileSize = cfarNeighborhood ^ 2
+  
+  param imgWidth = 57018
+  param imgHeight = 57018
+  
+  param numXTiles = imgWidth  - ccdNeighborhood - cfarNeighborhood + 2
+  param numYTiles = imgHeight - ccdNeighborhood - cfarNeighborhood + 2
+  
+  // Anticipated rate of alarm (proportion of image which generates an update
+  // to Y (the detections array)
+  param alarmRate = 1.0
+  
+  kernel cfar {
+  execute [numXTiles * numYTiles]
+  {
+   // Allocates [tileSize * 4] to cache (temporary) correlation map.
+   loads [tileSize * 4] // from corr_map to temp.
+   
+   // Threshold calculation
+   flops [5 + tileSize] as simd      
+   stores [3 * 4 * alarmRate]
+  }
+  }
+  
+  kernel main {
+    call cfar
+  }
+  
+}

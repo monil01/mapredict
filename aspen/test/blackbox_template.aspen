@@ -1,0 +1,16 @@
+model example
+{
+  // the tool will solve for c because it has a range
+  param c = 1000 in 1e2 .. 1e12
+  // any other parameter can be overridden in your input file
+  param natoms = 10
+  param exponent = 2.0
+
+  kernel main
+  {
+    execute
+    {
+      flops [c * natoms^exponent] as sp, fmad, simd
+    }
+  }
+}

@@ -1,0 +1,38 @@
+// Echelon CP 1 - SSCP
+// Coherent Change Detection Kernel
+
+model ccd {
+  
+  param tileEdge = 5 // neighborhood size (5x5), aka nCor
+  param tileSize = tileEdge * tileEdge  
+  param imgWidth = 57018
+  param imgHeight = 57018
+  param wordSize = 8
+  
+  param numXTiles = imgWidth - (tileEdge + 1)
+  param numYTiles = imgHeight - (tileEdge + 1)
+  
+  kernel ccd {
+  execute [numXTiles * numYTiles]
+  {
+    // First tile loop
+    loads [2 * tileSize * wordSize] // from currImg, refImage, cached per tile
+    flops [4 * tileSize] as simd // accumulate into mu_f, mu_g
+    // Scale mu
+    flops [4] as simd // scale mu
+    // Second tile loop
+    flops [4 * tileSize] as simd
+    flops [16 * tileSize] as simd, fmad    
+    // Update 3 scalar values in corr_map
+    flops [1] as simd, sqrt
+    flops [2] as simd, fmad
+    flops [3] as simd
+    stores [3 * 4] // to corr_map
+  }
+  }
+  
+  kernel main {
+    call ccd  
+  }
+  
+}

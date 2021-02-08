@@ -1,0 +1,105 @@
+// Aspen Model for Echelon CP #1
+// Streaming Sensor Challenge Problem
+
+// Notes:
+// cp1v2 original total volume size calculation.
+// 85.1 TB = 96.9 per image * (15min * 60s) img buffer (actual 85.2TB)
+// 35 image buffer ~~ 3.4TBs 
+// Now downsample prior images to 44.8gb
+// 40.3 TB = 44.8 * (900) prior image.
+// NB: Slide 21 of deep dive operating on upsampled images.
+
+model sscp {
+
+// Parameters
+// Sizing
+param imgWidth = 57018
+param imgHeight = 57018
+param upSampledImgH = imgHeight * 2
+param upSampledImgW = imgWidth * 2
+param tilingFactor = 32
+param numTiles = tilingFactor ^ 2
+
+param wordSize = 8 // SP, complex
+param imgSize = imgWidth * imgHeight * wordSize
+param upSampledImgSize = upSampledImgW * upSampledImgH * wordSize
+
+// Pulse Rates
+param pulsesPerImage = 96763
+param pulsesPerSecond = 2809
+param samplesPerPulse = 80636
+
+// Kernel Specific Parameters
+// Spotlight and Backprojection
+param pulsesAfterSpotlight = pulsesPerSecond / tilingFactor  
+param samplesPerTF = samplesPerPulse / tilingFactor
+
+// Affine Registration Control Points
+param registrationPoints = 928799
+param regNeighborhood = 31
+param regNeighborhoodR = 16
+
+// Coherent Change Detection
+param ccdNeighborhood = 5
+// Constant False Alarm Rate
+param cfarNeighborhood = 25
+param alarmRate = 0.5
+
+// Data
+
+// Buffer to Store Backprojection Data
+// Stores 35 partial images at upsampled resolution.
+data backProjectBuffer as Array(35, (upSampledImgSize) / 35)
+// Priming / Active Buffer Pair
+data accumBufferA as Matrix(upSampledImgW, upSampledImgH, wordSize)
+data accumBufferB as Matrix(upSampledImgW, upSampledImgH, wordSize)
+// 35 Prior Image Buffer (NVRAM) 
+data imgRingBuffer as Array(35, upSampledImgSize)
+// The set of all images from the observation window to reside in NVRAM
+param orbitTime = 15 // minutes
+data orbitSet as Array(orbitTime * 60, imgSize)
+
+// Import kernel models
+
+// Digital Spotlighting
+import digitalSpotlight from "digispot.aspen"
+  with tilingFactor = tilingFactor, pulsesPerSecond = pulsesPerSecond,
+       pulsesAfterSpotlight = pulsesAfterSpotlight, samplesPerPulse = samplesPerPulse,
+       wordSize = wordSize
+
+// Backprojection
+import backprojection from "backprojection.aspen"
+  with imgWidth = upSampledImgW, imgHeight = upSampledImgH, wordSize = wordSize,
+       tilingFactor = tilingFactor, pulsesPerSecond = pulsesPerSecond
+// registration
+import registration from "registration.aspen"
+  with nControlPoints = registrationPoints, neighborhood = regNeighborhood,
+       neighborhoodRange = regNeighborhoodR, wordSize = wordSize, imgWidth = upSampledImgW,
+       imgHeight = upSampledImgH
+
+// Coherent Change Detection
+import ccd from "ccd.aspen"
+  with tileEdge = ccdNeighborhood, imgWidth = imgWidth, 
+       imgHeight = imgHeight, wordSize = wordSize
+
+// Constant False Alarm Rate
+import cfar from "cfar.aspen"
+  with ccdNeighborhood = ccdNeighborhood, cfarNeighborhood = cfarNeighborhood, 
+       imgWidth = imgWidth, imgHeight = imgHeight, alarmRate = alarmRate       
+       
+kernel main {  
+  // upsampled
+  map [numTiles]
+  {
+     seq {
+        call digitalSpotlight.main
+        call backprojection.main
+     }
+  }
+  call registration.main
+  // downsampled
+  call ccd.main  
+  call cfar.main
+}
+
+}

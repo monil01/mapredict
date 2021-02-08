@@ -1,0 +1,18 @@
+model simple
+{
+  param value = 1 in 1 .. 1
+
+  kernel main
+  {
+    execute firstblock
+    {
+      flops [20]
+      loads [10]
+    }   
+    execute secondblock [10]
+    {
+      flops [2]
+      loads [1]
+    }   
+  }
+}

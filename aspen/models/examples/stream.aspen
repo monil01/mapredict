@@ -1,0 +1,35 @@
+// serial_matmul.aspen
+// Simple Matrix-Matrix Multiply
+
+model matmul {
+
+// Matrix size
+param n = 16
+
+// How many times to repeat the mutliplication
+param nTimes = 1
+
+// Word Size (precision) in bytes
+param wordSize = 4
+
+// Data structures
+data matA as Matrix(n, n, wordSize)
+data matB as Matrix(n, n, wordSize)
+data matC as Matrix(n, n, wordSize)
+
+// The matrix multiply kernel
+kernel matmul {
+  execute [1] "mainblock2"
+  {
+    flops [2 * (n^3)] as sp, fmad, simd
+    loads [n^2] of size [wordSize] from matA
+    loads [n^2] of size [wordSize] from matB
+    stores [n^2] of size [wordSize] to matC
+  }
+}
+// Control Flow (in this case a single kernel)
+kernel main {
+    iterate [nTimes] { call matmul }
+}
+
+}

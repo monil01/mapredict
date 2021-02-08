@@ -1,0 +1,154 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Application Model -----
+App model model1:
+   Globals:
+      Import model2 from ''import2_b.aspen'' with 1 args:
+         Identifier n = 
+            Ident: n
+      Identifier n = 
+         Range:
+            Default value:
+               Int: 10
+            Minimum value:
+               Int: 5
+            Maximum value:
+               Int: 15
+      Identifier model2.n = 
+         Range:
+            Default value:
+               Ident: n
+            Minimum value:
+               Int: 99
+            Maximum value:
+               Int: 101
+   Kernels:
+      Kernel k1:
+         Control node '101': sequential:
+            Execution Block (control node '100')
+               Requires flops of quantity: 
+                  Ident: n
+      Kernel main:
+         Control node '104': sequential:
+            Control node '102': kernel call k1
+            Control node '103': kernel call model2.k2
+      Kernel model2.k2:
+         Control node '106': sequential:
+            Execution Block (control node '105')
+               Requires flops of quantity: 
+                  Ident: model2.n
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = (k1 + model2.k2)
+
+>> Raw expression without variable expansion:
+flops    = ((1*n) + (1*model2.n))
+messages = (0 + 0)
+loads    = (0 + 0)
+stores   = (0 + 0)
+
+>> Raw expression with variable expansion:
+flops    = ((1*10) + (1*10))
+messages = (0 + 0)
+loads    = (0 + 0)
+stores   = (0 + 0)
+
+>> as values, With parameters using default values
+flops    = 20
+messages = 0
+loads    = 0
+stores   = 0
+
+>> Simplification test:
+flops (noexp)       = ((1*n) + (1*model2.n))
+flops (noexp,simpl) = (n + model2.n)
+flops (exp)         = ((1*10) + (1*10))
+flops (exp,simpl)   = 20
+
+There are 2 parameters with ranges.
+>> with parameter ''n'' set to its minimum of 5:
+flops    = 10
+messages = 0
+loads    = 0
+stores   = 0
+
+-> and now with ''n'' set to its maximum of 15:
+flops    = 30
+messages = 0
+loads    = 0
+stores   = 0
+
+>> Expression with parameter ''n'' left as a variable (named x) (and simplified):
+flops = ((1*x) + (1*x))
+flops = (x + x)
+
+>> with parameter ''model2.n'' set to its minimum of 99:
+flops    = 109
+messages = 0
+loads    = 0
+stores   = 0
+
+-> and now with ''model2.n'' set to its maximum of 101:
+flops    = 111
+messages = 0
+loads    = 0
+stores   = 0
+
+>> Expression with parameter ''model2.n'' left as a variable (named x) (and simplified):
+flops = ((1*10) + (1*x))
+flops = (10 + x)
+
+
+
+
+>> Kernel k1
+
+Raw flops for kernel 'k1' = 10
+Raw loads for kernel 'k1' = 0
+Raw stores for kernel 'k1' = 0
+Raw messages for kernel 'k1' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'k1':
+  = (1*n) / 0
+  expanding, but in terms of x:
+  = (1*10) / 0
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 20
+Raw loads for kernel 'main' = 0
+Raw stores for kernel 'main' = 0
+Raw messages for kernel 'main' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'main':
+  = (((1*n) + (1*model2.n))) / ((0 + 0))
+  expanding, but in terms of x:
+  = (((1*10) + (1*10))) / ((0 + 0))
+
+
+>> Kernel model2.k2
+
+Raw flops for kernel 'model2.k2' = 10
+Raw loads for kernel 'model2.k2' = 0
+Raw stores for kernel 'model2.k2' = 0
+Raw messages for kernel 'model2.k2' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'model2.k2':
+  = (1*model2.n) / 0
+  expanding, but in terms of x:
+  = (1*10) / 0

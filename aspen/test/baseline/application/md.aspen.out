@@ -1,0 +1,885 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Application Model -----
+App model md:
+   Globals:
+      Identifier nAtom = 
+         Int: 10000
+      Identifier nTimeSteps = 
+         Int: 10
+      Identifier wordSize = 
+         Int: 4
+      Identifier boxX = 
+         Int: 10
+      Identifier boxY = 
+         Int: 10
+      Identifier boxZ = 
+         Int: 10
+      Identifier cutoff = 
+         Real: 2.5
+      Identifier meshDim = 
+         Int: 10
+      Data chargeMesh:
+         As:
+            Call Volume3D with 4 args:
+               Ident: meshDim
+               Ident: meshDim
+               Ident: meshDim
+               Int: 16
+      Import fft3d from ''../3dfft/3D_FFT.aspen'' with 2 args:
+         Identifier n = 
+            Ident: nAtom
+         Identifier fftVolume = 
+            Ident: chargeMesh
+      Identifier cellVolume = 
+         Binary Op ^
+            LHS
+               Ident: cutoff
+            RHS
+               Int: 3
+      Identifier nCellsX = 
+         Binary Op /
+            LHS
+               Ident: boxX
+            RHS
+               Ident: cutoff
+      Identifier nCellsY = 
+         Binary Op /
+            LHS
+               Ident: boxY
+            RHS
+               Ident: cutoff
+      Identifier nCellsZ = 
+         Binary Op /
+            LHS
+               Ident: boxZ
+            RHS
+               Ident: cutoff
+      Identifier P = 
+         Int: 8
+      Identifier P_X = 
+         Int: 2
+      Identifier P_Y = 
+         Int: 2
+      Identifier P_Z = 
+         Int: 2
+      Identifier CELLS_X = 
+         Int: 5
+      Identifier CELLS_Y = 
+         Int: 5
+      Identifier CELLS_Z = 
+         Int: 5
+      Identifier atomDensity = 
+         Binary Op /
+            LHS
+               Ident: nAtom
+            RHS
+               Binary Op *
+                  LHS
+                     Binary Op *
+                        LHS
+                           Ident: boxX
+                        RHS
+                           Ident: boxY
+                  RHS
+                     Ident: boxZ
+      Identifier atomsPerCell = 
+         Binary Op *
+            LHS
+               Ident: cellVolume
+            RHS
+               Ident: atomDensity
+      Identifier avgNeighbors = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Binary Op *
+                        LHS
+                           Binary Op /
+                              LHS
+                                 Int: 4
+                              RHS
+                                 Int: 3
+                        RHS
+                           Real: 3.14
+                  RHS
+                     Ident: cellVolume
+            RHS
+               Ident: atomDensity
+      Identifier varSizePerCell = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Ident: atomsPerCell
+                  RHS
+                     Int: 3
+            RHS
+               Ident: wordSize
+      Data position:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Binary Op *
+                  LHS
+                     Binary Op *
+                        LHS
+                           Ident: wordSize
+                        RHS
+                           Int: 3
+                  RHS
+                     Int: 2
+      Data velocity:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Binary Op *
+                  LHS
+                     Ident: wordSize
+                  RHS
+                     Int: 3
+      Data forces:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Binary Op *
+                  LHS
+                     Ident: wordSize
+                  RHS
+                     Int: 3
+      Data neighborList:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Binary Op *
+                  LHS
+                     Ident: avgNeighbors
+                  RHS
+                     Ident: wordSize
+      Identifier fft3d.Z = 
+         Binary Op *
+            LHS
+               Int: 24
+            RHS
+               Real: 1e+06
+      Identifier fft3d.L = 
+         Int: 128
+      Identifier fft3d.n = 
+         Range:
+            Default value:
+               Ident: nAtom
+            Minimum value:
+               Int: 1000
+            Maximum value:
+               Int: 10000
+      Identifier fft3d.wordSize = 
+         Int: 16
+      Identifier fft3d.a = 
+         Real: 6.3
+      Data fftVolume:
+         Quantity:
+            Binary Op *
+               LHS
+                  Binary Op ^
+                     LHS
+                        Ident: fft3d.n
+                     RHS
+                        Int: 3
+               RHS
+                  Ident: fft3d.wordSize
+   Kernels:
+      Kernel integrate:
+         Args:
+            Type=data name=base
+            Type=data name=deriv
+         Control node '101': sequential:
+            Execution Block (control node '100')
+               Parallelism:
+                  Ident: nAtom
+               Requires flops of quantity: 
+                  Int: 2
+                  As fmad
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: deriv
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: base
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: base
+      Kernel exchange:
+         Control node '103': sequential:
+            Execution Block (control node '102')
+               Parallelism:
+                  Ident: P
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: CELLS_Y
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+                  As copied with value:
+                     Int: 2
+               Requires messages of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: CELLS_Y
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+                  As copied with value:
+                     Int: 2
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+                  As copied with value:
+                     Int: 2
+               Requires messages of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+                  As copied with value:
+                     Int: 2
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Y
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+                  As copied with value:
+                     Int: 2
+               Requires messages of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Y
+                     RHS
+                        Ident: varSizePerCell
+                  As copied with value:
+                     Int: 2
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: CELLS_Y
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+                  As copied with value:
+                     Int: 2
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Z
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+                  As copied with value:
+                     Int: 2
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: CELLS_X
+                           RHS
+                              Ident: CELLS_Y
+                     RHS
+                        Ident: varSizePerCell
+                  To/From: position
+                  As copied with value:
+                     Int: 2
+      Kernel buildNList:
+         Control node '105': sequential:
+            Execution Block (control node '104')
+               Parallelism:
+                  Ident: nAtom
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: varSizePerCell
+                     RHS
+                        Int: 27
+                  To/From: position
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Int: 27
+                     RHS
+                        Int: 8
+                  As simd
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: avgNeighbors
+                     RHS
+                        Ident: wordSize
+                  To/From: neighborList
+      Kernel ljForce:
+         Control node '107': sequential:
+            Execution Block (control node '106')
+               Parallelism:
+                  Ident: nAtom
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: avgNeighbors
+                     RHS
+                        Ident: wordSize
+                  To/From: neighborList
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: avgNeighbors
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+                  As random
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: avgNeighbors
+                     RHS
+                        Binary Op +
+                           LHS
+                              Int: 8
+                           RHS
+                              Int: 13
+                  As simd
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: forces
+      Kernel main:
+         Control node '117': sequential:
+            Control node '116': iterate:
+               Quantity:
+                  Ident: nTimeSteps
+               Control node '115': sequential:
+                  Control node '108': kernel call integrate with 2 args:
+                     Ident: position
+                     Ident: velocity
+                  Control node '109': kernel call integrate with 2 args:
+                     Ident: velocity
+                     Ident: forces
+                  Control node '110': kernel call exchange
+                  Control node '111': kernel call buildNList
+                  Control node '112': kernel call fft
+                  Control node '113': kernel call ljForce
+                  Control node '114': kernel call integrate with 2 args:
+                     Ident: position
+                     Ident: velocity
+      Kernel fft:
+         Control node '119': sequential:
+            Control node '118': kernel call fft3d.main
+      Kernel fft3d.shuffle:
+         Control node '121': sequential:
+            Execution Block (control node '120')
+               Parallelism:
+                  Binary Op ^
+                     LHS
+                        Ident: fft3d.n
+                     RHS
+                        Int: 2
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: fft3d.n
+                     RHS
+                        Ident: fft3d.wordSize
+                  To/From: fftVolume
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: fft3d.n
+                     RHS
+                        Ident: fft3d.wordSize
+                  To/From: fftVolume
+      Kernel fft3d.localFFT:
+         Control node '123': sequential:
+            Execution Block (control node '122')
+               Parallelism:
+                  Binary Op ^
+                     LHS
+                        Ident: fft3d.n
+                     RHS
+                        Int: 2
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 5
+                           RHS
+                              Ident: fft3d.n
+                     RHS
+                        Call log2 with 1 args:
+                           Ident: fft3d.n
+                  As dp
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Ident: fft3d.a
+                                 RHS
+                                    Ident: fft3d.n
+                           RHS
+                              Call max with 2 args:
+                                 Int: 1
+                                 Binary Op /
+                                    LHS
+                                       Call log with 1 args:
+                                          Ident: fft3d.n
+                                    RHS
+                                       Call log with 1 args:
+                                          Ident: fft3d.Z
+                     RHS
+                        Ident: fft3d.wordSize
+                  To/From: fftVolume
+      Kernel fft3d.ibmFFT:
+         Control node '125': sequential:
+            Execution Block (control node '124')
+               Parallelism:
+                  Binary Op ^
+                     LHS
+                        Ident: fft3d.n
+                     RHS
+                        Int: 2
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 8
+                           RHS
+                              Ident: fft3d.n
+                     RHS
+                        Call log2 with 1 args:
+                           Ident: fft3d.n
+                  As dp
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Ident: fft3d.a
+                                 RHS
+                                    Binary Op +
+                                       LHS
+                                          Int: 1
+                                       RHS
+                                          Binary Op /
+                                             LHS
+                                                Ident: fft3d.n
+                                             RHS
+                                                Ident: fft3d.L
+                           RHS
+                              Binary Op +
+                                 LHS
+                                    Int: 1
+                                 RHS
+                                    Binary Op /
+                                       LHS
+                                          Call log with 1 args:
+                                             Ident: fft3d.n
+                                       RHS
+                                          Call log with 1 args:
+                                             Ident: fft3d.Z
+                     RHS
+                        Ident: fft3d.wordSize
+                  To/From: fftVolume
+      Kernel fft3d.bigO:
+         Control node '127': sequential:
+            Execution Block (control node '126')
+               Parallelism:
+                  Binary Op ^
+                     LHS
+                        Ident: fft3d.n
+                     RHS
+                        Int: 2
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: fft3d.n
+                     RHS
+                        Call log2 with 1 args:
+                           Ident: fft3d.n
+                  As dp
+                  As simd
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Ident: fft3d.a
+                                 RHS
+                                    Binary Op +
+                                       LHS
+                                          Int: 1
+                                       RHS
+                                          Binary Op /
+                                             LHS
+                                                Ident: fft3d.n
+                                             RHS
+                                                Ident: fft3d.L
+                           RHS
+                              Binary Op +
+                                 LHS
+                                    Int: 1
+                                 RHS
+                                    Binary Op /
+                                       LHS
+                                          Call log with 1 args:
+                                             Ident: fft3d.n
+                                       RHS
+                                          Call log with 1 args:
+                                             Ident: fft3d.Z
+                     RHS
+                        Ident: fft3d.wordSize
+                  To/From: fftVolume
+      Kernel fft3d.exchange:
+         Control node '129': sequential:
+            Execution Block (control node '128')
+               Parallelism:
+                  Binary Op ^
+                     LHS
+                        Ident: fft3d.n
+                     RHS
+                        Int: 2
+               Requires messages of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: fft3d.n
+                     RHS
+                        Ident: fft3d.wordSize
+      Kernel fft3d.main:
+         Control node '137': sequential:
+            Control node '130': kernel call fft3d.localFFT
+            Control node '131': kernel call fft3d.shuffle
+            Control node '132': kernel call fft3d.exchange
+            Control node '133': kernel call fft3d.localFFT
+            Control node '134': kernel call fft3d.shuffle
+            Control node '135': kernel call fft3d.exchange
+            Control node '136': kernel call fft3d.localFFT
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = nTimeSteps*((integrate*3) + exchange + buildNList + fft + ljForce)
+
+>> Raw expression without variable expansion:
+flops    = nTimeSteps*((nAtom*2) + (nAtom*2) + 0 + (nAtom*((atomsPerCell*27)*8)) + (((fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))) + 0 + 0 + (fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))) + 0 + 0 + (fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))))) + (nAtom*(avgNeighbors*(8 + 13))) + (nAtom*2))
+messages = nTimeSteps*(0 + 0 + (P*(((CELLS_Y*CELLS_Z)*varSizePerCell + (CELLS_X*CELLS_Z)*varSizePerCell) + (CELLS_X*CELLS_Y)*varSizePerCell)) + 0 + ((0 + 0 + (fft3d.n^2*(fft3d.n*fft3d.wordSize)) + 0 + 0 + (fft3d.n^2*(fft3d.n*fft3d.wordSize)) + 0)) + 0 + 0)
+loads    = nTimeSteps*((nAtom*(wordSize*3 + wordSize*3)) + (nAtom*(wordSize*3 + wordSize*3)) + (P*(((CELLS_Y*CELLS_Z)*varSizePerCell + (CELLS_X*CELLS_Z)*varSizePerCell) + (CELLS_X*CELLS_Y)*varSizePerCell)) + (nAtom*(varSizePerCell*27)) + (((fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize)) + (fft3d.n^2*(fft3d.n*fft3d.wordSize)) + 0 + (fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize)) + (fft3d.n^2*(fft3d.n*fft3d.wordSize)) + 0 + (fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize)))) + (nAtom*((3*wordSize + avgNeighbors*wordSize) + (avgNeighbors*3)*wordSize)) + (nAtom*(wordSize*3 + wordSize*3)))
+stores   = nTimeSteps*((nAtom*(wordSize*3)) + (nAtom*(wordSize*3)) + (P*(((CELLS_Y*CELLS_Z)*varSizePerCell + (CELLS_X*CELLS_Z)*varSizePerCell) + (CELLS_X*CELLS_Y)*varSizePerCell)) + (nAtom*(avgNeighbors*wordSize)) + ((0 + (fft3d.n^2*(fft3d.n*fft3d.wordSize)) + 0 + 0 + (fft3d.n^2*(fft3d.n*fft3d.wordSize)) + 0 + 0)) + (nAtom*(3*wordSize)) + (nAtom*(wordSize*3)))
+
+>> Raw expression with variable expansion:
+flops    = 10*((10000*2) + (10000*2) + 0 + (10000*(((2.5^3*(10000 / ((10*10)*10)))*27)*8)) + (((10000^2*((5*10000)*(log(10000)/log(2)))) + 0 + 0 + (10000^2*((5*10000)*(log(10000)/log(2)))) + 0 + 0 + (10000^2*((5*10000)*(log(10000)/log(2)))))) + (10000*(((((4 / 3)*3.14)*2.5^3)*(10000 / ((10*10)*10)))*(8 + 13))) + (10000*2))
+messages = 10*(0 + 0 + (8*(((5*5)*(((2.5^3*(10000 / ((10*10)*10)))*3)*4) + (5*5)*(((2.5^3*(10000 / ((10*10)*10)))*3)*4)) + (5*5)*(((2.5^3*(10000 / ((10*10)*10)))*3)*4))) + 0 + ((0 + 0 + (10000^2*(10000*16)) + 0 + 0 + (10000^2*(10000*16)) + 0)) + 0 + 0)
+loads    = 10*((10000*(4*3 + 4*3)) + (10000*(4*3 + 4*3)) + (8*(((5*5)*(((2.5^3*(10000 / ((10*10)*10)))*3)*4) + (5*5)*(((2.5^3*(10000 / ((10*10)*10)))*3)*4)) + (5*5)*(((2.5^3*(10000 / ((10*10)*10)))*3)*4))) + (10000*((((2.5^3*(10000 / ((10*10)*10)))*3)*4)*27)) + (((10000^2*(((6.3*10000)*max(1, (log(10000)) / (log(24*1e+06))))*16)) + (10000^2*(10000*16)) + 0 + (10000^2*(((6.3*10000)*max(1, (log(10000)) / (log(24*1e+06))))*16)) + (10000^2*(10000*16)) + 0 + (10000^2*(((6.3*10000)*max(1, (log(10000)) / (log(24*1e+06))))*16)))) + (10000*((3*4 + ((((4 / 3)*3.14)*2.5^3)*(10000 / ((10*10)*10)))*4) + (((((4 / 3)*3.14)*2.5^3)*(10000 / ((10*10)*10)))*3)*4)) + (10000*(4*3 + 4*3)))
+stores   = 10*((10000*(4*3)) + (10000*(4*3)) + (8*(((5*5)*(((2.5^3*(10000 / ((10*10)*10)))*3)*4) + (5*5)*(((2.5^3*(10000 / ((10*10)*10)))*3)*4)) + (5*5)*(((2.5^3*(10000 / ((10*10)*10)))*3)*4))) + (10000*(((((4 / 3)*3.14)*2.5^3)*(10000 / ((10*10)*10)))*4)) + ((0 + (10000^2*(10000*16)) + 0 + 0 + (10000^2*(10000*16)) + 0 + 0)) + (10000*(3*4)) + (10000*(4*3)))
+
+>> as values, With parameters using default values
+flops    = 1.99316e+15
+messages = 3.2e+14
+loads    = 3.34401e+15
+stores   = 3.2e+14
+
+>> Simplification test:
+flops (noexp)       = nTimeSteps*((nAtom*2) + (nAtom*2) + 0 + (nAtom*((atomsPerCell*27)*8)) + (((fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))) + 0 + 0 + (fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))) + 0 + 0 + (fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))))) + (nAtom*(avgNeighbors*(8 + 13))) + (nAtom*2))
+flops (noexp,simpl) = nTimeSteps*((nAtom*(6 + ((216 * atomsPerCell)) + (avgNeighbors*(21)))) + (fft3d.n*((((fft3d.n^2) * 5 * ((log(fft3d.n)/log(2))))) + (((fft3d.n^2) * 5 * ((log(fft3d.n)/log(2))))) + (((fft3d.n^2) * 5 * ((log(fft3d.n)/log(2))))))))
+flops (exp)         = 10*((10000*2) + (10000*2) + 0 + (10000*(((2.5^3*(10000 / ((10*10)*10)))*27)*8)) + (((10000^2*((5*10000)*(log(10000)/log(2)))) + 0 + 0 + (10000^2*((5*10000)*(log(10000)/log(2)))) + 0 + 0 + (10000^2*((5*10000)*(log(10000)/log(2)))))) + (10000*(((((4 / 3)*3.14)*2.5^3)*(10000 / ((10*10)*10)))*(8 + 13))) + (10000*2))
+flops (exp,simpl)   = 1.99316e+15
+
+There are 1 parameters with ranges.
+>> with parameter ''fft3d.n'' set to its minimum of 1000:
+flops    = 1.49962e+12
+messages = 3.20011e+11
+loads    = 3.35013e+12
+stores   = 3.20278e+11
+
+-> and now with ''fft3d.n'' set to its maximum of 10000:
+flops    = 1.99316e+15
+messages = 3.2e+14
+loads    = 3.34401e+15
+stores   = 3.2e+14
+
+>> Expression with parameter ''fft3d.n'' left as a variable (named x) (and simplified):
+flops = 10*((10000*2) + (10000*2) + 0 + (10000*(((2.5^3*(10000 / ((10*10)*10)))*27)*8)) + (((x^2*((5*x)*(log(x)/log(2)))) + 0 + 0 + (x^2*((5*x)*(log(x)/log(2)))) + 0 + 0 + (x^2*((5*x)*(log(x)/log(2)))))) + (10000*(((((4 / 3)*3.14)*2.5^3)*(10000 / ((10*10)*10)))*(8 + 13))) + (10000*2))
+flops = 10*((x*((((x^2) * 5 * ((log(x)/log(2))))) + (((x^2) * 5 * ((log(x)/log(2))))) + (((x^2) * 5 * ((log(x)/log(2))))))) + 4.74935e+08)
+
+
+
+
+>> Kernel integrate
+
+Raw flops for kernel 'integrate' = 20000
+Raw loads for kernel 'integrate' = 240000
+Raw stores for kernel 'integrate' = 120000
+Raw messages for kernel 'integrate' = 0
+
+Exclusive set size is -9999
+Inclusive set size is -9999
+
+Calculating flops/byte intensity for kernel 'integrate':
+  = (nAtom*2) / (nAtom*((wordSize*3 + wordSize*3) + wordSize*3))
+  expanding, but in terms of x:
+  = (x*2) / (x*((4*3 + 4*3) + 4*3))
+
+
+>> Kernel exchange
+
+Raw flops for kernel 'exchange' = 0
+Raw loads for kernel 'exchange' = 1.125e+06
+Raw stores for kernel 'exchange' = 1.125e+06
+Raw messages for kernel 'exchange' = 1.125e+06
+
+Exclusive set size is nAtom*((wordSize*3)*2)
+Inclusive set size is nAtom*((wordSize*3)*2)
+
+Calculating flops/byte intensity for kernel 'exchange':
+  = 0 / (P*((((((CELLS_Y*CELLS_Z)*varSizePerCell + (CELLS_X*CELLS_Z)*varSizePerCell) + (CELLS_X*CELLS_Y)*varSizePerCell) + (CELLS_Y*CELLS_Z)*varSizePerCell) + (CELLS_X*CELLS_Z)*varSizePerCell) + (CELLS_X*CELLS_Y)*varSizePerCell))
+  expanding, but in terms of x:
+  = 0 / (8*((((((5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4) + (5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + (5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + (5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + (5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + (5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)))
+
+
+>> Kernel buildNList
+
+Raw flops for kernel 'buildNList' = 3.375e+08
+Raw loads for kernel 'buildNList' = 5.0625e+08
+Raw stores for kernel 'buildNList' = 2.61667e+07
+Raw messages for kernel 'buildNList' = 0
+
+Exclusive set size is nAtom*(avgNeighbors*wordSize) + nAtom*((wordSize*3)*2)
+Inclusive set size is nAtom*(avgNeighbors*wordSize) + nAtom*((wordSize*3)*2)
+
+Calculating flops/byte intensity for kernel 'buildNList':
+  = (nAtom*((atomsPerCell*27)*8)) / (nAtom*(varSizePerCell*27 + avgNeighbors*wordSize))
+  expanding, but in terms of x:
+  = (x*(((2.5^3*(x / ((10*10)*10)))*27)*8)) / (x*((((2.5^3*(x / ((10*10)*10)))*3)*4)*27 + ((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*4))
+
+
+>> Kernel ljForce
+
+Raw flops for kernel 'ljForce' = 1.37375e+08
+Raw loads for kernel 'ljForce' = 1.04787e+08
+Raw stores for kernel 'ljForce' = 120000
+Raw messages for kernel 'ljForce' = 0
+
+Exclusive set size is (nAtom*(wordSize*3) + nAtom*(avgNeighbors*wordSize)) + nAtom*((wordSize*3)*2)
+Inclusive set size is (nAtom*(wordSize*3) + nAtom*(avgNeighbors*wordSize)) + nAtom*((wordSize*3)*2)
+
+Calculating flops/byte intensity for kernel 'ljForce':
+  = (nAtom*(avgNeighbors*(8 + 13))) / (nAtom*(((3*wordSize + avgNeighbors*wordSize) + (avgNeighbors*3)*wordSize) + 3*wordSize))
+  expanding, but in terms of x:
+  = (x*(((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*(8 + 13))) / (x*(((3*4 + ((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*4) + (((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*3)*4) + 3*4))
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 1.99316e+15
+Raw loads for kernel 'main' = 3.34401e+15
+Raw stores for kernel 'main' = 3.2e+14
+Raw messages for kernel 'main' = 3.2e+14
+
+Exclusive set size is 0
+Inclusive set size is -9999
+
+Calculating flops/byte intensity for kernel 'main':
+  = (nTimeSteps*((nAtom*2) + (nAtom*2) + 0 + (nAtom*((atomsPerCell*27)*8)) + (((fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))) + 0 + 0 + (fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))) + 0 + 0 + (fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))))) + (nAtom*(avgNeighbors*(8 + 13))) + (nAtom*2))) / (nTimeSteps*((nAtom*((wordSize*3 + wordSize*3) + wordSize*3)) + (nAtom*((wordSize*3 + wordSize*3) + wordSize*3)) + (P*((((((CELLS_Y*CELLS_Z)*varSizePerCell + (CELLS_X*CELLS_Z)*varSizePerCell) + (CELLS_X*CELLS_Y)*varSizePerCell) + (CELLS_Y*CELLS_Z)*varSizePerCell) + (CELLS_X*CELLS_Z)*varSizePerCell) + (CELLS_X*CELLS_Y)*varSizePerCell)) + (nAtom*(varSizePerCell*27 + avgNeighbors*wordSize)) + (((fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize)) + (fft3d.n^2*(fft3d.n*fft3d.wordSize + fft3d.n*fft3d.wordSize)) + 0 + (fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize)) + (fft3d.n^2*(fft3d.n*fft3d.wordSize + fft3d.n*fft3d.wordSize)) + 0 + (fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize)))) + (nAtom*(((3*wordSize + avgNeighbors*wordSize) + (avgNeighbors*3)*wordSize) + 3*wordSize)) + (nAtom*((wordSize*3 + wordSize*3) + wordSize*3))))
+  expanding, but in terms of x:
+  = (10*((x*2) + (x*2) + 0 + (x*(((2.5^3*(x / ((10*10)*10)))*27)*8)) + (((x^2*((5*x)*(log(x)/log(2)))) + 0 + 0 + (x^2*((5*x)*(log(x)/log(2)))) + 0 + 0 + (x^2*((5*x)*(log(x)/log(2)))))) + (x*(((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*(8 + 13))) + (x*2))) / (10*((x*((4*3 + 4*3) + 4*3)) + (x*((4*3 + 4*3) + 4*3)) + (8*((((((5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4) + (5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + (5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + (5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + (5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4)) + (5*5)*(((2.5^3*(x / ((10*10)*10)))*3)*4))) + (x*((((2.5^3*(x / ((10*10)*10)))*3)*4)*27 + ((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*4)) + (((x^2*(((6.3*x)*max(1, (log(x)) / (log(24*1e+06))))*16)) + (x^2*(x*16 + x*16)) + 0 + (x^2*(((6.3*x)*max(1, (log(x)) / (log(24*1e+06))))*16)) + (x^2*(x*16 + x*16)) + 0 + (x^2*(((6.3*x)*max(1, (log(x)) / (log(24*1e+06))))*16)))) + (x*(((3*4 + ((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*4) + (((((4 / 3)*3.14)*2.5^3)*(x / ((10*10)*10)))*3)*4) + 3*4)) + (x*((4*3 + 4*3) + 4*3))))
+
+
+>> Kernel fft
+
+Raw flops for kernel 'fft' = 1.99316e+14
+Raw loads for kernel 'fft' = 3.344e+14
+Raw stores for kernel 'fft' = 3.2e+13
+Raw messages for kernel 'fft' = 3.2e+13
+
+Exclusive set size is 0
+Inclusive set size is fft3d.n^3*fft3d.wordSize
+
+Calculating flops/byte intensity for kernel 'fft':
+  = (((fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))) + 0 + 0 + (fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))) + 0 + 0 + (fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))))) / (((fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize)) + (fft3d.n^2*(fft3d.n*fft3d.wordSize + fft3d.n*fft3d.wordSize)) + 0 + (fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize)) + (fft3d.n^2*(fft3d.n*fft3d.wordSize + fft3d.n*fft3d.wordSize)) + 0 + (fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize))))
+  expanding, but in terms of x:
+  = (((x^2*((5*x)*(log(x)/log(2)))) + 0 + 0 + (x^2*((5*x)*(log(x)/log(2)))) + 0 + 0 + (x^2*((5*x)*(log(x)/log(2)))))) / (((x^2*(((6.3*x)*max(1, (log(x)) / (log(24*1e+06))))*16)) + (x^2*(x*16 + x*16)) + 0 + (x^2*(((6.3*x)*max(1, (log(x)) / (log(24*1e+06))))*16)) + (x^2*(x*16 + x*16)) + 0 + (x^2*(((6.3*x)*max(1, (log(x)) / (log(24*1e+06))))*16))))
+
+
+>> Kernel fft3d.shuffle
+
+Raw flops for kernel 'fft3d.shuffle' = 0
+Raw loads for kernel 'fft3d.shuffle' = 1.6e+13
+Raw stores for kernel 'fft3d.shuffle' = 1.6e+13
+Raw messages for kernel 'fft3d.shuffle' = 0
+
+Exclusive set size is fft3d.n^3*fft3d.wordSize
+Inclusive set size is fft3d.n^3*fft3d.wordSize
+
+Calculating flops/byte intensity for kernel 'fft3d.shuffle':
+  = 0 / (fft3d.n^2*(fft3d.n*fft3d.wordSize + fft3d.n*fft3d.wordSize))
+  expanding, but in terms of x:
+  = 0 / (x^2*(x*16 + x*16))
+
+
+>> Kernel fft3d.localFFT
+
+Raw flops for kernel 'fft3d.localFFT' = 6.64386e+13
+Raw loads for kernel 'fft3d.localFFT' = 1.008e+14
+Raw stores for kernel 'fft3d.localFFT' = 0
+Raw messages for kernel 'fft3d.localFFT' = 0
+
+Exclusive set size is fft3d.n^3*fft3d.wordSize
+Inclusive set size is fft3d.n^3*fft3d.wordSize
+
+Calculating flops/byte intensity for kernel 'fft3d.localFFT':
+  = (fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))) / (fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize))
+  expanding, but in terms of x:
+  = (x^2*((5*x)*(log(x)/log(2)))) / (x^2*(((6.3*x)*max(1, (log(x)) / (log(24*1e+06))))*16))
+
+
+>> Kernel fft3d.ibmFFT
+
+Raw flops for kernel 'fft3d.ibmFFT' = 1.06302e+14
+Raw loads for kernel 'fft3d.ibmFFT' = 1.22986e+12
+Raw stores for kernel 'fft3d.ibmFFT' = 0
+Raw messages for kernel 'fft3d.ibmFFT' = 0
+
+Exclusive set size is fft3d.n^3*fft3d.wordSize
+Inclusive set size is fft3d.n^3*fft3d.wordSize
+
+Calculating flops/byte intensity for kernel 'fft3d.ibmFFT':
+  = (fft3d.n^2*((8*fft3d.n)*(log(fft3d.n)/log(2)))) / (fft3d.n^2*(((fft3d.a*(1 + fft3d.n / fft3d.L))*(1 + (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize))
+  expanding, but in terms of x:
+  = (x^2*((8*x)*(log(x)/log(2)))) / (x^2*(((6.3*(1 + x / 128))*(1 + (log(x)) / (log(24*1e+06))))*16))
+
+
+>> Kernel fft3d.bigO
+
+Raw flops for kernel 'fft3d.bigO' = 1.32877e+13
+Raw loads for kernel 'fft3d.bigO' = 1.22986e+12
+Raw stores for kernel 'fft3d.bigO' = 0
+Raw messages for kernel 'fft3d.bigO' = 0
+
+Exclusive set size is fft3d.n^3*fft3d.wordSize
+Inclusive set size is fft3d.n^3*fft3d.wordSize
+
+Calculating flops/byte intensity for kernel 'fft3d.bigO':
+  = (fft3d.n^2*(fft3d.n*(log(fft3d.n)/log(2)))) / (fft3d.n^2*(((fft3d.a*(1 + fft3d.n / fft3d.L))*(1 + (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize))
+  expanding, but in terms of x:
+  = (x^2*(x*(log(x)/log(2)))) / (x^2*(((6.3*(1 + x / 128))*(1 + (log(x)) / (log(24*1e+06))))*16))
+
+
+>> Kernel fft3d.exchange
+
+Raw flops for kernel 'fft3d.exchange' = 0
+Raw loads for kernel 'fft3d.exchange' = 0
+Raw stores for kernel 'fft3d.exchange' = 0
+Raw messages for kernel 'fft3d.exchange' = 1.6e+13
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'fft3d.exchange':
+  = 0 / 0
+  expanding, but in terms of x:
+  = 0 / 0
+
+
+>> Kernel fft3d.main
+
+Raw flops for kernel 'fft3d.main' = 1.99316e+14
+Raw loads for kernel 'fft3d.main' = 3.344e+14
+Raw stores for kernel 'fft3d.main' = 3.2e+13
+Raw messages for kernel 'fft3d.main' = 3.2e+13
+
+Exclusive set size is 0
+Inclusive set size is fft3d.n^3*fft3d.wordSize
+
+Calculating flops/byte intensity for kernel 'fft3d.main':
+  = (((fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))) + 0 + 0 + (fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))) + 0 + 0 + (fft3d.n^2*((5*fft3d.n)*(log(fft3d.n)/log(2)))))) / (((fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize)) + (fft3d.n^2*(fft3d.n*fft3d.wordSize + fft3d.n*fft3d.wordSize)) + 0 + (fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize)) + (fft3d.n^2*(fft3d.n*fft3d.wordSize + fft3d.n*fft3d.wordSize)) + 0 + (fft3d.n^2*(((fft3d.a*fft3d.n)*max(1, (log(fft3d.n)) / (log(fft3d.Z))))*fft3d.wordSize))))
+  expanding, but in terms of x:
+  = (((x^2*((5*x)*(log(x)/log(2)))) + 0 + 0 + (x^2*((5*x)*(log(x)/log(2)))) + 0 + 0 + (x^2*((5*x)*(log(x)/log(2)))))) / (((x^2*(((6.3*x)*max(1, (log(x)) / (log(24*1e+06))))*16)) + (x^2*(x*16 + x*16)) + 0 + (x^2*(((6.3*x)*max(1, (log(x)) / (log(24*1e+06))))*16)) + (x^2*(x*16 + x*16)) + 0 + (x^2*(((6.3*x)*max(1, (log(x)) / (log(24*1e+06))))*16))))

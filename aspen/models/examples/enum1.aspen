@@ -1,0 +1,27 @@
+model testenum
+{
+   enum decomp { pencil, slab }
+   param algorithm = pencil in decomp
+
+   kernel k1
+   {
+      execute { flops [100] }
+   }
+
+   kernel k2
+   {
+      execute { flops [2000] }
+   }
+
+   kernel main
+   {
+      if (algorithm == slab)
+      {
+         call k1
+      }
+      else if (algorithm == pencil)
+      {
+         call k2
+      }
+   }   
+}

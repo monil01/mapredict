@@ -1,0 +1,25 @@
+# Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
+@VARIABLES@
+
+CPPFLAGS+=-I../aspen
+
+ARCHIVE=libaspenc.a
+LIBRARY=libaspenc.so
+
+SRC=aspenc.cpp
+
+OBJ=$(SRC:.cpp=.o)
+
+all: @LIBRARY_OR_ARCHIVE@
+
+-include testc.d
+
+testc: testc.o @LIBRARY_OR_ARCHIVE@
+	$(CXX) -o testc testc.o -L. -laspenc -L../lib -laspen
+
+test: all testc
+	./testc
+
+CLEAN_FILES=testc testc.o testc.d
+
+@TARGETS@

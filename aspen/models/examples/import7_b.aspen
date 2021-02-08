@@ -1,0 +1,9 @@
+model model2
+{
+   param n = 100
+
+   kernel k2(param y)
+   {
+      execute { flops [y] }
+   }
+}

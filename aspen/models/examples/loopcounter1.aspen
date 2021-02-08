@@ -1,0 +1,17 @@
+model testcounter
+{
+   param nsteps = 5
+   param values[] = {6, 11, 30, 100, 1000}
+
+   kernel main
+   {
+      iterate [nsteps]
+      {
+         execute [1000] { flops [1000] }
+      }
+      iterate counter [nsteps]
+      {
+         execute [1000] { flops [1000 * (values[counter])] }
+      }
+   }   
+}

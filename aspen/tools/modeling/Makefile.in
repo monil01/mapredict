@@ -1,0 +1,23 @@
+# Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
+@VARIABLES@
+
+CPPFLAGS+=-I$(TOPDIR)/aspen $(NLOPT_CPPFLAGS)
+LDFLAGS+=$(NLOPT_LDFLAGS)
+LIBS=-L$(TOPDIR)/lib -laspen $(NLOPT_LIBS)
+LIBDEP=$(TOPDIR)/lib/libaspen.a
+
+TESTS=blackbox
+ALL=blackbox
+
+PARSE=CSVParser.o InputParser.o
+
+OBJ=$(TESTS:=.o) $(PARSE)
+
+all: $(ALL)
+
+# programs
+
+blackbox: $(LIBDEP) $(PARSE) blackbox.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(PARSE) $(@:=.o) -o $@ $(LIBS)
+
+@TARGETS@

@@ -1,0 +1,293 @@
+// 
+// CoMD.aspen
+// Aspen model for CoMD Kernels, LJ\EAM force
+
+model coMD {
+
+// Double Precision
+param wordSize = 8
+param nTimesteps = 1000
+
+// Input Parameters -- Vals Taken from OpenCL Version
+// Number of atoms 
+//param nAtom = 8192
+//param nAtom = 262144
+//param nAtom = 1048576
+param nAtom = 32000
+
+// Spatial Decomposition Info
+// param nCellsX = 14
+// param nCellsY = 14
+// param nCellsZ = 7
+
+//param nCellsX = 57
+//param nCellsY = 28
+//param nCellsZ = 28
+
+//param nCellsX = 57
+//param nCellsY = 28
+//param nCellsZ = 114
+
+param nCellsX = 20
+param nCellsY = 20
+param nCellsZ = 20
+
+// This statement tells Aspen to arrange the processors
+// into a 3D topology (cubic by default, skewed by cells here).
+// It also adds the variables P_x, P_y, and P_z into scope.
+//set topology3D [nCellsX, nCellsY, nCellsZ]
+// With this we can calculate the avg cells in each direction per proc.
+//param cellsX = nCellsX / P_x
+//param cellsY = nCellsY / P_y
+//param cellsZ = nCellsZ / P_z
+
+// Cutoff Distance
+param cutoff = 4.5
+
+// Box factor
+// 1.0 works for most, but up to 1.5 can be optimal for some hardware 
+// and particle density
+param boxFactor = 1.0
+
+// Cell size parameterized by box factor
+param cellSize = boxFactor * cutoff
+
+// Cells
+param cellVolume = cellSize^3 // Could add epsilon here.
+
+param boxX = cellSize * nCellsX // Length of sim box in x
+param boxY = cellSize * nCellsY 
+param boxZ = cellSize * nCellsZ
+
+// Assume average atom density (atoms per cell)
+param atomsPerCell = nAtom / (nCellsX * nCellsY * nCellsZ)
+
+// 26 neighboring cells in 3D...
+// and we also treat the local cell as a neighbor cell
+// --> 27 neighbors
+param avgNeighbors = 27 * atomsPerCell
+// Neighbors within cutoff (15.5%)
+param neighFactor = 0.155 / boxFactor^3
+param avgNeighborsInCutoff = avgNeighbors * neighFactor
+
+// Most of the variables have 3 values (x, y, z components)
+param varSizePerCell = atomsPerCell * 3 * wordSize
+
+// Data
+// Most variables -- three words per atom --> x, y, & z
+data position as Array(nAtom, wordSize * 3)
+data velocity as Array(nAtom, wordSize * 3)
+data forces   as Array(nAtom, wordSize * 3)
+data energy   as Array(nAtom, wordSize)
+
+// If EAM we have some more arrays
+data fi      as Array(nAtom, wordSize)
+data rho     as Array(nAtom, wordSize)
+data EAMData as Array(8000, wordSize)
+
+// Update V by a half step (using F)
+kernel advanceVelocities {	
+  execute [nAtom]
+  {
+  flops  [2] as fmad, simd, dp
+  loads  [4] // 1 int -> number of atoms in the box
+  loads  [wordSize * 3] from forces
+  loads  [wordSize * 3] from velocity
+  stores [wordSize * 3] to velocity
+  }
+}
+
+// Update X by a half step (using V)
+kernel advancePositions {	
+  execute [nAtom]
+  {
+  flops  [2] as fmad, simd, dp
+  loads  [4] // 1 int -> Number of atoms in the box
+  loads  [wordSize * 3] from velocity
+  loads  [wordSize * 3] from position
+  stores [wordSize * 3] to position
+  }
+}
+
+kernel ljForce {
+  execute [nCellsX * nCellsY * nCellsZ]
+  {
+  // Get the LJ coefficients sigma6, epsilon
+  loads [2 * wordSize]
+  // Get the atoms' position
+  loads [3 * atomsPerCell * wordSize] from position	
+  // Load neighbors' positions
+  loads [avgNeighbors * 3 * wordSize] from position	
+  // Distance calculation.
+  flops [atomsPerCell * avgNeighbors * 7] as simd, dp
+  flops [atomsPerCell * avgNeighbors * 4] as simd, fmad, dp
+  // Force and energy calculation 
+  flops [atomsPerCell * avgNeighborsInCutoff * 21] as simd, dp
+  stores [atomsPerCell * wordSize] to energy
+  stores [atomsPerCell * 3 * wordSize] to forces
+  }
+}
+
+kernel eamForce {
+  execute [nCellsX * nCellsY * nCellsZ]
+  {
+  // First pass
+  loads [3 * atomsPerCell * wordSize] from position	
+  // Load neighbors' positions
+  loads [avgNeighbors * 3 * wordSize] from position	
+  // Distance calculation.
+  flops [atomsPerCell * avgNeighbors * 7] as simd, dp
+  flops [atomsPerCell * avgNeighbors * 4] as simd, fmad, dp
+  // EAM force computation
+  // evaluate phi 
+  flops [atomsPerCell * avgNeighborsInCutoff * 16] as simd, dp
+  loads [atomsPerCell * avgNeighborsInCutoff * 4 * wordSize] from EAMData  
+  // evaluate rho
+  flops [atomsPerCell * avgNeighborsInCutoff * 16] as simd, dp
+  loads [atomsPerCell * avgNeighborsInCutoff * 4 * wordSize] from EAMData
+  // store intermediate force terms
+  flops  [atomsPerCell * 2] as simd, dp
+  stores [atomsPerCell * 3 * wordSize] to forces
+  // store intermediate energy terms
+  stores [atomsPerCell * wordSize] to energy
+  // store intermediate rho terms
+  stores [atomsPerCell * wordSize] to rho
+   
+  // Second pass
+  // add F(rho(ij))
+  loads [atomsPerCell * wordSize] from rho
+  // evaluate F(rho)
+  flops [atomsPerCell * avgNeighbors * 16] as simd, dp
+  loads [atomsPerCell * avgNeighbors * 4 * wordSize] from EAMData
+  // update fi
+  stores [atomsPerCell * wordSize] to fi
+  // update energy
+  loads [atomsPerCell * wordSize] from energy
+  flops [atomsPerCell * 1] as simd, dp
+  stores [atomsPerCell * wordSize] to energy
+
+  // Third pass
+  loads [3 * atomsPerCell * wordSize] from position	
+  // Load neighbors' positions
+  loads [avgNeighbors * 3 * wordSize] from position	
+  // Distance calculation.
+  flops [atomsPerCell * avgNeighbors * 7] as simd, dp
+  flops [atomsPerCell * avgNeighbors * 4] as simd, fmad, dp
+  // Evaluate rhoijprime
+  flops [atomsPerCell * avgNeighborsInCutoff * 16] as simd, dp
+  loads [atomsPerCell * avgNeighborsInCutoff * 4 * wordSize] from EAMData
+  // Store forces 
+  loads  [3 * atomsPerCell * wordSize] from forces
+  flops  [atomsPerCell * 5] as simd, dp
+  stores [atomsPerCell * 3 * wordSize] to forces
+  }
+}
+
+kernel eamForce_cached {
+  execute [nCellsX * nCellsY * nCellsZ]
+  {
+  // First pass
+  loads [3 * atomsPerCell * wordSize] from position	
+  // Load neighbors' positions
+  loads [avgNeighbors * 3 * wordSize] from position	
+  // Distance calculation.
+  flops [atomsPerCell * avgNeighbors * 7] as simd, dp
+  flops [atomsPerCell * avgNeighbors * 4] as simd, fmad, dp
+  // EAM force computation
+  // evaluate phi 
+  flops [atomsPerCell * avgNeighborsInCutoff * 16] as simd, dp
+  //loads [atomsPerCell * avgNeighborsInCutoff * 4 * wordSize] from EAMData  
+  // evaluate rho
+  flops [atomsPerCell * avgNeighborsInCutoff * 16] as simd, dp
+  //loads [atomsPerCell * avgNeighborsInCutoff * 4 * wordSize] from EAMData
+  // store intermediate force terms
+  flops  [atomsPerCell * 2] as simd, dp
+  stores [atomsPerCell * 3 * wordSize] to forces
+  // store intermediate energy terms
+  stores [atomsPerCell * wordSize] to energy
+  // store intermediate rho terms
+  stores [atomsPerCell * wordSize] to rho
+   
+  // Second pass
+  // add F(rho(ij))
+  loads [atomsPerCell * wordSize] from rho
+  // evaluate F(rho)
+  flops [atomsPerCell * avgNeighbors * 16] as simd, dp
+  //loads [atomsPerCell * avgNeighbors * 4 * wordSize] from EAMData
+  // update fi
+  stores [atomsPerCell * wordSize] to fi
+  // update energy
+  loads [atomsPerCell * wordSize] from energy
+  flops [atomsPerCell * 1] as simd, dp
+  stores [atomsPerCell * wordSize] to energy
+
+  // Third pass
+  loads [3 * atomsPerCell * wordSize] from position	
+  // Load neighbors' positions
+  loads [avgNeighbors * 3 * wordSize] from position	
+  // Distance calculation.
+  flops [atomsPerCell * avgNeighbors * 7] as simd, dp
+  flops [atomsPerCell * avgNeighbors * 4] as simd, fmad, dp
+  // Evaluate rhoijprime
+  flops [atomsPerCell * avgNeighborsInCutoff * 16] as simd, dp
+  //loads [atomsPerCell * avgNeighborsInCutoff * 4 * wordSize] from EAMData
+  // Store forces 
+  loads  [3 * atomsPerCell * wordSize] from forces
+  flops  [atomsPerCell * 5] as simd, dp
+  stores [atomsPerCell * 3 * wordSize] to forces
+  }
+}
+
+
+// MPI Communication
+//kernel exchange {
+//  exposes parallelism [P] // P is a built-in var = number of processors.
+  // In each of the six directions, the proc has to load (pack) and send a 2D plane
+  // of the outermost cells.  E.g. in Z direction, an (x by y by 1) plane
+  // of cell atom position info.
+  // X direction
+//  loads    [2 * cellsY * cellsZ * varSizePerCell] from position
+//  messages [2 * cellsY * cellsZ * varSizePerCell]
+  // Y direction
+//  loads    [2 * cellsX * cellsZ * varSizePerCell] from position
+//  messages [2 * cellsX * cellsZ * varSizePerCell]
+  // Z direction
+//  loads    [2 * cellsX * cellsY * varSizePerCell] from position
+//  messages [2 * cellsX * cellsY * varSizePerCell]
+  // After the exchange, the received info has to be stored.
+//  stores [cellsY * cellsZ * varSizePerCell] to position
+//  stores [cellsX * cellsZ * varSizePerCell] to position
+//  stores [cellsX * cellsY * varSizePerCell] to position
+//} 
+
+// Lennard jones Control Flow
+kernel main {
+  iterate [nTimesteps] {
+    call advancePositions	
+    //call exchange
+    call ljForce
+    call advanceVelocities
+    call advancePositions
+    call eamForce
+  }
+}
+
+kernel eamKernel {
+  iterate [nTimesteps] {
+    call eamForce
+  }
+}
+
+// EAM Control Flow
+kernel eam {
+  iterate [nTimesteps] {
+    call advancePositions	
+    //call exchange
+    call eamForce
+    //call exchange
+    call advanceVelocities
+    call advancePositions
+  }
+}
+
+} // model

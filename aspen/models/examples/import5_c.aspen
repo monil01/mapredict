@@ -1,0 +1,12 @@
+model model3
+{
+   import model2 from "import5_b.aspen"
+
+   param n = 1000
+
+   kernel k3
+   {
+      execute { flops[n] }
+      call model2.k2
+   }
+}

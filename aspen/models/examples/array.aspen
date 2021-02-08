@@ -1,0 +1,28 @@
+model arraytest
+{
+   param index = 1
+   param indices[] = {5, 0, 9, 100000} // include out of range test
+   param numiters[] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100}
+
+   kernel precedence
+   {
+      execute
+      {
+         flops [ numiters[indices[index]] + 1 ]
+
+         messages [ numiters[indices[index]] + 1 ]
+
+         loads [ numiters[indices[index] + 1] ]
+         stores [ numiters[indices[index + 1]] ]
+      }
+   }
+
+   kernel main
+   {
+      execute
+      {
+         flops [ numiters[index] ]
+         loads [ numiters[indices[index]] ]
+      }
+   }
+}

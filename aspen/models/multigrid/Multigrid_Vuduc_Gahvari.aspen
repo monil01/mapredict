@@ -1,0 +1,195 @@
+// Multigrid_Vuduc_Gahvari.aspen
+// Simple geometric multigrid 
+
+// This model is based on the 
+// distributed stencil model from Vuduc's paper:
+// "A theoretical framework for algorithm-architecture co-design"
+//
+// and the multigrid model from 
+// Gahvari's paper:
+// "An Introductory Exascale Feasibility Study for FFTs and Multigrid"
+
+model multigrid {
+
+// Reminder: In the future, the machine model will set these parameters for us.
+param Z = 6100 * mega // --> LL $$ Capacity (CPU)
+//param Z = 86.4 * mega // --> LL $$ Capacity  (GPU)
+//param Z = 800 * mega // --> LL $$ Capacity  (PHI)
+param L = 128 // --> Cache line size (CPU,PHI)
+//param L = 256 // --> Cache line size (GPU)
+
+// Dimensions of cubic 3D Volume (overridden in analysis code resource_runtime.cpp)
+param n = 21000 
+
+param wordSize = 16 // double complex
+
+data multigridVolume [n^3 * wordSize]
+
+// Smooth (3D stencil)
+kernel smooth (param x) {
+  execute [x^3]
+  {
+    flops [(2 * 6 + 1)] as dp, simd
+    loads [((6/(x^(.333))) + 2) * wordSize] from multigridVolume  
+  }
+}
+
+// Restrict (3D stencil)
+kernel restrict (param x) {
+  execute [x^3]
+  {
+    flops [(2 * 6 + 1)] as dp, simd
+    loads [((6/(x^(.333))) + 2) * wordSize] from multigridVolume  
+  }
+}
+
+// Prolong (3D stencil)
+kernel prolong (param x) {
+  execute [x^3]
+  {
+    flops [(2 * 6 + 1)] as dp, simd
+    loads [((6/(x^(.333))) + 2) * wordSize] from multigridVolume  
+  }
+}
+
+// Smooth network communication 
+kernel smoothNet(param x) {
+  execute [x^2]
+  {
+    // 
+    messages [6 * wordSize]
+  }
+}
+
+// Restrict network communication 
+kernel restrictNet(param x) {
+  execute [x^2]
+  {
+    // 
+    messages [6 * wordSize]
+  }
+}
+
+// Prolong network communication 
+kernel prolongNet(param x) {
+  execute [x^2]
+  {
+    // 
+    messages [6 * wordSize]
+  }
+}
+
+kernel main {
+  call smooth(n)
+  call smoothNet(n)
+  call restrict(n/2)
+  call restrictNet(n/2)
+  call prolong(n)
+  call prolongNet(n)
+  call smooth(n)
+  call smoothNet(n)
+
+  call smooth(n/2)
+  call smoothNet(n/2)
+  call restrict(n/4)
+  call restrictNet(n/4)
+  call prolong(n/2)
+  call prolongNet(n/2)
+  call smooth(n/2)
+  call smoothNet(n/2)
+
+  call smooth(n/4)
+  call smoothNet(n/4)
+  call restrict(n/8)
+  call restrictNet(n/8)
+  call prolong(n/4)
+  call prolongNet(n/4)
+  call smooth(n/4)
+  call smoothNet(n/4)
+
+  call smooth(n/8)
+  call smoothNet(n/8)
+  call restrict(n/16)
+  call restrictNet(n/16)
+  call prolong(n/8)
+  call prolongNet(n/8)
+  call smooth(n/8)
+  call smoothNet(n/8)
+
+  call smooth(n/16)
+  call smoothNet(n/16)
+  call restrict(n/32)
+  call restrictNet(n/32)
+  call prolong(n/16)
+  call prolongNet(n/16)
+  call smooth(n/16)
+  call smoothNet(n/16)
+
+  call smooth(n/32)
+  call smoothNet(n/32)
+  call restrict(n/64)
+  call restrictNet(n/64)
+  call prolong(n/32)
+  call prolongNet(n/32)
+  call smooth(n/32)
+  call smoothNet(n/32)
+
+  call smooth(n/64)
+  call smoothNet(n/64)
+  call restrict(n/128)
+  call restrictNet(n/128)
+  call prolong(n/64)
+  call prolongNet(n/64)
+  call smooth(n/64)
+  call smoothNet(n/64)
+
+  call smooth(n/128)
+  call smoothNet(n/128)
+  call restrict(n/256)
+  call restrictNet(n/256)
+  call prolong(n/128)
+  call prolongNet(n/128)
+  call smooth(n/128)
+  call smoothNet(n/128)
+
+  call smooth(n/256)
+  call smoothNet(n/256)
+  call restrict(n/512)
+  call restrictNet(n/512)
+  call prolong(n/256)
+  call prolongNet(n/256)
+  call smooth(n/256)
+  call smoothNet(n/256)
+
+  call smooth(n/512)
+  call smoothNet(n/512)
+  call restrict(n/1024)
+  call restrictNet(n/1024)
+  call prolong(n/512)
+  call prolongNet(n/512)
+  call smooth(n/512)
+  call smoothNet(n/512)
+
+  call smooth(n/1024)
+  call smoothNet(n/1024)
+  call restrict(n/2048)
+  call restrictNet(n/2048)
+  call prolong(n/1024)
+  call prolongNet(n/1024)
+  call smooth(n/1024)
+  call smoothNet(n/1024)
+
+  call smooth(n/2048)
+  call smoothNet(n/2048)
+  call restrict(n/4096)
+  call restrictNet(n/4096)
+  call prolong(n/2048)
+  call prolongNet(n/2048)
+  call smooth(n/2048)
+  call smoothNet(n/2048)
+
+  call smooth(n/4096)
+  call smoothNet(n/4096)
+}
+
+}

@@ -1,0 +1,23 @@
+model model0
+{
+   param n = 1
+
+   // note: you can't analyze the flops
+   // independently in this kernel, because
+   // you don't know what "x" is.
+   kernel stuff(param x)
+   {
+      execute
+      {
+         flops [n]
+         loads [x]
+      }   
+   }
+
+   kernel main
+   {
+      call stuff(1)
+      call stuff(n)
+      call stuff(2)
+   }
+}

@@ -1,0 +1,14 @@
+model simple
+{
+  param value = 5
+
+  kernel main
+  {
+    probability
+    {
+      [0.3] { execute { flops [100] } }
+      [0.5] { execute { flops [200] } }
+      else  { execute { flops [300] } }
+    }
+  }
+}

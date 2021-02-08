@@ -1,0 +1,63 @@
+// 3DFFT_Vuduc.aspen
+// 3D FFT using Pencil Decomposition
+
+// This model is based on the paper:
+// "On the Communication Complexity of 3D FFTs 
+// and its Implications for Exascale"
+// Czechowski et al. Georgia Tech.
+
+model fft3d {
+
+// Reminder: In the future, the machine model will set these parameters for us.
+//param Z = 192 * mega // --> LL $$ Capacity (CPU)
+//param Z = 86.4 * mega // --> LL $$ Capacity  (GPU)
+param Z = 800 * mega // --> LL $$ Capacity  (PHI)
+param L = 128 // --> Cache line size (CPU,PHI)
+//param L = 256 // --> Cache line size (GPU)
+
+// Dimensions of cubic 3D Volume
+param n = 21000 in 1000 .. 100000
+
+param wordSize = 16 // double complex
+param c = 40.0 // constant for cache miss calculation, see technical report version of paper above
+
+data fftVolume [n^3 * wordSize]
+
+// Shuffle 
+kernel shuffle {
+  execute [n^2]
+  {
+      loads  [n * wordSize] from fftVolume
+      stores [n * wordSize] to fftVolume
+  }
+}
+
+// Local 1D FFT using theoretical bound on FLOPs
+kernel localFFT {
+  execute [n^2]
+  {
+      flops [5 * n * log2(n)] as dp, simd
+      loads [c* (1+(n/L))*(2)*L * wordSize] from fftVolume  
+  }
+}
+
+// All to all exchange.
+kernel exchange {
+  execute [n^2]
+  {
+      // Each pencil must be sent
+      messages [n * wordSize]
+  }
+}
+
+kernel main {
+    call localFFT // in x
+    //call shuffle
+    call exchange
+    call localFFT // in y
+    //call shuffle
+    call exchange
+    call localFFT // in z
+}
+
+}

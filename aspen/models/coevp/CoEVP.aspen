@@ -1,0 +1,241 @@
+model CoEVP
+{
+   param numIterations = 3
+   param real_bytes = 8 // assuming double prec
+
+   param stall_flops = 100
+   param sqrt_flops = 8
+   param pow_flops = 20
+
+   param tensor_norm_loads = 6 // assuming symm tensor
+   param tensor_norm_flops = 18 + sqrt_flops // as fmad
+
+   // penalty 
+   param if_flops = 4
+   param if_loads = 20
+
+   kernel normsymm
+   {
+      execute { loads [tensor_norm_loads] of size [real_bytes]
+                flops [tensor_norm_flops] as dp }
+   }
+
+   kernel Taylor_tensorFunction
+   {
+      // don't know probability yet, but it's low; just ignore it for now
+      //probability
+      //{
+      //   [0.05]
+      //   {
+      //      execute { loads [2] of size [real_bytes]
+      //                flops [10] as dp }
+      //   }
+      //   else
+      //   {
+            execute { loads [4 + tensor_norm_loads] of size [real_bytes] as stride
+                      flops [2*6 + 8 + 8 + 8 + 20 + stall_flops + tensor_norm_flops] as dp }
+      //   }
+      //}
+   }
+
+
+   kernel Plasticity_tensorFunctionDerivative
+   {
+      call Taylor_tensorFunction
+      execute
+      {
+         loads [tensor_norm_loads+1] of size [real_bytes] as stride
+         flops [tensor_norm_flops+1] as dp
+      }
+      iterate [6] 
+      {
+         execute
+         {
+            stores [6] of size [real_bytes] as stride
+            flops [12] as dp
+            stores [6] of size [real_bytes] as stride
+            flops [stall_flops] as dp
+            flops [6 * 6] as dp
+            // taylor tensor function
+            loads [4 + tensor_norm_loads] of size [real_bytes]
+            flops [2*6 + 8 + 8 + 8 + 20 + stall_flops + tensor_norm_flops] as dp 
+         }
+
+         iterate [6]
+         {
+            execute
+            {
+               flops [1] as dp, simd
+               loads [6] of size [real_bytes] as stride
+               stores [6] of size [real_bytes] as stride
+            }
+         }
+      }
+   }
+
+   kernel Plasticity_evaluateNative
+   {
+      call Taylor_tensorFunction
+      call Plasticity_tensorFunctionDerivative
+   }
+
+   kernel EVP_evaluateFineScaleModel
+   {
+      call Plasticity_evaluateNative
+   }
+
+   kernel EVP_evaluateSpecificModel
+   {
+      call Plasticity_evaluateNative
+   }
+
+   kernel EVP_tauBarPrime
+   {
+      execute {
+         loads [6] of size [real_bytes]
+         flops [15] as dp, simd
+         stores [6] of size [real_bytes]
+      }
+   }
+
+   kernel EVP_computeResidual
+   {
+      execute
+      {
+         loads [6*2+1] of size [real_bytes]
+         flops [6+8] as dp
+         // convertToFine:
+           loads [9] of size [real_bytes] as stride
+           stores [9] of size [real_bytes] as stride // transpose
+           flops [9*2] as dp
+           // sym()
+           loads [9] of size [real_bytes] as stride
+           flops [2] as dp
+           stores [6] of size [real_bytes] as stride
+         loads [6] of size [real_bytes]
+         flops [6*2] as dp
+      }
+   }
+
+   kernel EVP_solveJacobianSystem
+   {
+      // right now, hardcoded to QR factor and QR solve
+
+      //  N=6, A[36], C[6], D[6], y[6]
+      
+      // QR factor:
+      iterate [5]
+      {
+         execute
+         {
+            flops [4*if_flops] as dp loads [4*if_loads] // absA>eta trinary op
+            loads [4*1] of size [real_bytes] as stride
+            loads [4*1] of size [real_bytes] as stride
+            flops [4*2] as dp
+            flops [if_flops] as dp loads [if_loads] // if eta==0
+            loads [4*1] of size [real_bytes] as stride
+            flops [4*8] as dp
+            stores [4*1] of size [real_bytes] as stride
+            flops [4*2] as dp
+            flops [10] as dp
+            flops [1] as dp
+            flops [if_flops] as dp loads [if_loads] // trinary op with test > 0
+            stores [1] of size [real_bytes] as stride
+            flops [2] as dp
+            stores [2] of size [real_bytes] as stride
+            // final loop
+            stores [4*1] of size [real_bytes] 
+            loads [4*4*2] of size [real_bytes] 
+            flops [4*4*2] as dp
+            stores [4*4] of size [real_bytes]
+            flops [4*8] as dp
+            loads [4*4*2] of size [real_bytes]
+            flops [4*4*2] as dp
+            stores [4*4*2] of size [real_bytes]
+            loads [1] of size [real_bytes] as stride
+            stores [1] of size [real_bytes] as stride
+         }
+      }
+
+      // QR solve
+      iterate [5]
+      {
+         execute
+         {
+            stores [1] of size [real_bytes]
+            loads [4*2] of size [real_bytes] as stride
+            flops [4*2] as dp
+            flops [if_flops] as dp loads [if_loads] // if c[j]>0
+            loads [1] of size [real_bytes] as stride
+            flops [8] as dp
+            loads [4*2] of size [real_bytes] as stride
+            flops [4*2] as dp
+            stores [4*1] of size [real_bytes] as stride
+         }
+      }
+
+      // R solve
+      // missing: if D[N-1]==0
+      execute
+      {
+         loads [1] of size [real_bytes]
+         flops [if_flops] as dp loads [if_loads] // if D[N-1]==0
+         flops [8] as dp
+      }
+      iterate [4]
+      {
+         execute
+         { 
+            flops [if_flops] as dp loads [if_loads] // if D[i]==0
+            loads [4*2] of size [real_bytes] as stride
+            flops [4*2] as dp
+            loads [2] of size [real_bytes] as stride
+            flops [9] as dp
+            stores [1] of size [real_bytes]
+         }
+      }
+   }
+
+   kernel EVP_computeJacobian
+   {
+      // note: Tensor4LSym has 36 values
+      execute
+      {
+         stores [36] of size [real_bytes] // init temp tensor
+         loads [3] of size [real_bytes] // get a, m_G, delta_t
+         flops [1] as dp // a*delta_t
+         flops [8*36] as dp // divide
+         flops [10] as dp // 2*m_G/a
+         loads [36] of size [real_bytes] // load Dbar_deriv
+         flops [36] as dp // ... * Dbar_deriv
+         flops [36] as dp // term1 + term2
+         stores [36] of size [real_bytes] // store in jacobian
+      }
+   }
+
+   kernel EVP_updateVbar_prime
+   {
+      call normsymm
+      call EVP_tauBarPrime
+      call EVP_evaluateFineScaleModel
+      call EVP_computeResidual
+      iterate [numIterations] 
+      {
+         call EVP_computeJacobian
+         call EVP_solveJacobianSystem
+         // math: tensor2sym +,+,*,norm and one scalar div
+         call EVP_evaluateSpecificModel
+         call EVP_computeResidual
+         // math: norm, *,<=
+         execute  {
+            loads [13] of size [real_bytes] as stride
+            stores [13] of size [real_bytes] as stride
+         }
+      }
+   }
+
+   kernel main
+   {
+      call EVP_updateVbar_prime
+   }
+}

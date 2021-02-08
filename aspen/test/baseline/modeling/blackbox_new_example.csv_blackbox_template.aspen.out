@@ -1,0 +1,20 @@
+
+Solving for variables:
+c in range [100 .. 1e+12] (starting guess = 1000)
+
+Erasing unknowns
+    erasing variable c definition
+
+Erasing CSV-specified variables
+    erasing variable natoms definition
+
+Generating 2 predictions
+  prediction type 'flops' for ../models/machine/simple.aspen SimpleCPU:
+    c*natoms^2
+  prediction type 'runtime' for ../models/machine/simple.aspen SimpleCPU:
+    (c * (natoms^2) * 1e-09)
+
+Final Result:
+   RMS error:0.019
+   iterations (approx):700000
+c = 1e+06

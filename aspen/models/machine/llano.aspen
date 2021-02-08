@@ -1,0 +1,13 @@
+include memory/ddr3_1333.aspen
+include sockets/amd_a8_3850_cpu.aspen
+include sockets/amd_a8_3850_gpu.aspen
+
+machine SimpleNode {
+  node [1] SIMPLE
+}
+
+node SIMPLE {
+   socket [1] amd_a8_3850_cpu
+   socket [1] amd_a8_3850_gpu
+}
+

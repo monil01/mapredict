@@ -1,0 +1,1065 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Application Model -----
+App model coMD:
+   Globals:
+      Identifier wordSize = 
+         Int: 8
+      Identifier nTimesteps = 
+         Int: 1000
+      Identifier nAtom = 
+         Int: 32000
+      Identifier nCellsX = 
+         Int: 20
+      Identifier nCellsY = 
+         Int: 20
+      Identifier nCellsZ = 
+         Int: 20
+      Identifier cutoff = 
+         Real: 4.5
+      Identifier boxFactor = 
+         Real: 1
+      Identifier cellSize = 
+         Binary Op *
+            LHS
+               Ident: boxFactor
+            RHS
+               Ident: cutoff
+      Identifier cellVolume = 
+         Binary Op ^
+            LHS
+               Ident: cellSize
+            RHS
+               Int: 3
+      Identifier boxX = 
+         Binary Op *
+            LHS
+               Ident: cellSize
+            RHS
+               Ident: nCellsX
+      Identifier boxY = 
+         Binary Op *
+            LHS
+               Ident: cellSize
+            RHS
+               Ident: nCellsY
+      Identifier boxZ = 
+         Binary Op *
+            LHS
+               Ident: cellSize
+            RHS
+               Ident: nCellsZ
+      Identifier atomsPerCell = 
+         Binary Op /
+            LHS
+               Ident: nAtom
+            RHS
+               Binary Op *
+                  LHS
+                     Binary Op *
+                        LHS
+                           Ident: nCellsX
+                        RHS
+                           Ident: nCellsY
+                  RHS
+                     Ident: nCellsZ
+      Identifier avgNeighbors = 
+         Binary Op *
+            LHS
+               Int: 27
+            RHS
+               Ident: atomsPerCell
+      Identifier neighFactor = 
+         Binary Op /
+            LHS
+               Real: 0.155
+            RHS
+               Binary Op ^
+                  LHS
+                     Ident: boxFactor
+                  RHS
+                     Int: 3
+      Identifier avgNeighborsInCutoff = 
+         Binary Op *
+            LHS
+               Ident: avgNeighbors
+            RHS
+               Ident: neighFactor
+      Identifier varSizePerCell = 
+         Binary Op *
+            LHS
+               Binary Op *
+                  LHS
+                     Ident: atomsPerCell
+                  RHS
+                     Int: 3
+            RHS
+               Ident: wordSize
+      Data position:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Binary Op *
+                  LHS
+                     Ident: wordSize
+                  RHS
+                     Int: 3
+      Data velocity:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Binary Op *
+                  LHS
+                     Ident: wordSize
+                  RHS
+                     Int: 3
+      Data forces:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Binary Op *
+                  LHS
+                     Ident: wordSize
+                  RHS
+                     Int: 3
+      Data energy:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Ident: wordSize
+      Data fi:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Ident: wordSize
+      Data rho:
+         As:
+            Call Array with 2 args:
+               Ident: nAtom
+               Ident: wordSize
+      Data EAMData:
+         As:
+            Call Array with 2 args:
+               Int: 8000
+               Ident: wordSize
+   Kernels:
+      Kernel advanceVelocities:
+         Control node '101': sequential:
+            Execution Block (control node '100')
+               Parallelism:
+                  Ident: nAtom
+               Requires flops of quantity: 
+                  Int: 2
+                  As fmad
+                  As simd
+                  As dp
+               Requires loads of quantity: 
+                  Int: 4
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: forces
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: velocity
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: velocity
+      Kernel advancePositions:
+         Control node '103': sequential:
+            Execution Block (control node '102')
+               Parallelism:
+                  Ident: nAtom
+               Requires flops of quantity: 
+                  Int: 2
+                  As fmad
+                  As simd
+                  As dp
+               Requires loads of quantity: 
+                  Int: 4
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: velocity
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: position
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: wordSize
+                     RHS
+                        Int: 3
+                  To/From: position
+      Kernel ljForce:
+         Control node '105': sequential:
+            Execution Block (control node '104')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: nCellsX
+                           RHS
+                              Ident: nCellsY
+                     RHS
+                        Ident: nCellsZ
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Int: 2
+                     RHS
+                        Ident: wordSize
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 3
+                           RHS
+                              Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: avgNeighbors
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 7
+                  As simd
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 4
+                  As simd
+                  As fmad
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighborsInCutoff
+                     RHS
+                        Int: 21
+                  As simd
+                  As dp
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: energy
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: forces
+      Kernel eamForce:
+         Control node '107': sequential:
+            Execution Block (control node '106')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: nCellsX
+                           RHS
+                              Ident: nCellsY
+                     RHS
+                        Ident: nCellsZ
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 3
+                           RHS
+                              Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: avgNeighbors
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 7
+                  As simd
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 4
+                  As simd
+                  As fmad
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighborsInCutoff
+                     RHS
+                        Int: 16
+                  As simd
+                  As dp
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Ident: atomsPerCell
+                                 RHS
+                                    Ident: avgNeighborsInCutoff
+                           RHS
+                              Int: 4
+                     RHS
+                        Ident: wordSize
+                  To/From: EAMData
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighborsInCutoff
+                     RHS
+                        Int: 16
+                  As simd
+                  As dp
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Ident: atomsPerCell
+                                 RHS
+                                    Ident: avgNeighborsInCutoff
+                           RHS
+                              Int: 4
+                     RHS
+                        Ident: wordSize
+                  To/From: EAMData
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Int: 2
+                  As simd
+                  As dp
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: forces
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: energy
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: rho
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: rho
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 16
+                  As simd
+                  As dp
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Ident: atomsPerCell
+                                 RHS
+                                    Ident: avgNeighbors
+                           RHS
+                              Int: 4
+                     RHS
+                        Ident: wordSize
+                  To/From: EAMData
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: fi
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: energy
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Int: 1
+                  As simd
+                  As dp
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: energy
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 3
+                           RHS
+                              Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: avgNeighbors
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 7
+                  As simd
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 4
+                  As simd
+                  As fmad
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighborsInCutoff
+                     RHS
+                        Int: 16
+                  As simd
+                  As dp
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Binary Op *
+                                 LHS
+                                    Ident: atomsPerCell
+                                 RHS
+                                    Ident: avgNeighborsInCutoff
+                           RHS
+                              Int: 4
+                     RHS
+                        Ident: wordSize
+                  To/From: EAMData
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 3
+                           RHS
+                              Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: forces
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Int: 5
+                  As simd
+                  As dp
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: forces
+      Kernel eamForce_cached:
+         Control node '109': sequential:
+            Execution Block (control node '108')
+               Parallelism:
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: nCellsX
+                           RHS
+                              Ident: nCellsY
+                     RHS
+                        Ident: nCellsZ
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 3
+                           RHS
+                              Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: avgNeighbors
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 7
+                  As simd
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 4
+                  As simd
+                  As fmad
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighborsInCutoff
+                     RHS
+                        Int: 16
+                  As simd
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighborsInCutoff
+                     RHS
+                        Int: 16
+                  As simd
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Int: 2
+                  As simd
+                  As dp
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: forces
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: energy
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: rho
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: rho
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 16
+                  As simd
+                  As dp
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: fi
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: energy
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Int: 1
+                  As simd
+                  As dp
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: energy
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 3
+                           RHS
+                              Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: avgNeighbors
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: position
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 7
+                  As simd
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighbors
+                     RHS
+                        Int: 4
+                  As simd
+                  As fmad
+                  As dp
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Ident: avgNeighborsInCutoff
+                     RHS
+                        Int: 16
+                  As simd
+                  As dp
+               Requires loads of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Int: 3
+                           RHS
+                              Ident: atomsPerCell
+                     RHS
+                        Ident: wordSize
+                  To/From: forces
+               Requires flops of quantity: 
+                  Binary Op *
+                     LHS
+                        Ident: atomsPerCell
+                     RHS
+                        Int: 5
+                  As simd
+                  As dp
+               Requires stores of quantity: 
+                  Binary Op *
+                     LHS
+                        Binary Op *
+                           LHS
+                              Ident: atomsPerCell
+                           RHS
+                              Int: 3
+                     RHS
+                        Ident: wordSize
+                  To/From: forces
+      Kernel main:
+         Control node '117': sequential:
+            Control node '116': iterate:
+               Quantity:
+                  Ident: nTimesteps
+               Control node '115': sequential:
+                  Control node '110': kernel call advancePositions
+                  Control node '111': kernel call ljForce
+                  Control node '112': kernel call advanceVelocities
+                  Control node '113': kernel call advancePositions
+                  Control node '114': kernel call eamForce
+      Kernel eamKernel:
+         Control node '120': sequential:
+            Control node '119': iterate:
+               Quantity:
+                  Ident: nTimesteps
+               Control node '118': kernel call eamForce
+      Kernel eam:
+         Control node '127': sequential:
+            Control node '126': iterate:
+               Quantity:
+                  Ident: nTimesteps
+               Control node '125': sequential:
+                  Control node '121': kernel call advancePositions
+                  Control node '122': kernel call eamForce
+                  Control node '123': kernel call advanceVelocities
+                  Control node '124': kernel call advancePositions
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = nTimesteps*((advancePositions*2) + ljForce + advanceVelocities + eamForce)
+
+>> Raw expression without variable expansion:
+flops    = nTimesteps*((nAtom*2) + (((nCellsX*nCellsY)*nCellsZ)*(((atomsPerCell*avgNeighbors)*7 + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*21)) + (nAtom*2) + (nAtom*2) + (((nCellsX*nCellsY)*nCellsZ)*(((((((((((atomsPerCell*avgNeighbors)*7 + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*2) + (atomsPerCell*avgNeighbors)*16) + atomsPerCell*1) + (atomsPerCell*avgNeighbors)*7) + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*5)))
+messages = nTimesteps*(0 + 0 + 0 + 0 + 0)
+loads    = nTimesteps*((nAtom*((4 + wordSize*3) + wordSize*3)) + (((nCellsX*nCellsY)*nCellsZ)*((2*wordSize + (3*atomsPerCell)*wordSize) + (avgNeighbors*3)*wordSize)) + (nAtom*((4 + wordSize*3) + wordSize*3)) + (nAtom*((4 + wordSize*3) + wordSize*3)) + (((nCellsX*nCellsY)*nCellsZ)*(((((((((((3*atomsPerCell)*wordSize + (avgNeighbors*3)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + atomsPerCell*wordSize) + ((atomsPerCell*avgNeighbors)*4)*wordSize) + atomsPerCell*wordSize) + (3*atomsPerCell)*wordSize) + (avgNeighbors*3)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + (3*atomsPerCell)*wordSize)))
+stores   = nTimesteps*((nAtom*(wordSize*3)) + (((nCellsX*nCellsY)*nCellsZ)*(atomsPerCell*wordSize + (atomsPerCell*3)*wordSize)) + (nAtom*(wordSize*3)) + (nAtom*(wordSize*3)) + (((nCellsX*nCellsY)*nCellsZ)*((((((atomsPerCell*3)*wordSize + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + (atomsPerCell*3)*wordSize)))
+
+>> Raw expression with variable expansion:
+flops    = 1000*((32000*2) + (((20*20)*20)*((((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*7 + ((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*4) + ((32000 / ((20*20)*20))*((27*(32000 / ((20*20)*20)))*(0.155 / (1^3))))*21)) + (32000*2) + (32000*2) + (((20*20)*20)*((((((((((((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*7 + ((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*4) + ((32000 / ((20*20)*20))*((27*(32000 / ((20*20)*20)))*(0.155 / (1^3))))*16) + ((32000 / ((20*20)*20))*((27*(32000 / ((20*20)*20)))*(0.155 / (1^3))))*16) + (32000 / ((20*20)*20))*2) + ((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*16) + (32000 / ((20*20)*20))*1) + ((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*7) + ((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*4) + ((32000 / ((20*20)*20))*((27*(32000 / ((20*20)*20)))*(0.155 / (1^3))))*16) + (32000 / ((20*20)*20))*5)))
+messages = 1000*(0 + 0 + 0 + 0 + 0)
+loads    = 1000*((32000*((4 + 8*3) + 8*3)) + (((20*20)*20)*((2*8 + (3*(32000 / ((20*20)*20)))*8) + ((27*(32000 / ((20*20)*20)))*3)*8)) + (32000*((4 + 8*3) + 8*3)) + (32000*((4 + 8*3) + 8*3)) + (((20*20)*20)*(((((((((((3*(32000 / ((20*20)*20)))*8 + ((27*(32000 / ((20*20)*20)))*3)*8) + (((32000 / ((20*20)*20))*((27*(32000 / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + (((32000 / ((20*20)*20))*((27*(32000 / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + (32000 / ((20*20)*20))*8) + (((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*4)*8) + (32000 / ((20*20)*20))*8) + (3*(32000 / ((20*20)*20)))*8) + ((27*(32000 / ((20*20)*20)))*3)*8) + (((32000 / ((20*20)*20))*((27*(32000 / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + (3*(32000 / ((20*20)*20)))*8)))
+stores   = 1000*((32000*(8*3)) + (((20*20)*20)*((32000 / ((20*20)*20))*8 + ((32000 / ((20*20)*20))*3)*8)) + (32000*(8*3)) + (32000*(8*3)) + (((20*20)*20)*(((((((32000 / ((20*20)*20))*3)*8 + (32000 / ((20*20)*20))*8) + (32000 / ((20*20)*20))*8) + (32000 / ((20*20)*20))*8) + (32000 / ((20*20)*20))*8) + ((32000 / ((20*20)*20))*3)*8)))
+
+>> as values, With parameters using default values
+flops    = 2.06754e+11
+messages = 0
+loads    = 2.32929e+11
+stores   = 5.888e+09
+
+>> Simplification test:
+flops (noexp)       = nTimesteps*((nAtom*2) + (((nCellsX*nCellsY)*nCellsZ)*(((atomsPerCell*avgNeighbors)*7 + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*21)) + (nAtom*2) + (nAtom*2) + (((nCellsX*nCellsY)*nCellsZ)*(((((((((((atomsPerCell*avgNeighbors)*7 + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*2) + (atomsPerCell*avgNeighbors)*16) + atomsPerCell*1) + (atomsPerCell*avgNeighbors)*7) + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*5)))
+flops (noexp,simpl) = nTimesteps*((nAtom*6) + (nCellsZ*(((nCellsX * nCellsY * atomsPerCell * ((((avgNeighborsInCutoff * 21)) + (avgNeighbors*11))))) + ((nCellsX * nCellsY * atomsPerCell * ((8 + (avgNeighbors*38) + (avgNeighborsInCutoff*48))))))))
+flops (exp)         = 1000*((32000*2) + (((20*20)*20)*((((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*7 + ((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*4) + ((32000 / ((20*20)*20))*((27*(32000 / ((20*20)*20)))*(0.155 / (1^3))))*21)) + (32000*2) + (32000*2) + (((20*20)*20)*((((((((((((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*7 + ((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*4) + ((32000 / ((20*20)*20))*((27*(32000 / ((20*20)*20)))*(0.155 / (1^3))))*16) + ((32000 / ((20*20)*20))*((27*(32000 / ((20*20)*20)))*(0.155 / (1^3))))*16) + (32000 / ((20*20)*20))*2) + ((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*16) + (32000 / ((20*20)*20))*1) + ((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*7) + ((32000 / ((20*20)*20))*(27*(32000 / ((20*20)*20))))*4) + ((32000 / ((20*20)*20))*((27*(32000 / ((20*20)*20)))*(0.155 / (1^3))))*16) + (32000 / ((20*20)*20))*5)))
+flops (exp,simpl)   = 2.06754e+11
+
+There are 0 parameters with ranges.
+
+
+
+>> Kernel advanceVelocities
+
+Raw flops for kernel 'advanceVelocities' = 64000
+Raw loads for kernel 'advanceVelocities' = 1.664e+06
+Raw stores for kernel 'advanceVelocities' = 768000
+Raw messages for kernel 'advanceVelocities' = 0
+
+Exclusive set size is nAtom*(wordSize*3) + nAtom*(wordSize*3)
+Inclusive set size is nAtom*(wordSize*3) + nAtom*(wordSize*3)
+
+Calculating flops/byte intensity for kernel 'advanceVelocities':
+  = (nAtom*2) / (nAtom*(((4 + wordSize*3) + wordSize*3) + wordSize*3))
+  expanding, but in terms of x:
+  = (x*2) / (x*(((4 + 8*3) + 8*3) + 8*3))
+
+
+>> Kernel advancePositions
+
+Raw flops for kernel 'advancePositions' = 64000
+Raw loads for kernel 'advancePositions' = 1.664e+06
+Raw stores for kernel 'advancePositions' = 768000
+Raw messages for kernel 'advancePositions' = 0
+
+Exclusive set size is nAtom*(wordSize*3) + nAtom*(wordSize*3)
+Inclusive set size is nAtom*(wordSize*3) + nAtom*(wordSize*3)
+
+Calculating flops/byte intensity for kernel 'advancePositions':
+  = (nAtom*2) / (nAtom*(((4 + wordSize*3) + wordSize*3) + wordSize*3))
+  expanding, but in terms of x:
+  = (x*2) / (x*(((4 + 8*3) + 8*3) + 8*3))
+
+
+>> Kernel ljForce
+
+Raw flops for kernel 'ljForce' = 4.92653e+07
+Raw loads for kernel 'ljForce' = 2.1632e+07
+Raw stores for kernel 'ljForce' = 1.024e+06
+Raw messages for kernel 'ljForce' = 0
+
+Exclusive set size is (nAtom*wordSize + nAtom*(wordSize*3)) + nAtom*(wordSize*3)
+Inclusive set size is (nAtom*wordSize + nAtom*(wordSize*3)) + nAtom*(wordSize*3)
+
+Calculating flops/byte intensity for kernel 'ljForce':
+  = (((nCellsX*nCellsY)*nCellsZ)*(((atomsPerCell*avgNeighbors)*7 + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*21)) / (((nCellsX*nCellsY)*nCellsZ)*((((2*wordSize + (3*atomsPerCell)*wordSize) + (avgNeighbors*3)*wordSize) + atomsPerCell*wordSize) + (atomsPerCell*3)*wordSize))
+  expanding, but in terms of x:
+  = (((20*20)*20)*((((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7 + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*21)) / (((20*20)*20)*((((2*8 + (3*(x / ((20*20)*20)))*8) + ((27*(x / ((20*20)*20)))*3)*8) + (x / ((20*20)*20))*8) + ((x / ((20*20)*20))*3)*8))
+
+
+>> Kernel eamForce
+
+Raw flops for kernel 'eamForce' = 1.57297e+08
+Raw loads for kernel 'eamForce' = 2.06305e+08
+Raw stores for kernel 'eamForce' = 2.56e+06
+Raw messages for kernel 'eamForce' = 0
+
+Exclusive set size is ((((8000*wordSize + nAtom*wordSize) + nAtom*wordSize) + nAtom*(wordSize*3)) + nAtom*(wordSize*3)) + nAtom*wordSize
+Inclusive set size is ((((8000*wordSize + nAtom*wordSize) + nAtom*wordSize) + nAtom*(wordSize*3)) + nAtom*(wordSize*3)) + nAtom*wordSize
+
+Calculating flops/byte intensity for kernel 'eamForce':
+  = (((nCellsX*nCellsY)*nCellsZ)*(((((((((((atomsPerCell*avgNeighbors)*7 + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*2) + (atomsPerCell*avgNeighbors)*16) + atomsPerCell*1) + (atomsPerCell*avgNeighbors)*7) + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*5)) / (((nCellsX*nCellsY)*nCellsZ)*(((((((((((((((((3*atomsPerCell)*wordSize + (avgNeighbors*3)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + (atomsPerCell*3)*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + ((atomsPerCell*avgNeighbors)*4)*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + (3*atomsPerCell)*wordSize) + (avgNeighbors*3)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + (3*atomsPerCell)*wordSize) + (atomsPerCell*3)*wordSize))
+  expanding, but in terms of x:
+  = (((20*20)*20)*((((((((((((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7 + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + (x / ((20*20)*20))*2) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*16) + (x / ((20*20)*20))*1) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + (x / ((20*20)*20))*5)) / (((20*20)*20)*(((((((((((((((((3*(x / ((20*20)*20)))*8 + ((27*(x / ((20*20)*20)))*3)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + ((x / ((20*20)*20))*3)*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4)*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (3*(x / ((20*20)*20)))*8) + ((27*(x / ((20*20)*20)))*3)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + (3*(x / ((20*20)*20)))*8) + ((x / ((20*20)*20))*3)*8))
+
+
+>> Kernel eamForce_cached
+
+Raw flops for kernel 'eamForce_cached' = 1.57297e+08
+Raw loads for kernel 'eamForce_cached' = 4.4288e+07
+Raw stores for kernel 'eamForce_cached' = 2.56e+06
+Raw messages for kernel 'eamForce_cached' = 0
+
+Exclusive set size is (((nAtom*wordSize + nAtom*wordSize) + nAtom*(wordSize*3)) + nAtom*(wordSize*3)) + nAtom*wordSize
+Inclusive set size is (((nAtom*wordSize + nAtom*wordSize) + nAtom*(wordSize*3)) + nAtom*(wordSize*3)) + nAtom*wordSize
+
+Calculating flops/byte intensity for kernel 'eamForce_cached':
+  = (((nCellsX*nCellsY)*nCellsZ)*(((((((((((atomsPerCell*avgNeighbors)*7 + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*2) + (atomsPerCell*avgNeighbors)*16) + atomsPerCell*1) + (atomsPerCell*avgNeighbors)*7) + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*5)) / (((nCellsX*nCellsY)*nCellsZ)*(((((((((((((3*atomsPerCell)*wordSize + (avgNeighbors*3)*wordSize) + (atomsPerCell*3)*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + (3*atomsPerCell)*wordSize) + (avgNeighbors*3)*wordSize) + (3*atomsPerCell)*wordSize) + (atomsPerCell*3)*wordSize))
+  expanding, but in terms of x:
+  = (((20*20)*20)*((((((((((((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7 + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + (x / ((20*20)*20))*2) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*16) + (x / ((20*20)*20))*1) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + (x / ((20*20)*20))*5)) / (((20*20)*20)*(((((((((((((3*(x / ((20*20)*20)))*8 + ((27*(x / ((20*20)*20)))*3)*8) + ((x / ((20*20)*20))*3)*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (3*(x / ((20*20)*20)))*8) + ((27*(x / ((20*20)*20)))*3)*8) + (3*(x / ((20*20)*20)))*8) + ((x / ((20*20)*20))*3)*8))
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 2.06754e+11
+Raw loads for kernel 'main' = 2.32929e+11
+Raw stores for kernel 'main' = 5.888e+09
+Raw messages for kernel 'main' = 0
+
+Exclusive set size is 0
+Inclusive set size is (((((8000*wordSize + nAtom*wordSize) + nAtom*wordSize) + nAtom*(wordSize*3)) + nAtom*(wordSize*3)) + nAtom*wordSize) + nAtom*(wordSize*3)
+
+Calculating flops/byte intensity for kernel 'main':
+  = (nTimesteps*((nAtom*2) + (((nCellsX*nCellsY)*nCellsZ)*(((atomsPerCell*avgNeighbors)*7 + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*21)) + (nAtom*2) + (nAtom*2) + (((nCellsX*nCellsY)*nCellsZ)*(((((((((((atomsPerCell*avgNeighbors)*7 + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*2) + (atomsPerCell*avgNeighbors)*16) + atomsPerCell*1) + (atomsPerCell*avgNeighbors)*7) + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*5)))) / (nTimesteps*((nAtom*(((4 + wordSize*3) + wordSize*3) + wordSize*3)) + (((nCellsX*nCellsY)*nCellsZ)*((((2*wordSize + (3*atomsPerCell)*wordSize) + (avgNeighbors*3)*wordSize) + atomsPerCell*wordSize) + (atomsPerCell*3)*wordSize)) + (nAtom*(((4 + wordSize*3) + wordSize*3) + wordSize*3)) + (nAtom*(((4 + wordSize*3) + wordSize*3) + wordSize*3)) + (((nCellsX*nCellsY)*nCellsZ)*(((((((((((((((((3*atomsPerCell)*wordSize + (avgNeighbors*3)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + (atomsPerCell*3)*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + ((atomsPerCell*avgNeighbors)*4)*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + (3*atomsPerCell)*wordSize) + (avgNeighbors*3)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + (3*atomsPerCell)*wordSize) + (atomsPerCell*3)*wordSize))))
+  expanding, but in terms of x:
+  = (1000*((x*2) + (((20*20)*20)*((((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7 + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*21)) + (x*2) + (x*2) + (((20*20)*20)*((((((((((((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7 + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + (x / ((20*20)*20))*2) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*16) + (x / ((20*20)*20))*1) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + (x / ((20*20)*20))*5)))) / (1000*((x*(((4 + 8*3) + 8*3) + 8*3)) + (((20*20)*20)*((((2*8 + (3*(x / ((20*20)*20)))*8) + ((27*(x / ((20*20)*20)))*3)*8) + (x / ((20*20)*20))*8) + ((x / ((20*20)*20))*3)*8)) + (x*(((4 + 8*3) + 8*3) + 8*3)) + (x*(((4 + 8*3) + 8*3) + 8*3)) + (((20*20)*20)*(((((((((((((((((3*(x / ((20*20)*20)))*8 + ((27*(x / ((20*20)*20)))*3)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + ((x / ((20*20)*20))*3)*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4)*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (3*(x / ((20*20)*20)))*8) + ((27*(x / ((20*20)*20)))*3)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + (3*(x / ((20*20)*20)))*8) + ((x / ((20*20)*20))*3)*8))))
+
+
+>> Kernel eamKernel
+
+Raw flops for kernel 'eamKernel' = 1.57297e+11
+Raw loads for kernel 'eamKernel' = 2.06305e+11
+Raw stores for kernel 'eamKernel' = 2.56e+09
+Raw messages for kernel 'eamKernel' = 0
+
+Exclusive set size is 0
+Inclusive set size is ((((8000*wordSize + nAtom*wordSize) + nAtom*wordSize) + nAtom*(wordSize*3)) + nAtom*(wordSize*3)) + nAtom*wordSize
+
+Calculating flops/byte intensity for kernel 'eamKernel':
+  = (nTimesteps*(((nCellsX*nCellsY)*nCellsZ)*(((((((((((atomsPerCell*avgNeighbors)*7 + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*2) + (atomsPerCell*avgNeighbors)*16) + atomsPerCell*1) + (atomsPerCell*avgNeighbors)*7) + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*5))) / (nTimesteps*(((nCellsX*nCellsY)*nCellsZ)*(((((((((((((((((3*atomsPerCell)*wordSize + (avgNeighbors*3)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + (atomsPerCell*3)*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + ((atomsPerCell*avgNeighbors)*4)*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + (3*atomsPerCell)*wordSize) + (avgNeighbors*3)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + (3*atomsPerCell)*wordSize) + (atomsPerCell*3)*wordSize)))
+  expanding, but in terms of x:
+  = (1000*(((20*20)*20)*((((((((((((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7 + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + (x / ((20*20)*20))*2) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*16) + (x / ((20*20)*20))*1) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + (x / ((20*20)*20))*5))) / (1000*(((20*20)*20)*(((((((((((((((((3*(x / ((20*20)*20)))*8 + ((27*(x / ((20*20)*20)))*3)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + ((x / ((20*20)*20))*3)*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4)*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (3*(x / ((20*20)*20)))*8) + ((27*(x / ((20*20)*20)))*3)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + (3*(x / ((20*20)*20)))*8) + ((x / ((20*20)*20))*3)*8)))
+
+
+>> Kernel eam
+
+Raw flops for kernel 'eam' = 1.57489e+11
+Raw loads for kernel 'eam' = 2.11297e+11
+Raw stores for kernel 'eam' = 4.864e+09
+Raw messages for kernel 'eam' = 0
+
+Exclusive set size is 0
+Inclusive set size is (((((8000*wordSize + nAtom*wordSize) + nAtom*wordSize) + nAtom*(wordSize*3)) + nAtom*(wordSize*3)) + nAtom*wordSize) + nAtom*(wordSize*3)
+
+Calculating flops/byte intensity for kernel 'eam':
+  = (nTimesteps*((nAtom*2) + (((nCellsX*nCellsY)*nCellsZ)*(((((((((((atomsPerCell*avgNeighbors)*7 + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*2) + (atomsPerCell*avgNeighbors)*16) + atomsPerCell*1) + (atomsPerCell*avgNeighbors)*7) + (atomsPerCell*avgNeighbors)*4) + (atomsPerCell*avgNeighborsInCutoff)*16) + atomsPerCell*5)) + (nAtom*2) + (nAtom*2))) / (nTimesteps*((nAtom*(((4 + wordSize*3) + wordSize*3) + wordSize*3)) + (((nCellsX*nCellsY)*nCellsZ)*(((((((((((((((((3*atomsPerCell)*wordSize + (avgNeighbors*3)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + (atomsPerCell*3)*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + ((atomsPerCell*avgNeighbors)*4)*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + atomsPerCell*wordSize) + (3*atomsPerCell)*wordSize) + (avgNeighbors*3)*wordSize) + ((atomsPerCell*avgNeighborsInCutoff)*4)*wordSize) + (3*atomsPerCell)*wordSize) + (atomsPerCell*3)*wordSize)) + (nAtom*(((4 + wordSize*3) + wordSize*3) + wordSize*3)) + (nAtom*(((4 + wordSize*3) + wordSize*3) + wordSize*3))))
+  expanding, but in terms of x:
+  = (1000*((x*2) + (((20*20)*20)*((((((((((((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7 + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + (x / ((20*20)*20))*2) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*16) + (x / ((20*20)*20))*1) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*7) + ((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4) + ((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*16) + (x / ((20*20)*20))*5)) + (x*2) + (x*2))) / (1000*((x*(((4 + 8*3) + 8*3) + 8*3)) + (((20*20)*20)*(((((((((((((((((3*(x / ((20*20)*20)))*8 + ((27*(x / ((20*20)*20)))*3)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + ((x / ((20*20)*20))*3)*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (((x / ((20*20)*20))*(27*(x / ((20*20)*20))))*4)*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (x / ((20*20)*20))*8) + (3*(x / ((20*20)*20)))*8) + ((27*(x / ((20*20)*20)))*3)*8) + (((x / ((20*20)*20))*((27*(x / ((20*20)*20)))*(0.155 / (1^3))))*4)*8) + (3*(x / ((20*20)*20)))*8) + ((x / ((20*20)*20))*3)*8)) + (x*(((4 + 8*3) + 8*3) + 8*3)) + (x*(((4 + 8*3) + 8*3) + 8*3))))

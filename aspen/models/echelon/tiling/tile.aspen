@@ -1,0 +1,92 @@
+// Subset of Echelon CP #1 for tiling analysis
+
+model imageFormation {
+
+param wordSize = 4 // single precision
+param complexWordSize = 8
+
+// System Parameters
+param pulsesPerImage  = 96763
+param samplesPerPulse = 80636
+param bpRangeUpsampling = 4
+param pixelsPerSide = 114036
+param prf = 2809 in 2000 .. 4000
+param sincInterpPoints = 17
+
+// Derived Parameters
+param dataInputRate = (prf * samplesPerPulse * wordSize)
+param pixelsPerImage = pixelsPerSide * pixelsPerSide
+param imageSize = pixelsPerImage * wordSize
+
+// Flop counting conventions
+//param sinCos = 26
+param sinCos = 18
+
+// Tiling parameters
+param tf = 32 in 16 .. 64
+param tfi = floor(tf) //(tile factor is always an integer)
+param dsPulsesPerSec    = ceil(prf             / tfi)
+param dsSamplesPerPulse = ceil(samplesPerPulse / tfi)
+
+// Import model for complex 1D FFT (includes fft kernel)
+import fft1d from "1D_FFT.aspen" with 
+  numberOfFFTs = prf, n = samplesPerPulse
+
+// Range Shifting/Gating
+kernel phaseShift {
+  execute [prf]
+  {
+  // Read platform positions +  freqVec, X
+  loads [(3 * wordSize) + (samplesPerPulse * (wordSize + complexWordSize))]
+  // Range calculation and scale factor
+  flops [8+1] as simd
+  flops [1] as simd, sqrt
+  // Phase shift arg, sincos, apply shift
+  flops [samplesPerPulse*(2 + sinCos)] as simd
+  flops [samplesPerPulse] as simd, complex 
+  stores [samplesPerPulse*complexWordSize] // store shiftedX
+  }
+}
+
+// Pulse Dowsampling
+kernel sincInterp {
+  execute [dsPulsesPerSec * dsSamplesPerPulse]
+  {
+  // Load interP timestamps, rangeGatedX   
+  loads [sincInterpPoints * (wordSize + complexWordSize)]   
+  // Sinc calculation,  accumulate, scale by T/Tprime
+  flops [(sincInterpPoints * (3 + 4)) + 2] as simd
+  flops [sincInterpPoints] as sincos
+  // Store outut
+  stores [sincInterpPoints * complexWordSize]
+  }
+}
+
+kernel backprojection {
+  execute [pixelsPerImage]
+  {
+  // Load x,y,z coord, xyz pos per pulse
+  loads [ (3 + (dsPulsesPerSec * 3) * wordSize)]
+  // Load two complex words from X
+  loads [dsPulsesPerSec * complexWordSize * 2]   
+  // Range Calculation
+  flops [dsPulsesPerSec * 8] as simd
+  flops [dsPulsesPerSec] as simd, sqrt
+  // Range Bin, Integral Bin, sample interp, filter arg calc., sincos
+  flops [dsPulsesPerSec * (14+sinCos+2)] as simd
+  flops [dsPulsesPerSec] as simd, complex
+  // Store result to image
+  stores [complexWordSize] 
+  }
+}
+
+kernel main {
+   map [tfi * tfi] {	
+     call fft1d.main // Digital Spotlighting FFT
+     call phaseShift
+     call sincInterp     
+   }
+   call backprojection
+}
+
+} // end model

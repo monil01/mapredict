@@ -1,0 +1,13 @@
+raw expression:
+((1*1) + (1*n) + (1*2))
+
+expanded:
+((1*1) + (1*1) + (1*2))
+
+simplified:
+((1*1) + (1*n) + (1*2))
+
+expanded and simplified:
+(1 + 1 + 2)
+
+4

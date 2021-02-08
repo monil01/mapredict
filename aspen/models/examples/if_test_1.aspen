@@ -1,0 +1,40 @@
+model simple
+{
+  param value = 22/2
+
+  kernel main
+  {
+    // 1, 3-6, 9-10 map to 30
+    // 7,8 maps to 40
+    // 2 maps to 50
+    // 11+ maps to 20
+    if (value-1 == 1)
+    {
+      execute
+      {
+        flops [50]
+      }   
+    }
+    else if (value == 7 or value == 8)
+    {
+      execute
+      {
+        flops [40]
+      }   
+    }
+    else if (value <= 10)
+    {
+      execute
+      {
+        flops [30]
+      }   
+    }
+    else
+    {
+      execute
+      {
+        flops [20]
+      }   
+    }
+  }
+}

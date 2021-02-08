@@ -1,0 +1,158 @@
+
+------------------- Syntax Trees ---------------------
+
+----- Main Application Model -----
+App model model1:
+   Globals:
+      Import model2 from ''import5_b.aspen'' with 0 args:
+      Import model3 from ''import5_c.aspen'' with 0 args:
+      Identifier n = 
+         Int: 10
+      Identifier model2.n = 
+         Int: 100
+      Import model2 from ''import5_b.aspen'' with 0 args:
+      Identifier model3.n = 
+         Int: 1000
+      Identifier model3.model2.n = 
+         Int: 100
+   Kernels:
+      Kernel k1:
+         Control node '101': sequential:
+            Execution Block (control node '100')
+               Requires flops of quantity: 
+                  Ident: n
+      Kernel main:
+         Control node '105': sequential:
+            Control node '102': kernel call k1
+            Control node '103': kernel call model2.k2
+            Control node '104': kernel call model3.k3
+      Kernel model2.k2:
+         Control node '107': sequential:
+            Execution Block (control node '106')
+               Requires flops of quantity: 
+                  Ident: model2.n
+      Kernel model3.k3:
+         Control node '110': sequential:
+            Execution Block (control node '108')
+               Requires flops of quantity: 
+                  Ident: model3.n
+            Control node '109': kernel call model3.model2.k2
+      Kernel model3.model2.k2:
+         Control node '112': sequential:
+            Execution Block (control node '111')
+               Requires flops of quantity: 
+                  Ident: model3.model2.n
+
+-----------------------------------------------------
+
+
+ ------  Application Analysis ------
+>> Basic control flow expression
+flops    = (model2.k2 + model3.k3 + k1)
+
+>> Raw expression without variable expansion:
+flops    = ((1*n) + (1*model2.n) + (((1*model3.n) + (1*model3.model2.n))))
+messages = (0 + 0 + ((0 + 0)))
+loads    = (0 + 0 + ((0 + 0)))
+stores   = (0 + 0 + ((0 + 0)))
+
+>> Raw expression with variable expansion:
+flops    = ((1*10) + (1*100) + (((1*1000) + (1*100))))
+messages = (0 + 0 + ((0 + 0)))
+loads    = (0 + 0 + ((0 + 0)))
+stores   = (0 + 0 + ((0 + 0)))
+
+>> as values, With parameters using default values
+flops    = 1210
+messages = 0
+loads    = 0
+stores   = 0
+
+>> Simplification test:
+flops (noexp)       = ((1*n) + (1*model2.n) + (((1*model3.n) + (1*model3.model2.n))))
+flops (noexp,simpl) = (model3.model2.n + n + model2.n + model3.n)
+flops (exp)         = ((1*10) + (1*100) + (((1*1000) + (1*100))))
+flops (exp,simpl)   = 1210
+
+There are 0 parameters with ranges.
+
+
+
+>> Kernel k1
+
+Raw flops for kernel 'k1' = 10
+Raw loads for kernel 'k1' = 0
+Raw stores for kernel 'k1' = 0
+Raw messages for kernel 'k1' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'k1':
+  = (1*n) / 0
+  expanding, but in terms of x:
+  = (1*10) / 0
+
+
+>> Kernel main
+
+Raw flops for kernel 'main' = 1210
+Raw loads for kernel 'main' = 0
+Raw stores for kernel 'main' = 0
+Raw messages for kernel 'main' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'main':
+  = (((1*n) + (1*model2.n) + (((1*model3.n) + (1*model3.model2.n))))) / ((0 + 0 + ((0 + 0))))
+  expanding, but in terms of x:
+  = (((1*10) + (1*100) + (((1*1000) + (1*100))))) / ((0 + 0 + ((0 + 0))))
+
+
+>> Kernel model2.k2
+
+Raw flops for kernel 'model2.k2' = 100
+Raw loads for kernel 'model2.k2' = 0
+Raw stores for kernel 'model2.k2' = 0
+Raw messages for kernel 'model2.k2' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'model2.k2':
+  = (1*model2.n) / 0
+  expanding, but in terms of x:
+  = (1*100) / 0
+
+
+>> Kernel model3.k3
+
+Raw flops for kernel 'model3.k3' = 1100
+Raw loads for kernel 'model3.k3' = 0
+Raw stores for kernel 'model3.k3' = 0
+Raw messages for kernel 'model3.k3' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'model3.k3':
+  = (((1*model3.n) + (1*model3.model2.n))) / ((0 + 0))
+  expanding, but in terms of x:
+  = (((1*1000) + (1*100))) / ((0 + 0))
+
+
+>> Kernel model3.model2.k2
+
+Raw flops for kernel 'model3.model2.k2' = 100
+Raw loads for kernel 'model3.model2.k2' = 0
+Raw stores for kernel 'model3.model2.k2' = 0
+Raw messages for kernel 'model3.model2.k2' = 0
+
+Exclusive set size is 0
+Inclusive set size is 0
+
+Calculating flops/byte intensity for kernel 'model3.model2.k2':
+  = (1*model3.model2.n) / 0
+  expanding, but in terms of x:
+  = (1*100) / 0

@@ -1,0 +1,28 @@
+max(a,b) = (a > b) ? a : b
+min(a,b) = (a > b) ? b : a
+pow(a,b) = a ** b
+
+sp_flops(x) = min(20.8, x*133.2)
+sp_simd_flops(x) = min(665.6, x*133.2)
+sp_simd_fmad_flops(x) = min(1331.2, x*133.2)
+dp_flops(x) = min(10.4, x*133.2)
+dp_simd_flops(x) = min(332.8, x*133.2)
+dp_simd_fmad_flops(x) = min(665.6, x*133.2)
+# Using specified X range
+set xrange [0.0625:16]
+
+# Using specified Y range
+set yrange [10:10000]
+
+set logscale x 2
+set logscale y
+
+set key top left
+# X Axis Label
+set xlabel "Flop:Byte Ratio"
+# Y Axis Label
+set ylabel "GFLOPS"
+set title "Achievable GFLOPS for nvidia_m2090 on fermiCluster"
+
+plot sp_flops(x) with lines linewidth 2 ti "sp_flops", sp_simd_flops(x) with lines linewidth 2 ti "sp_simd_flops", sp_simd_fmad_flops(x) with lines linewidth 2 ti "sp_simd_fmad_flops", dp_flops(x) with lines linewidth 2 ti "dp_flops", dp_simd_flops(x) with lines linewidth 2 ti "dp_simd_flops", dp_simd_fmad_flops(x) with lines linewidth 2 ti "dp_simd_fmad_flops"
+pause -1 "hit any key to continue"

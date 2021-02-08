@@ -1,5 +1,6 @@
 # Copyright 2013-2015 UT-Battelle, LLC.  See LICENSE.txt for more information.
-TOP=/home/users/mmonil/ORNL_seyong/mapmc
+TOP=.
+#TOP=/home/users/mmonil/ORNL_seyong/mapmc
 ASPEN=${TOP}/aspen
 SRC=${TOP}/model_parser
 #TOPDIR=/home/users/mmonil/ORNL_seyong/mapmc/aspen

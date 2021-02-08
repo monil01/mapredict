@@ -1,0 +1,29 @@
+model maxloadstore
+{
+  // How many megabytes **EACH** for loads and stores
+  // In most cases, loads and stores conflict, so
+  // you can calculate the result as 2xBytes.
+  param n = kilo in 1 .. mega
+
+  // The kernel
+  kernel serial
+  {
+    execute [1]
+    {
+      loads [n*mega]
+      stores [n*mega]
+    }
+  }
+
+  kernel parallel
+  {
+    execute [n]
+    {
+      loads [mega]
+      stores [mega]
+    }
+  }
+
+  kernel main { call serial() }
+
+}

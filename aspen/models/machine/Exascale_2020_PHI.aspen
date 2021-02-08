@@ -1,0 +1,61 @@
+// Machine Model 4 EFLOPS/S PHI based system
+param numNodes = 63125
+
+// Memory
+param ddr3BW  = 1455 * giga
+memory ddr3 {
+ resource loads(numBytes) [(numBytes / ddr3BW)]
+ resource stores(numBytes) [(numBytes / ddr3BW)]
+ conflict loads, stores  
+}
+
+// Network
+param qdrBW = 218 * giga
+param qdrBisectionBandwidth = qdrBW*numNodes^(.667)/numNodes
+interconnect qdrInfiniband {
+  property fatTree
+  resource messages(msgsize) [(msgsize/qdrBisectionBandwidth)]
+}
+
+// WM Core Parameters
+param wmIssueRate = 31683 * giga
+param wmSIMD = 4
+
+socket intel {
+ core [1] westmere
+ memory ddr3
+// shared wmCache cache
+// linked with qpi
+}
+
+core westmere {
+ resource flops(number) [number / wmIssueRate ] 
+  with dp   [base * 2],
+  simd [base / wmSIMD]
+}
+
+machine Exascale_2020_PHI {
+
+  // Properties
+  node [numNodes] sl390
+  interconnect qdrInfiniband
+  
+  // Resources
+  resource bbw(msgVolume) [msgVolume / bisectionBW]
+
+}
+
+node sl390 {
+   socket [1] intel
+}
+
+
+
+
+
+
+
+
+
+
+

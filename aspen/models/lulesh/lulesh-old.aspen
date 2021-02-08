@@ -1,0 +1,335 @@
+// 
+// lulesh.aspen
+//
+// An ASPEN application model for the LULESH 1.01 challenge problem.  Based
+// on the CUDA version of the source code found at: 
+//  https://computation.llnl.gov/casc/ShockHydro/
+//
+param nTimeSteps = 1495
+
+// Information about domain
+param edgeElems = 45
+param edgeNodes = edgeElems + 1
+
+param numElems = edgeElems^3
+param numNodes = edgeNodes^3
+
+// Double precision
+param wordSize = 8
+
+// Element data
+data mNodeList as Array(numElems, wordSize)
+data mMatElemList as Array(numElems, wordSize)
+data mNodeList as Array(8 * numElems, wordSize) //  8 nodes per element
+data mlxim as Array(numElems, wordSize)
+data mlxip as Array(numElems, wordSize)
+data mletam as Array(numElems, wordSize)
+data mletap as Array(numElems, wordSize)
+data mzetam as Array(numElems, wordSize)
+data mzetap as Array(numElems, wordSize)
+data melemBC as Array(numElems, wordSize)
+data mE as Array(numElems, wordSize)
+data mP as Array(numElems, wordSize)
+data mQ as Array(numElems, wordSize)
+data mQL as Array(numElems, wordSize)      
+data mQQ as Array(numElems, wordSize)
+      
+data mV as Array(numElems, wordSize)
+data mVolo as Array(numElems, wordSize)
+data mDelv as Array(numElems, wordSize)
+data mVdov as Array(numElems, wordSize)
+data mARealG as Array(numElems, wordSize)
+data mSS as Array(numElems, wordSize)
+data mElemMass as Array(numElems, wordSize)
+
+// Nodal Data
+data mX as Array(numNodes, wordSize)
+data mY as Array(numNodes, wordSize)
+data mZ as Array(numNodes, wordSize)
+
+data mXd as Array(numNodes, wordSize)
+data mYd as Array(numNodes, wordSize)
+data mZd as Array(numNodes, wordSize)
+
+data mXdd as Array(numNodes, wordSize)
+data mYdd as Array(numNodes, wordSize)
+data mZdd as Array(numNodes, wordSize)
+
+data fX as Array(numNodes, wordSize)
+data fY as Array(numNodes, wordSize)
+data fZ as Array(numNodes, wordSize)
+
+data nodalMass as Array(numNodes, wordSize)
+
+// Global reduction and account for Courant (CFL) constraint.
+// kernel timeIncrement {
+//    exposes parallelism [P]
+//	messages as reduction(wordSize)
+//}
+
+
+kernel CalcKinematicsForElems {
+  execute [numElems]
+  {
+    // Step 1. Loading.
+    // Load as index
+    loads [8 * indexWordSize] from nodelist
+    // Load to local buffer.
+    loads [8 * wordSize] from x as indirected
+    loads [8 * wordSize] from y as indirected
+    loads [8 * wordSize] from z as indirected
+    
+    // Sub 2: Volume Calc
+    // 37 flops in difference
+    // 14 in triple prod
+    // 3 triple products w/ 3 flops in args
+    // 1 volume fix
+    flops [37] as dp, simd, fmad
+    flops [(3 * (14+3)) + 1] as dp, simd
+    // Store results of volume calc.
+    stores [wordSize] to vnew
+    stores [wordSize] to vdelv
+    
+    // Sub: CalcElemCharacteristicLength
+    // For each of 6 faces... (extract AreaFace)
+    // 41 flops & a max
+    flops [6 * (18)] as dp, fmad, simd
+    flops [6 * (23 + 1)] as dp, simd
+    flops [2 + 1] as dp, simd //(1 is sqrt)
+    
+    // Combine to "nodalLoad" with other load at beginning of kinematics.
+    // Load from global xd to local cache
+    // Load as index
+    loads [8 * indexWordSize] from nodelist
+    // Load to local buffer.
+    loads [8 * wordSize] from xd as indirected
+    loads [8 * wordSize] from yd as indirected
+    loads [8 * wordSize] from zd as indirected
+    
+    // Push
+    // x_local -= dt2 * xd_local
+    flops [2 * 3] as dp, simd, fmad
+    
+    // CalcElemShapeFunctionDerivatives
+    // Common subexpression elimination makes this
+    // one tricky
+    // First blocks: 13 per block, 3 blocks
+    // Cofactors: 10 per block, 3 blocks
+    // partials: 5 , 3 blocks
+    // Volume (determinant) 6 
+    
+    // CalcElemVelocityGradient
+    // 9 blocks, 12 per block (all on variables in local mem)
+    flops [9 * 12] as dp, simd
+    flops [6] as fmad, dp, simd	
+    // Stores
+    stores [wordSize] to dxx
+    stores [wordSize] to dyy
+    stores [wordSize] to dzz
+    
+  }
+}
+
+kernel laGrangeElements2 {
+  execute [numElems]
+  {
+    loads [wordSize] from dxx
+    loads [wordSize] from dyy
+    loads [wordSize] from dzz
+    flops [6]
+    stores [wordSize] to dxx
+    stores [wordSize] to dyy
+    stores [wordSize] to dzz
+    stores [wordSize] to vdov
+  }
+}
+
+kernel CalcMonotonicQGradients {
+  execute [numElems]
+  {
+    loads [8 * indexWordSize] from nodelist
+    // Load and cache position and velocity.
+    loads/caching [8 * wordSize] from x
+    loads/caching [8 * wordSize] from y
+    loads/caching [8 * wordSize] from z
+    
+    loads/caching [8 * wordSize] from xvel
+    loads/caching [8 * wordSize] from yvel
+    loads/caching [8 * wordSize] from zvel
+    
+    loads [wordSize] from volo
+    loads [wordSize] from vnew
+    // dx, dy, etc.
+    flops [90] as dp, simd
+    // delvk delxk
+    flops [9 + 8 + 3 + 30 + 5] as dp, simd
+    stores [wordSize] to delv_xeta
+    // delxi delvi
+    flops [9 + 8 + 3 + 30 + 5] as dp, simd
+    stores [wordSize] to delx_xi
+    // delxj and delvj
+    flops [9 + 8 + 3 + 30 + 5] as dp, simd
+    stores [wordSize] to delv_eta
+  }
+}
+
+kernel Calc MonotonicQRegionForElems { // line 3861
+  execute [numElems]
+  {
+
+    loads [indexSize] from matElemList
+    loads [4] from elemBC // bc bitmask
+    // phixi
+    flops [2 + 6] as dp, simd
+    // conditional load --> either nothing, a word from delv_xi, or an indirect work from delv_xi using lxim
+    
+    // phieta
+    flops [2 + 6] as dp, simd
+    // conditional load --> either nothing, a word from delv_eta, or an indirect work from delv_eta
+    
+    // phizeta
+    flops [2 + 6] as dp, simd
+    // conditional load --> either nothing, a word from delv_xeta, or an indirect work from delv_xeta
+    
+    // remove length scale
+    loads [wordSize] from elemMass
+    loads [wordSize] from volo
+    loads [wordSize] from vnew
+    flops [32] as dp, simd
+    stores [wordSize] to qq
+    stores [wordSize] to ql
+  }
+}
+
+// Basically an indirected memcopy
+kernel ApplyMaterialPropertiesPart1 {
+  execute [numElem]
+  {
+    loads [indexSize] from matElemList
+    loads [wordSize] from vnew as indirect
+    stores [wordSize] to vnewc
+  }
+}
+
+kernel EvalEOSForElemsPart1 {
+  execute [numElems]
+  {
+    loads [indexSize] from matElemList
+    // Backup e, delv, p, q
+    loads [wordSize] from e, delv, p, q, qq, ql as indirect
+    stores [wordSize] to e_old, delvc, p_old, q_old, qq_old, ql_old, work
+    // conditional write to compHalfStep and compression[i]
+    
+  }
+}
+
+kernel CalcEnergyForElems1 {
+  execute [numElems]
+  {
+    loads [wordSize] from e_old, delvc, p_old, q_old, work
+    stores [wordSize] to e_new
+    flops [6] as dp, simd
+  }
+}
+
+kernel CalcEnergyForElems2 {
+  execute [numElems]
+  {
+    loads [wordSize] from delvc
+    
+    stores [wordSize] to q_new
+    //OR 6 flops, 4 words loaded
+    
+    flops [10] as dp, simd  
+    loads [wordSize] from p_old, q_old, pHalfStep, q_new
+    stores [wordSize] to e_new
+    
+  }
+}
+
+kernel CalcEnergyForElems3 {
+  execute [numElems]
+  {
+    // Calc q tilde
+    loads [wordSize] from pbvc, e_new, vnewc, bvc, p_new, ql, qq
+    flops [7] as dp, simd
+    // e_new
+    stores [wordSize] to e_new
+    loads [wordSize] from pold, qold, pHalfStep, q_new, p_new, delvc
+    flops[10] as dp, simd
+  }
+}
+
+kernel CalcEnergyForElems4 {
+  execute [numElems]
+  {
+    loads [wordSize] from pbvc, enew, vnewc, bvc, pnew, ql, qq
+    flops [8] as dp, simd
+    stores [wordSize] to qnew
+  }
+}
+
+// TODO double check varying args here.
+kernel CalcPressureForElems {
+	varying argument p_new
+	varying argument compression
+	
+  execute [numElems]
+  {
+
+    loads [wordSize] from compression, 
+    stores [wordSize] to p_new, bvc, pbvc
+    flops[3]
+  }
+}
+
+kernel EvalEOSForElemsPart2 {
+  execute [numElems]
+  {
+    loads [indexSize] from matElemList
+    // Indirected memcpy (i.e. scatter)
+    loads [wordSize] from p_new,e_new,q_new
+    stores [wordSize] to p,e,q as indirect
+  }
+}
+
+kernel {
+  iterate [nTimeSteps] {     	
+	timeIncrement
+	// Lagrange leapfrog.
+		// Lagrange Nodal
+			// Calc Force For Nodes
+			// Calc Accel For nodes
+			// Apply Accel BC
+			// Calc Velocity For Nodes
+			// Calc Position For Nodes
+
+		// Lagrange Elements
+			// CalcLagrange Elems
+//D		    	// Calc Kinematics For Elems --> CalcKinematicsForElems
+//D				// Calc LG Elements Part 2 --> LaGrangeElements2
+            // Calc Q for Elems
+//D				// CalcMonotonicQGradients
+				// CalcMonotonicQ
+//D				    // CalcMonotonicQRegionForElems
+			// Apply MaterialProperties
+//D				// Create (temp vnewc, array length numElems)
+//D				// ApplyMaterialPropertiesPart1
+				// EvalEOSForelems
+//D					// Part 1
+					// CalcEnergyForElems_gpu
+						// Allocate temp pHalfStep, Array(numElems, wordSize)
+						// Part 1
+						// CalcPressureForElems (pHalfStep, compHalfStep)
+						// Part 2
+						// CalcPressureForElems (p_new, compression)
+						// Part 3
+						// CalcPressureForElems (p_new, compression)
+						// Part 4
+					// Part 2
+					
+			// Update Volumes
+
+		// CalcTimeConstraints
+  }
+}

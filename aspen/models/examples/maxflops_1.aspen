@@ -1,0 +1,16 @@
+model maxflops
+{
+  // How many megaflops
+  // so range is from 1MF to 1TF, default 1GF
+  param n = kilo in 1 .. mega
+
+  kernel parallel
+  {
+    execute [n]
+    {
+      flops [mega] as sp, fmad, simd
+    }
+  }
+
+  kernel main { call parallel }
+}

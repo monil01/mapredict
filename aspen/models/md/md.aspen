@@ -1,0 +1,148 @@
+// 
+// md.aspen
+// -Spatial Decomposition
+// -Velocity-Verlet formulation
+// -Short range, Lennard-Jones forces
+// -Long range 
+//
+
+model md {
+  
+param nAtom = 10000
+param nTimeSteps = 10
+param wordSize = 4
+
+// Spatial Decomposition Info
+// Dimensions of simulation box and cutoff
+param boxX = 10
+param boxY = 10
+param boxZ = 10
+param cutoff = 2.5
+
+// Double complex charge mesh
+param meshDim = 10
+data chargeMesh as Volume3D(meshDim, meshDim, meshDim, 16)
+
+import fft3d from "../3dfft/3D_FFT.aspen" with n = nAtom, fftVolume = chargeMesh
+
+// Cells
+param cellVolume = cutoff^3
+param nCellsX = boxX / cutoff
+param nCellsY = boxY / cutoff
+param nCellsZ = boxZ / cutoff
+ 
+// Set a 3D processor topology
+// set topology3D [nCellsX, nCellsY, nCellsZ]
+// Adds P, P_X, P_Y, P_Z to the environment from the machine model
+// Adds CELLS_X, CELLS_Y, CELLS_Z, CELLS.N into envrionment
+param P = 8
+param P_X = 2
+param P_Y = 2
+param P_Z = 2
+param CELLS_X = 5
+param CELLS_Y = 5
+param CELLS_Z = 5
+
+// Atom density factor
+param atomDensity = nAtom / (boxX * boxY * boxZ)
+param atomsPerCell = cellVolume * atomDensity
+
+// With constant atom density, average number of neighbors is 
+// volume of the sphere with radius of the cutoff distance.
+param avgNeighbors = ((4/3)*3.14*cellVolume) * atomDensity
+
+// Most of the variables have 3 values (x, y, z components)
+param varSizePerCell = atomsPerCell * 3 * wordSize
+
+// Data
+// A factor of two is added to position for ghost cells
+// Position -- three words per atom --> x, y, & z location
+data position as Array(nAtom, wordSize * 3 * 2)
+data velocity as Array(nAtom, wordSize * 3)
+data forces   as Array(nAtom, wordSize * 3)
+data neighborList as Array (nAtom, avgNeighbors * wordSize)
+
+// Update V by a half step (using F)
+kernel integrate(data base, data deriv) {	
+  execute [nAtom]
+  {
+	flops  [2] as fmad, simd
+	loads  [wordSize * 3] from deriv
+	loads  [wordSize * 3] from base
+	stores [wordSize * 3] to base
+  }
+}
+
+// The 3D 6-neighbor stencil exchange -- may need to add velocity here.
+kernel exchange {
+  execute [P]
+  {
+	// This has communication that depends on how many procs there are
+	// so we model parallelism that way
+	// In each of the six directions, the proc has to load (pack) and send a 2D plane
+	// of the outermost cells.  E.g. in Z direction, an (x by y by 1) plane
+	// of atom position info.
+	// X direction
+	loads [CELLS_Y * CELLS_Z * varSizePerCell] from position as copied(2)
+	messages [CELLS_Y * CELLS_Z * varSizePerCell] as copied(2)
+	// Y direction
+	loads [CELLS_X * CELLS_Z * varSizePerCell] from position as copied(2)
+	messages [CELLS_X * CELLS_Z * varSizePerCell] as copied(2)
+	// Z direction
+	loads [CELLS_X * CELLS_Y * varSizePerCell] from position as copied(2)
+	messages [CELLS_X * CELLS_Y * varSizePerCell] as copied(2)
+	// After the exchange, the new info has to be stored.
+	stores [CELLS_Y * CELLS_Z * varSizePerCell] to position as copied(2)
+	stores [CELLS_X * CELLS_Z * varSizePerCell] to position as copied(2)	
+	stores [CELLS_X * CELLS_Y * varSizePerCell] to position as copied(2)
+  }
+} 
+
+// Full neighbor list build
+kernel buildNList {
+  execute [nAtom]
+  {
+	// For each atom, you have to look at its cell and its 26 neighboring cells.
+	loads [varSizePerCell * 27] from position
+	// For each of those other atoms, you have to calculate distance, which I'm counting
+	// as eight flops (could change slightly due to sqrt)
+	flops [atomsPerCell * 27 * 8] as simd
+	// Store the appropriate atom ID's to neighbor list
+	stores [avgNeighbors * wordSize] to neighborList
+  }
+}
+
+kernel ljForce {
+  execute [nAtom]
+  {
+	// Get this atom's position
+	loads [3 * wordSize] from position
+	// Load neighbor IDs
+	loads [avgNeighbors * wordSize] from neighborList
+	// Load neighbors' positions (model as random access because access
+	// pattern is data dependent and irregular).
+	loads [avgNeighbors * 3 * wordSize] from position as random	
+	// Distance calculation (8) + force calculation (13)
+	flops [avgNeighbors * (8 + 13)] as simd
+	// Store forces
+	stores [3 * wordSize] to forces
+  }
+}
+
+kernel main {
+  iterate [nTimeSteps] {
+	call integrate(position, velocity)
+        call integrate(velocity, forces)
+	call exchange
+	call buildNList
+	call fft
+	call ljForce
+	call integrate(position, velocity)
+  }
+}
+
+kernel fft {
+  call fft3d.main  
+}
+
+}

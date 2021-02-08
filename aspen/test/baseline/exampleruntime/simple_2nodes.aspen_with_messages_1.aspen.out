@@ -1,0 +1,12 @@
+
+Expression for runtime: 
+((((ceil(n / 1)*(1e+06 / BANDWIDTH)))))
+
+... simplified: 
+ceil(n)*(1e+06 / BANDWIDTH)
+
+... with parameter expansion: 
+((((ceil(1000 / 1)*(1e+06 / (1*1e+09))))))
+
+Value for runtime: 1
+

@@ -1,0 +1,11 @@
+Makefile
+executiontrace
+kernelmemusageexclusive
+kernelmemusageinclusive
+memorytrace
+new_resource_count
+parallelism
+resourcecount
+resourcematch
+roofline
+singleregionmemusage

@@ -1,0 +1,42 @@
+param CORECLOCK = 1.0 * giga
+param MEMCLOCK = 1.0 * giga
+param NUMCORES = 4
+param MEMWIDTH = 4
+
+// key parameters:
+
+// single-core peak = 1 GFLOPS SP
+// single-node peak = 2 GFLOPS SP (dual-core)
+
+// node memory bandwidth = 4 GB/sec 
+
+machine SimpleMachine
+{
+   node [1] SimpleNode
+}
+
+node SimpleNode
+{
+   socket [1] SimpleCPU
+}
+
+socket SimpleCPU
+{
+   core [4] SimpleCore
+   memory SimpleMem
+}
+
+core SimpleCore
+{
+   resource flops(number) [number / CORECLOCK] 
+       with dp [base * 2]
+}
+
+memory SimpleMem
+{
+   resource loads(numBytes) [numBytes / (MEMWIDTH*MEMCLOCK)]
+   resource stores(numBytes) [numBytes / (MEMWIDTH*MEMCLOCK)]
+
+   conflict loads, stores
+}
+
