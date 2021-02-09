@@ -46,10 +46,15 @@
         3.4.2 convention of running MAPredict: ./[MAPredict_binary] [application_model] [machine_model]
   
   
-  #### 4. Examples
+#### 4. Examples
+
     4.1 Source Code annonation: Source code annotation examplese are in [applications/memory_research_ornl/aspen_model_generation].
     4.2 Memory prediction for all applications: [./scripts] directory has scripts for all applications that generate memory prediction.
     4.3 #### Lulesh : source code annotation processor for lulesh can be found in [applications/memory_research_ornl/aspen_model_generation].
+    
+
+#### 5. Data for ICS21
+    5.1 ICS21 submission data is available at [applications/memory_research_ornl/data_paper/Data_for_ICS21.xlsx].
 
 
   
