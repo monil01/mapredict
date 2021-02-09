@@ -1,0 +1,3 @@
+#!/bin/sh
+# This file was generated automatically by build.sh.
+java  -cp /home/users/mmonil/ORNL_seyong/mapmc/OpenARC-devel/lib/antlr.jar:/home/users/mmonil/ORNL_seyong/mapmc/OpenARC-devel/lib/cetus.jar -Xmx1g openacc.exec.ACC2GPUDriver $*
