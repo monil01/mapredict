@@ -1,0 +1,89 @@
+                                     370.bt
+                     SPEC ACCEL Benchmark Description File
+
+Benchmark Name
+
+   370.bt
+
+   --------------------------------------------------------------------------
+
+Benchmark Author
+
+   Serial C version was developed the Center for Manycore Programming at
+   Seoul National University and derived from the serial Fortran versions in
+   "NPB3.3-SER" developed by NAS.
+
+   OpenACC version was developed by Rengan Xu & Sunita Chandrasekaran from
+   University of Houston.
+
+   --------------------------------------------------------------------------
+
+Benchmark Program General Category
+
+   Block Tridiagonal Solver for 3D PDE
+
+   --------------------------------------------------------------------------
+
+Benchmark Description
+
+   BT solves a 3D discretization of Naiver-Stokes equation: Ku=r where u and
+   r are 5x1 vectors defined at the points of a 3D rectangular grid and K is
+   a 7 diagonal block matrix of 5x5 blocks. K = BTx * BTy * BTz where BTx,
+   BTy and BTz are block tridiagonal matrices of 5x5 blocks in x, y and z
+   directions, respectively. The main iteration loop of BT starts from the
+   computation of r (compute_rhs) followed by successive inversion of BTx,
+   BTy and BTz (x_solve, y_solve and z_solve) and the result is stored in the
+   main variable u.
+
+   --------------------------------------------------------------------------
+
+Input Description
+
+   The input dataset size is comprised of W, A, B classes.
+
+   Test: class W reference data for 24X24X24 grids after 200 time steps,
+
+   Train: class A reference data for 64X64X64 grids after 200 time steps
+
+   Ref: class B reference data for 102X102X102 grids after 200 time steps
+
+   --------------------------------------------------------------------------
+
+Output Description
+
+   It prints out the 5x1 vector in u.
+
+   --------------------------------------------------------------------------
+
+Programming Language
+
+   C
+
+   --------------------------------------------------------------------------
+
+Threading Model
+
+   OpenACC
+
+   --------------------------------------------------------------------------
+
+Known portability issues
+
+   None.
+
+   --------------------------------------------------------------------------
+
+Reference
+
+    1. Information on NPB 3.3, including the technical report, the original
+       specifications, source code, results and information on how to submit
+       new results, is available at: [1]http://www.nas.nasa.gov/Software/NPB/
+    2. Information about the C version developed by the Center for Manycore
+       Programming can be found at:
+       [2]http://aces.snu.ac.kr/Center_for_Manycore_Programming/Home.html
+
+References
+
+   Visible links
+   1. http://www.nas.nasa.gov/Software/NPB/
+   2. http://aces.snu.ac.kr/Center_for_Manycore_Programming/Home.html

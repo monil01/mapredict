@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<TITLE>370.bt: SPEC ACCEL Benchmark Description</TITLE>
+<META GENERATOR="Cloyce+VIM 5.3">
+<META REVISION="$Id: bt.html 1286 2015-03-02 20:15:22Z CloyceS $">
+</HEAD>
+
+<BODY>
+<CENTER><H1>370.bt<BR>
+SPEC ACCEL Benchmark Description File</H1></CENTER>
+
+<H2>Benchmark Name</H2>
+<P>370.bt</P>
+<HR>
+
+<H2>Benchmark Author</H2>
+<p>Serial C version was developed the Center for Manycore Programming at 
+Seoul National University and derived from the serial Fortran versions in
+ "NPB3.3-SER" developed by NAS.</p>
+<p>OpenACC version was developed by Rengan Xu & Sunita Chandrasekaran from University of Houston.</p>
+<HR>
+
+<H2>Benchmark Program General Category</H2>
+<P>Block Tridiagonal Solver for 3D PDE
+</P>
+<HR>
+
+<H2>Benchmark Description</H2>
+<P>
+BT solves a 3D discretization of Naiver-Stokes equation: Ku=r
+where u and r are 5x1 vectors defined at the points of a 3D rectangular grid and
+K is a 7 diagonal block matrix of 5x5 blocks. K = BTx * BTy * BTz where BTx, BTy
+and BTz are block tridiagonal matrices of 5x5 blocks in x, y and z directions, respectively.
+The main iteration loop of BT starts from the computation of r (compute_rhs) followed
+by successive inversion of BTx, BTy and BTz (x_solve, y_solve and z_solve) and
+the result is stored in the main variable u.
+</P>
+<HR>
+
+
+<H2>Input Description</H2>
+<P>
+The input dataset size is comprised of W, A, B classes.</p>
+<P>Test: class W reference data for 24X24X24 grids after 200 time steps,
+</P><P>Train: class A reference data for 64X64X64 grids after 200 time steps
+</p><P>Ref: class B reference data for 102X102X102 grids after 200 time steps
+</P>
+<HR>
+
+<H2>Output Description</H2>
+<P>
+It prints out the 5x1 vector in u.
+</P>
+<HR>
+
+<H2>Programming Language</H2>
+<P>C</P>
+<HR>
+
+<H2>Threading Model</H2>
+<P>OpenACC</P>
+<HR>
+<H2>Known portability issues</H2>
+<P>None.</P>
+<HR>
+
+<H2>Reference</H2>
+<ol>
+<li>Information on NPB 3.3, including the technical report, the original specifications, 
+source code, results and information on how to submit new results, is available at: 
+<a href=http://www.nas.nasa.gov/Software/NPB/>http://www.nas.nasa.gov/Software/NPB/</A>
+</li>
+<li>
+Information about the C version developed by the Center for Manycore Programming can be 
+found at: <a href=http://aces.snu.ac.kr/Center_for_Manycore_Programming/Home.html>http://aces.snu.ac.kr/Center_for_Manycore_Programming/Home.html</a>
+</li>
+</ol>
+</BODY>
+</HTML>

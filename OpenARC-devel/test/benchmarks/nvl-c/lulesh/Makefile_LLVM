@@ -1,0 +1,41 @@
+# Adjust this to choose whether to build LULESH as a serial application or
+# to use MPI.
+USE_MPI = 0
+
+include ../../../../make.header
+
+OPENARC_FLAGS += -macro=USE_MPI=$(USE_MPI)
+LDFLAGS += -lm
+
+ifeq ($(USE_MPI),1)
+OPENARC_FLAGS += -addIncludePath=$(MPI_INCLUDES)
+LDFLAGS += -lmpi -L$(MPI_LIBDIR)
+endif
+
+OPENARC = ../../../../bin/openarc -emitLLVM -outdir=.
+LLVM_LLC = ../../../../llvm/install/bin/llc
+
+SRCDIR = ../../pmas/lulesh
+SRCS = $(wildcard $(SRCDIR)/*.c)
+HDRS = $(wildcard $(SRCDIR)/*.h)
+OBJS = $(patsubst $(SRCDIR)/%.c,%.o,$(SRCS))
+
+# Disable implicit .c.o target rule.
+.SUFFIXES:
+
+# Disable automatic removal of .bc files.
+.SECONDARY:
+
+all: lulesh
+
+%.bc: $(SRCDIR)/%.c $(HDRS)
+	$(OPENARC) $(OPENARC_FLAGS) $<
+
+%.o: %.bc
+	$(LLVM_LLC) -filetype=obj $<
+
+lulesh: $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LDFLAGS)
+
+clean:
+	rm -rf lulesh *.o *.bc

@@ -1,0 +1,90 @@
+<!DOCTYPE html
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>314.omriq: SPEC ACCEL Benchmark Description</title>
+<meta name="generator" content="Cloyce+VIM 6.2" />
+<meta name="revision"
+      content="$Id: omriq.html 1286 2015-03-02 20:15:22Z CloyceS $" />
+</head>
+
+<body>
+<div style="text-align: center">
+<h1>314.omriq<br />
+SPEC ACCEL Benchmark Description</h1>
+</div>
+ 
+<h2>Benchmark Name</h2>
+<p>314.omriq</p>
+<hr />
+
+<h2>Benchmark Author</h2>
+<p>Sam S. Stone, John A. Stratton</p>
+<p>Ported to OpenACC by Mathew Colgrove</p>
+<hr />
+
+<h2>Benchmark Program General Category</h2>
+<p>Medicine</p>
+<hr />
+ 
+<h2>Benchmark Description</h2>
+<p>One of the original Parboil benchmarks, MRI-Q, calculates equation 3 in the GPU-based MRI reconstruction
+paper by Stone et al., and is based on the implementation used to publish their work. An MRI image
+reconstruction is a conversion from sampled radio responses to magnetic field gradients. Sample “coordinates” are in
+the space of magnetic field gradients or k-space. The Q matrix in MRI image reconstruction is a precomputable value
+based on the sampling trajectory, the plan of how points in k-space will be sampled. The algorithm examines a large
+set of input representing the intended MRI scanning trajectory and the points that will be sampled. Each element
+of the Q matrix is computed by a summation of contributions from all trajectory sample points. Each contribution
+involves a three-element vector dot product of the input and output 3-D location, and a few trigonometric operations.
+ 
+The output Q elements are complex numbers, but the inputs are multi-element vectors. An output element (and
+its corresponding input denoting its 3-D location) is assigned to a single thread. To make sure the thread-private
+data structures exhibit good coalescing, a structure-of-arrays layout was chosen for the complex values and physical
+positions of a thread’s output. The shared input data set, however, is cached using GPU constant memory or some
+other high-bandwidth resource, and elects an array-of-structures implementation to keep each structure in a single
+cache line. When limited-capacity constant memory is employed, the data is tiled such that one tile is put in constant
+memory before each kernel invocation, which accumulates that tile’s contributions into the output.
+ 
+MRI-Q is a fundamentally compute-bound application, as trigonometric functions are expensive and the regularity
+of the problem allows for easy management of bandwidth. Therefore, once tiling and data layout remove any
+artificial bandwidth bottleneck, the most important optimizations were the low-level sequential code optimizations
+improving the instruction stream efficiency, such as loop unrolling.</p>
+
+<hr />
+
+<h2>Input Description</h2>
+<p>314.omriq's input is in one file, containing the number of K-space values, the number of X-space values, and then 
+the list of K-space coordinates, X-space coordinates, and Phi-field complex values for the K-space samples.
+Each set of coordinates and the complex values are stored as arrays, with each field written contiguously.</p>
+
+<hr />
+
+<h2>Output Description</h2>
+<p>314.omriq outputs the resulting Q matrix of complex values in "real, imaginary" format for each line.</p>
+
+<hr />
+
+<h2>Programming Language</h2>
+<p><i>C</i></p>
+<hr />
+
+<h2>Threading Model</h2>
+<p><i>OpenACC</i></p>
+<hr />
+
+<h2>Known portability issues</h2>
+<p>Input file is in little-endian binary format.</p>
+<hr />
+
+<h2>References</h2>
+<ul>
+<li>[10] S. S. Stone, J. P. Haldar, S. C. Tsao, W. W. Hwu., Z. Liang, and B. P. Sutton. 
+Accelerating advanced MRI reconstructions on GPUs. In International Conference on Computing Frontiers, 
+pages 261–272, 2008.</li>
+</ul>
+
+<hr />
+<p>Last updated: $Date: 2015-03-02 15:15:22 -0500 (Mon, 02 Mar 2015) $</p>
+</body>
+</html>

@@ -1,0 +1,49 @@
+The version of STREAM provided here is the latest STREAM OpenMP enabled benchmark.
+(see http://www.cs.virginia.edu/stream/ref.html)
+
+Optionally, for GPU architectures, the vendor may choose to run the Scalable Heterogeneous Computing Benchmark Suite (SHOC)
+Level 1 Triad benchmark. (see https://github.com/spaffy/shoc/wiki). See run rules below.
+
+
+The STREAM source code has a parameter, N, which represents the length of the 
+arrays used in the tests. It is important to set N such that the test
+touches a large enough portion of the memory. The vectors are of 
+type DOUBLE PRECISION and there are three vectors A,B,C of this length.
+So for 8 byte doubles 3*8*N bytes are required.
+
+N is hardcoded as a PARAMETER, located
+around line 98 of the FORTRAN stream.f source code.
+around line 58 of the C stream.c soruce code
+
+The STREAM source code also allows the use of an offset to separate
+the three arrays and you may use any value for this although you should
+state the reason for the specific offset chosen, either as a comment
+in the source code (which should be returned to NERSC) or elsewhere
+in your materials.
+
+You must also return to NERSC either a makefile or script or 
+something similar that shows all the compiler/linker options used for 
+compilations of STREAM. An example makefile and runscript are provided.
+
+To build the code:
+------------------
+Edit the Makefile to use the appropriate compilers and compiler flags.
+Type 'make'
+This will build both the C and Fortran executables.
+
+To run the code:
+----------------
+
+For Trinity/NERSC8:
+on a multi-core node with "n" hardware cores and M bytes of main memory STREAM must
+be executed as follows:
+
+1) The parameter N adjusted such that the used memory is  0.6*M
+2) Two results must be reported
+   a) maximum bandwidth with enough OpenMP threads to utilize all hardware cores and hardware threads (fully packed)
+   b) bandwidth for a vendor determined minimum number of cores and threads that achieves maximum bandwidth
+
+If results a) and b) are the same, only report a single result. In both cases, report the number of cores and threads used
+as well as their placement and affinity, if applicable. 
+
+Please report memory bandwidth results in the provided spreadsheet. 

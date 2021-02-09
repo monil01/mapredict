@@ -1,0 +1,157 @@
+$ hostname
+megatron.ftpn.ornl.gov
+$ cat /etc/redhat-release
+CentOS Linux release 7.2.1511 (Core)
+$ git describe --always
+nvl-c.hpdc2016-82-gfefb22d
+
+$ git diff -U0 .
+diff --git a/test/benchmarks/nvl-c/kernels/matmul/matmul.c b/test/benchmarks/nvl-c/kernels/matmul/matmul.c
+index f29fd98..bcb692b 100644
+--- a/test/benchmarks/nvl-c/kernels/matmul/matmul.c
++++ b/test/benchmarks/nvl-c/kernels/matmul/matmul.c
+@@ -28 +28,2 @@
+-#define NVLFILE "_NVLFILEPATH_"
++//#define NVLFILE "_NVLFILEPATH_"
++#define NVLFILE "/opt/fio/scratch/jum/matmul.nvl"
+
+$ rm -f /opt/fio/scratch/jum/matmul.nvl && make -s run-matmul-safe-refs-poor
+Input matrix size: M = 512, N = 512, P = 512
+Volatile Memory Elapsed time = 0.279941 sec
+NVM Elapsed time = 0.223703 sec
+Verification Successful err = 0.000000e+00
+
+$ rm -f /opt/fio/scratch/jum/matmul.nvl && make -s run-matmul-safe-refs
+Input matrix size: M = 512, N = 512, P = 512
+Volatile Memory Elapsed time = 0.287042 sec
+NVM Elapsed time = 0.224378 sec
+Verification Successful err = 0.000000e+00
+
+$ rm -f /opt/fio/scratch/jum/matmul.nvl && make -s run-matmul-safe-refs-txs3-poor
+Input matrix size: M = 512, N = 512, P = 512
+Volatile Memory Elapsed time = 0.266735 sec
+NVM Elapsed time = 0.236354 sec
+Verification Successful err = 0.000000e+00
+
+$ rm -f /opt/fio/scratch/jum/matmul.nvl && make -s run-matmul-safe-refs-txs3
+Input matrix size: M = 512, N = 512, P = 512
+Volatile Memory Elapsed time = 0.278442 sec
+NVM Elapsed time = 0.233694 sec
+Verification Successful err = 0.000000e+00
+
+
+
+Adding the following shows that all allocations are freed in all of
+the above cases:
+
+diff --git a/test/benchmarks/nvl-c/kernels/matmul/matmul.c b/test/benchmarks/nvl-c/kernels/matmul/matmul.c
+index f29fd98..8365d2b 100644
+--- a/test/benchmarks/nvl-c/kernels/matmul/matmul.c
++++ b/test/benchmarks/nvl-c/kernels/matmul/matmul.c
+@@ -227,2 +228,5 @@ struct root {
+ 
++size_t nvlrt_get_numAllocNV();
++size_t nvlrt_get_numFreeNV();
++
+ int
+@@ -405,2 +409,5 @@ main()
+ #elif MEM == NVL
++  nvl_set_root(heap, 0);
++  printf("nallocs=%zu\n", nvlrt_get_numAllocNV());
++  printf("nfrees=%zu\n", nvlrt_get_numFreeNV());
+   nvl_close(heap);
+
+
+
+To check overhead of automatic reference counting:
+
+$ rm -f /opt/fio/scratch/jum/matmul.nvl && make -s run-matmul-safe-norefs-poor
+Input matrix size: M = 512, N = 512, P = 512
+Volatile Memory Elapsed time = 0.299368 sec
+NVM Elapsed time = 0.223128 sec
+Verification Successful err = 0.000000e+00
+
+
+
+To check tx.add hoisting:
+
+$ rm -f /opt/fio/scratch/jum/matmul.nvl && make -s run-matmul-safe-refs-txs2-poor
+Input matrix size: M = 512, N = 512, P = 512
+Volatile Memory Elapsed time = 0.302268 sec
+NVM Elapsed time = 0.272312 sec
+Verification Successful err = 0.000000e+00
+
+$ rm -f /opt/fio/scratch/jum/matmul.nvl && make -s run-matmul-safe-refs-txs1-poor
+Input matrix size: M = 512, N = 512, P = 512
+Volatile Memory Elapsed time = 0.268500 sec
+NVM Elapsed time = 0.271434 sec
+Verification Successful err = 0.000000e+00
+
+
+
+Automatic Shadow Updates
+------------------------
+
+For a detailed discussion of automatic shadow update results for matmul, see
+our submission to CGO'17.
+
+The results below were collected at various stages of development of NVL-C's
+automatic shadow update implementation, so many are out of date.
+
+A pointer to the output matrix allocation is passed as a function argument
+to MatrixMultiplication_nv. Without inlining, this would suppress automatic
+shadow updates.
+
+The output matrix allocation is normally divided evenly among multiple
+transactions according to ROWS_PER_TX, so each undo log then includes no
+more than half the matrix allocation. According to our cost model then,
+shadow updates cannot normally improve execution time.
+
+Even if we set ROWS_PER_TX = N so that the undo log includes the entire
+matrix allocation, we need a large matrix allocation in order to overcome
+the constant baseline overhead of shadow updates.  Our cost model predicts
+that shadow updates should benefit execution time on megatron for
+ROWS_PER_TX = N > 671. However, at this scale, the execution time for matrix
+multiplication seems to far outweigh any execution time overhead from a
+single transaction, a single large undo log, or a single shadow update, so
+shadow updates don't really matter. Increasing to ROWS_PER_TX=N=1024 or 4096
+still gives the same execution time with and without shadow updates.
+
+To see an impact from shadow updates, we need smaller matrix allocations or
+more frequent transactions. Again, our cost model predicts that shadow
+updates will then harm execution time. The table below includes some cases
+where shadow updates harm execution time. Shadow updates are prevented by
+our cost model in every such case.
+
+N     ROWS_PER_TX   without  with
+-----------------------------------
+128   128           0.004s   0.01s
+512   512           0.231s   0.231s
+512   256           0.229s   0.238s
+512   128           0.230s   0.242s
+512   8             0.281s   0.506s
+671   671           0.363s   0.363s
+1024  1024          7.2s     7.2s
+2048  2048          84s      84s
+2048  1024          84s      110s
+4096  4096          748s     748s
+
+In summary, our cost model seems to prevent shadow updates from harming
+execution time. However, shadow updates seem to have little to offer matmul.
+
+The above is without PMEM_IS_PMEM_FORCE=1. With it (but still with backup
+not backup_writeFirst), we have:
+
+N     ROWS_PER_TX   without  with
+-----------------------------------
+64    64            0.0006s  0.0006s
+128   128           0.004s   0.005s
+316   316           0.04s    0.04s
+512   512           0.224s   0.224s
+512   256           0.223s   0.225s
+512   128           0.223s   0.225s
+512   8             0.224s   0.305s
+671   671           0.359s   0.357s
+1024  1024          7.2s     7.2s
+1024  512           7.2s     7.2s
+1024  256           7.2s     7.2s

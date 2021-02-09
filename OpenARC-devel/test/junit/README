@@ -1,0 +1,102 @@
+Overview
+--------
+
+This directory contains a JUnit test suite for OpenARC.  Currently, it
+contains tests for OpenARC's LLVM backend and cannot be run if LLVM
+support is not built.
+
+Prerequisites
+-------------
+
+You need the following software packages in order to run OpenARC's
+JUnit test suite.  Versions listed below are the versions we currently
+test, but later versions might work just as well.
+
+* JUnit <http://junit.org>
+
+  We normally run JUnit from Eclipse, whose JDT support includes
+  JUnit.  However, in order to run JUnit from a shell, you need the
+  following jars from the "Download and install" link at the above
+  URL:
+
+    junit.jar 4.11
+    hamcrest-core.jar 1.3
+
+* System Rules 1.9.0 <http://stefanbirkner.github.io/system-rules/>
+
+  OpenARC's JUnit test suite also depends on the System Rules
+  extension for JUnit, to which the main JUnit page has the above
+  link.  This extension is not included with the installations of
+  Eclipse we have tested.
+
+* Apache Commons IO 2.4 <https://commons.apache.org/proper/commons-io/download_io.cgi>
+
+  This package is required for some components of System Rules, but
+  OpenARC's JUnit test suite might not currently require it.
+
+Eclipse Setup
+-------------
+
+After you have set up an Eclipse project for OpenARC, the following
+steps configure that project to run OpenARC's JUnit test suite.  We
+have tested with Eclipse IDE for Java Developers, Luna Service Release
+2 (4.4.2) on Mac OS X Version 10.9.5.
+
+* right-click your OpenARC project > Properties > Java Build Path
+** select the Libraries tab
+*** Add Library > JUnit > Next
+**** the JUnit library version is 4 by default
+**** Finish
+*** Add External JARs > browse to your System Rules jar > Open
+*** Add External JARs > browse to your Apache Commons IO jar > Open
+** OK
+
+* right-click your OpenARC project > Run As > Run Configurations
+** double-click JUnit
+** set the Name however you like
+** select the Test tab
+*** check "Run a single test"
+*** "Project" should already be set to your OpenARC project
+*** set Test class to: openacc.test.JUnitSuite
+*** "Test method" should already be set to grayed "(all methods)"
+*** set "Test runner" to JUnit 4
+** select the Arguments tab
+*** under VM arguments, add:
+
+-ea:cetus... -ea:openacc... -ea:org.jllvm...
+
+** Apply > Close
+
+The run configuration you just created should now be listed when you
+click the drop down list for Eclipse's run button.  Running that
+configuration will run all of OpenARC's JUnit test suite except those
+tests that are skipped.
+
+Skipped Tests
+-------------
+
+Some test classes are skipped by default.  For example,
+test/junit/openacc/codegen/llvmBackend/BuildLLVMTest_SpecCPU2006.java.
+To enable such a test class, open its java file and remove the Ignore
+attribute on the class.  However, read its header comments first to
+understand why it's skipped and whether you need to satisfy additional
+requirements before running it.
+
+Running from a Shell
+--------------------
+
+Running OpenARC's JUnit test suite from a shell doesn't produce the
+nicely formatted output that Eclipse does, but sometimes it's
+necessary when you need to run it on a remote system.
+
+First, in make.header in the root directory of OpenARC, set
+JUNIT_CLASSPATH to locate all the Java prerequisites listed above.
+
+Second, run the following command from the root directory of OpenARC:
+
+$ ./build.sh check
+
+This will produce a tremendous amount of output, most of which will be
+captured in check.log as well.  The last line summarizes how many
+tests ran and how many failed, but it does not summarize skipped tests
+like Eclipse does.

@@ -1,0 +1,80 @@
+#! /bin/bash
+if [ $# -ge 2 ]; then
+    use_mpi=$1
+	dump_output=$2
+elif [ $# -eq 1 ]; then
+    use_mpi=$1
+	dump_output=0
+else
+    use_mpi=0
+	dump_output=0
+fi
+
+verLevel=0
+mpiinclude="/opt/cray/mpt/6.3.0/gni/mpich2-intel/130/include"
+openarcrt="../../../../openarcrt"
+openarclib="../../../../lib"
+
+if [ ! -f "openarcConf.txt" ]; then
+    cp "openarcConf_FTINJ.txt" "openarcConf.txt"
+fi
+
+if [ "$mpiinclude" != "" ]; then
+    mv "openarcConf.txt" "openarcConf.txt_tmp"
+    cat "openarcConf.txt_tmp" | sed "s|__mpiinclude__|${mpiinclude}|g" > "openarcConf.txt"
+    rm "openarcConf.txt_tmp"
+fi
+
+if [ "$openarcrt" != "" ]; then
+    mv "openarcConf.txt" "openarcConf.txt_tmp"
+    cat "openarcConf.txt_tmp" | sed "s|__openarcrt__|${openarcrt}|g" > "openarcConf.txt"
+    rm "openarcConf.txt_tmp"
+fi
+
+if [ "$OPENARC_ARCH" != "" ]; then
+    mv "openarcConf.txt" "openarcConf.txt_tmp"
+    cat "openarcConf.txt_tmp" | sed "s|__openarc_arch__|${OPENARC_ARCH}|g" > "openarcConf.txt"
+    rm "openarcConf.txt_tmp"
+else
+    mv "openarcConf.txt" "openarcConf.txt_tmp"
+    cat "openarcConf.txt_tmp" | sed "s|__openarc_arch__|0|g" > "openarcConf.txt"
+    rm "openarcConf.txt_tmp"
+fi
+
+mv "openarcConf.txt" "openarcConf.txt_tmp"
+cat "openarcConf.txt_tmp" | sed "s|__use_mpi__|${use_mpi}|g" > "openarcConf.txt"
+rm "openarcConf.txt_tmp"
+mv "openarcConf.txt" "openarcConf.txt_tmp"
+cat "openarcConf.txt_tmp" | sed "s|__dump_output__|${dump_output}|g" > "openarcConf.txt"
+rm "openarcConf.txt_tmp"
+
+java -classpath $openarclib/cetus.jar:$openarclib/antlr.jar openacc.exec.ACC2GPUDriver -verbosity=${verLevel} -gpuConfFile=openarcConf.txt *.c
+if [ -d "./cetus_output" ]; then
+cp *.h ./cetus_output/
+cd cetus_output
+if [ -f "lulesh.cpp" ]; then
+	targetFile="lulesh.cpp"
+	cat $targetFile | grep "_Bool" > /dev/null
+	if [ $? -eq 0 ];  then
+	mv "$targetFile" lulesh.tmp
+	cat "lulesh.tmp" | sed "s|_Bool|PERM|g" > lulesh.tmp2
+	cat "lulesh.tmp2" | sed "s|pallocator.h|jemalloc/pallocator.h|g" > lulesh.tmp
+	cat "lulesh.tmp" | sed "s|resilience\.h|resilience_ext\.h|g" > lulesh.tmp2
+	cat "lulesh.tmp2" | sed "s|#include \"jemalloc/pallocator.h\"|#define JEMALLOC_MANGLE\n&|g" > "$targetFile"
+	rm lulesh.tmp lulesh.tmp2
+	fi
+fi
+if [ -f "lulesh.c" ]; then
+	targetFile="lulesh.c"
+	cat $targetFile | grep "_Bool" > /dev/null
+	if [ $? -eq 0 ];  then
+	mv "$targetFile" lulesh.tmp
+	cat "lulesh.tmp" | sed "s|_Bool|PERM|g" > lulesh.tmp2
+	cat "lulesh.tmp2" | sed "s|pallocator.h|jemalloc/pallocator.h|g" > lulesh.tmp
+	cat "lulesh.tmp" | sed "s|resilience\.h|resilience_ext\.h|g" > lulesh.tmp2
+	cat "lulesh.tmp2" | sed "s|#include \"jemalloc/pallocator.h\"|#define JEMALLOC_MANGLE\n&|g" > "$targetFile"
+	rm lulesh.tmp lulesh.tmp2
+	fi
+fi
+cd ../
+fi

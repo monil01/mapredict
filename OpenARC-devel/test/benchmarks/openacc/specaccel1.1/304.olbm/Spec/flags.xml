@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription SYSTEM
+       "http://www.spec.org/dtd/cpuflags2.dtd">
+
+<!-- This file defines portability flags that may be used when compiling
+     304.olbm     
+
+  Copyright 2010 Standard Performance Evaluation Corporation
+
+  $Revision: 863 $
+  $Date: 2013-11-01 14:28:05 -0400 (Fri, 01 Nov 2013) $
+-->
+<flagsdescription>
+
+<filename>304.olbm.flags</filename>
+
+<title>304.olbm Approved Portability Flags</title>
+
+<header>
+<![CDATA[
+<p>This is the complete set of approved portability flags for 304.olbm.</p>
+]]>
+</header>
+
+<!-- flag name="DDBG" class="portability" -->
+<flag name="DDBG" class="forbidden">
+Enable internal debugging print statements.
+</flag>
+
+<!-- flag name="D_CONFIG_H_" class="portability" -->
+<flag name="D_CONFIG_H_" class="forbidden">
+Header file guard. 
+</flag>
+
+<!-- flag name="D_LBM_MACROS_H_" class="portability" -->
+<flag name="D_LBM_MACROS_H_" class="forbidden">
+Header file guard. 
+</flag>
+
+<!-- flag name="D_LBM_H_" class="portability" -->
+<flag name="D_LBM_H_" class="forbidden">
+Header file guard. 
+</flag>
+
+<!-- flag name="D_MAIN_H_" class="portability" -->
+<flag name="D_MAIN_H_" class="forbidden">
+Header file guard. 
+</flag>
+
+
+</flagsdescription>
