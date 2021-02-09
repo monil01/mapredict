@@ -28,8 +28,10 @@
         
     3.2 Getting the code
         3.2.1 git clone https://github.com/monil01/mapmc.git
-        3.2.2 git submodule init
-        3.2.3 git submodule update
+        3.2.2 cd mapmc
+        3.2.3 git checkout master
+        3.2.4 git submodule init
+        3.2.5 git submodule update
         
     3.3 installing
         3.3.1 cd [MAPredict_root]/aspen
