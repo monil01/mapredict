@@ -4,6 +4,12 @@
 
 #### A static analysis driven memory access prediction framework for modern CPUs.
 
+
+
+```diff
+++ New: MAPredict now does the total nodal prediction of LULESH. > 90% accuracy in all intel micro-architecutres. Source code: [applications/memory_research_ornl/aspen_model_generation/lulesh_full]++ 
+```
+
 #### 1. Overview
 ##### MAPredict, a static analysis driven framework that provides memory access prediction by gathering application and machines properties at compile time. MAPredict invokes an analytical model to predict LLC-DRAM traffic by combining the application model, the machine model, and user-provided hints for capturing dynamic information. MAPredict is tested on different micro-architectures of Intel and provided high accuracy for applications with different access patterns.
 
