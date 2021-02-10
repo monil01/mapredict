@@ -252,7 +252,10 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
         if (req) // requires statement
         {
             // not entertaining other types of instructions
-            if (req->GetResource() != "loads" && req->GetResource() != "stores" ) continue;
+            if (req->GetResource() != "loads" && req->GetResource() != "stores") continue;
+            if (req->GetToFrom().length() < 1) continue;
+
+            if(DEBUG_MAPMC == true) std::cout << " Variable name: To to from: " << req->GetToFrom() << " -- instruction type " << req->GetResource() << "\n";
             // calling the analytical model
 			std::int64_t memory_access_statement =  predictMemoryStatement(req, socket, inner_parallelism);
 			if(DEBUG_MAPMC == true) std::cout << " memory access statement : " << memory_access_statement << "\n";
@@ -262,6 +265,8 @@ traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
     } 
 
     total_memory_access *= outer_parallelism;
+
+    if(DEBUG_MAPMC == true) std::cout << " Execute Block name: " << exec->GetName() << "\n";
     if(DEBUG_MAPMC == true) std::cout << " Total executive block memory access : " << total_memory_access << "\n \n";
 
     //exit(0);
