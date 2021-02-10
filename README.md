@@ -31,7 +31,7 @@
         3.2.2 cd mapmc
         3.2.3 git checkout master
         3.2.4 git submodule init
-        3.2.5 git submodule update
+        3.2.5 git submodule update --remote --merge
         
     3.3 installing
         3.3.1 cd [MAPredict_root]/aspen
