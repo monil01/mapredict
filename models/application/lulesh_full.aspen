@@ -39,7 +39,7 @@ data sigxx as Array(m_numElem, aspen_param_sizeof_double)
 data sigyy as Array(m_numElem, aspen_param_sizeof_double)
 data sigzz as Array(m_numElem, aspen_param_sizeof_double)
 data determ as Array(m_numElem, aspen_param_sizeof_double)
-param edgeElems = 40
+param edgeElems = 300
 param edgeNodes = (edgeElems+1)
 param m_sizeX = edgeElems
 param m_numElem = ((edgeElems*edgeElems)*edgeElems)

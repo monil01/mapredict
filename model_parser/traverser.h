@@ -21,6 +21,7 @@
 #include "app/ASTRequiresStatement.h"
 #include "walkers/AspenTool.h"
 #include "types.h"
+#include "AspenUtility.h"
 
 
 
@@ -40,6 +41,7 @@ private:
     //ASTMachModel *mach = NULL;
 //TODo
 // All the private varialbe required to call the analytical model function
+    AspenUtility *_aspen_utility = NULL;
 
 
 public:
@@ -54,14 +56,8 @@ std::int64_t  predictMemoryAccess(ASTAppModel *app,
 std::int64_t  predictMemoryStatement(const ASTRequiresStatement *req, std::string socket, 
     std::int64_t inner_parallelism);
 
-std::int64_t  getApplicationParam(ASTAppModel *app, std::string param);
-std::string  getNameOfDataType(std::string str_expression);
 
-const ASTMachComponent* getSocketComponent(ASTMachModel *mach, std::string socket);
 
-std::int64_t getAnyMachineProperty(ASTMachModel *mach, 
-			std::string socket,
-			std::string component, std::string property);
 
 //std::int64_t analyticalStreamingAccess(std::int64_t D, std::int64_t E, std::int64_t S, std::int64_t CL);
 std::int64_t callAnalyticalModel(std::int64_t D, std::int64_t E, std::int64_t S, std::int64_t CL);
@@ -70,8 +66,6 @@ std::int64_t
 recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket, 
     std::int64_t outer_parallelism,
     const ASTControlStatement *s);
-
-int getMicroarchitecture(std::string socket);
 
 
 std::int64_t executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket,
