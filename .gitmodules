@@ -1,6 +1,0 @@
-[submodule "memory_research_ornl"]
-	path = memory_research_ornl
-	url = https://github.com/monil01/memory_research_ornl.git
-[submodule "applications/memory_research"]
-	path = applications/memory_research
-	url = https://github.com/monil01/memory_research_ornl.git
