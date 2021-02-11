@@ -16,16 +16,14 @@
 #### 2. Organization of the Repository
     2.1 [applications]: Follow the installation procedure to get all the content of this folder.  
           2.1.1 [applications/memory_research_ornl/all_apps_experiments]: TAU-PAPI script to generate LLC-DRAM traffic 
-                data for applications. Scripts are also available for different micro-architechtures of Intel and also 
-                for OpenMP execution.
+                    data for applications. Scripts are also available for different micro-architechtures of Intel and 
+                    also for OpenMP execution.
           2.1.2 [applications/memory_research_ornl/aspen_model_generation]: This folder contains all model generation 
-                source code (annotated source code) which is used by MAPredict to generate application model.
-    2.2 [aspen]: this folder contains aspen code which is needed for MAPredict. Aspen abstract models enable the creation
-        of performance models.
-    2.3 [OpenARC-devel]: This folder contains the source for OpenARC and COMPASS framework. MAPredict is uses COMPASS 
-        and OpenARC support. 
-    2.4 [model_parser]: This folder contains MAPredict's model parser that traverses the application and machine model 
-        and invokes an appropriate analytical model.
+                    source code (annotated source code) which is used by MAPredict to generate application model.
+    2.2 [aspen]: contains aspen source code. Aspen abstract models enable the creation of performance models.
+    2.3 [OpenARC-devel]: Contains the source code for OpenARC and COMPASS framework. 
+    2.4 [model_parser]: Contains MAPredict's model parser that traverses the application and machine model 
+            and invokes an appropriate analytical model.
     2.5 [models]: This folder contains the application and machine model which are passes to MAPredict for prediction.
     2.6 [scripts]: These scripts are used to compile MAPredict and invoke appropriate machine and application models.
     
@@ -59,15 +57,18 @@
         3.3.9 make (it should build the MAPredict binary)
         
     3.4 testing
-        3.4.1 run: ./scripts/stream_100.sh  , it should compile mapredict, generate the application model and generate a prediction result.
+        3.4.1 run: ./scripts/stream_100.sh  , it compiles mapredict, generates the model and generate a prediction result.
         3.4.2 convention of running MAPredict: ./[MAPredict_binary] [application_model] [machine_model]
   
   
 #### 4. Examples
 
-    4.1 Source Code annonation: Source code annotation examplese are in [applications/memory_research_ornl/aspen_model_generation].
-    4.2 Memory prediction for all applications: [MAPredict_root]/scripts directory has scripts for all applications that generate memory prediction.
-    4.3 #### Lulesh : source code annotation processor for lulesh can be found in [applications/memory_research_ornl/aspen_model_generation/lulesh_full].
+    4.1 Source Code annonation: Source code annotation examplese are in 
+            [applications/memory_research_ornl/aspen_model_generation].
+    4.2 Memory prediction for all applications: [MAPredict_root]/scripts directory has scripts for all applications 
+            that generate memory prediction.
+    4.3 #### Lulesh : source code annotation processor for lulesh can be found in 
+            [applications/memory_research_ornl/aspen_model_generation/lulesh_full].
     
 
 #### 5. Data for ICS21
