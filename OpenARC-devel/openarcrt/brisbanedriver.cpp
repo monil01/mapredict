@@ -4,8 +4,6 @@
 #include <brisbane/rt/LoaderCUDA.h>
 #include <brisbane/rt/Mem.h>
 
-#define BRISBANE_TASK_SUBMIT_MODE 1
-
 //Below structures contain Brisbane device IDs for a given device type.
 std::vector<int> BrisbaneDriver::NVIDIADeviceIDs;
 std::vector<int> BrisbaneDriver::AMDDeviceIDs;
@@ -378,11 +376,7 @@ HI_error_t BrisbaneDriver::HI_kernel_call(std::string kernel_name, size_t gridSi
 #endif
   if( nestingLevel == 0 ) {
     //brisbane_task_submit(task, brisbane_default, NULL, true);
-#if BRISBANE_TASK_SUBMIT_MODE == 0
     brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
-#else
-    brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
-#endif
 #ifdef _OPENARC_PROFILE_
 	tconf->BTaskCnt++;	
     if( HI_openarcrt_verbosity > 2 ) {
@@ -591,11 +585,7 @@ HI_error_t BrisbaneDriver::HI_memcpy(void *dst, const void *src, size_t count, H
 #endif
   		if( nestingLevel == 0 ) {
         	//brisbane_task_submit(task, brisbane_default, NULL, true);
-#if BRISBANE_TASK_SUBMIT_MODE == 2
-  			brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
-#else
   			brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
-#endif
 #ifdef _OPENARC_PROFILE_
 			tconf->BTaskCnt++;	
     	if( HI_openarcrt_verbosity > 2 ) {
@@ -628,11 +618,7 @@ HI_error_t BrisbaneDriver::HI_memcpy(void *dst, const void *src, size_t count, H
 #endif
   			if( nestingLevel == 0 ) {
         		//brisbane_task_submit(task, brisbane_default, NULL, true);
-#if BRISBANE_TASK_SUBMIT_MODE == 2
-  				brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
-#else
   				brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
-#endif
 #ifdef _OPENARC_PROFILE_
 				tconf->BTaskCnt++;	
     			if( HI_openarcrt_verbosity > 2 ) {
@@ -1437,11 +1423,7 @@ HI_error_t BrisbaneDriver::HI_bind_tex(std::string texName,  HI_datatype_t type,
     void* tmp = malloc(size);
     brisbane_task_h2d(task, (*((brisbane_mem*) &tHandle)), 0, size, tmp);
   	if( nestingLevel == 0 ) {
-#if BRISBANE_TASK_SUBMIT_MODE == 2
-    	brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
-#else
     	brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
-#endif
 #ifdef _OPENARC_PROFILE_
 		tconf->BTaskCnt++;	
     	if( HI_openarcrt_verbosity > 2 ) {
@@ -1482,11 +1464,7 @@ HI_error_t BrisbaneDriver::HI_bind_tex(std::string texName,  HI_datatype_t type,
   brisbane_task_custom(task, 0xdeadcafe, params, params_size);
   if( nestingLevel == 0 ) {
     //brisbane_task_submit(task, brisbane_default, NULL, true);
-#if BRISBANE_TASK_SUBMIT_MODE == 2
-    brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
-#else
     brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
-#endif
 #ifdef _OPENARC_PROFILE_
 	tconf->BTaskCnt++;	
     if( HI_openarcrt_verbosity > 2 ) {
@@ -1661,13 +1639,7 @@ void BrisbaneDriver::HI_exit_subregion(const char *label, int threadID) {
     }
 #endif
   			HostConf_t *tconf = getHostConf(threadID);
-#if BRISBANE_TASK_SUBMIT_MODE == 0
     		brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
-#elif BRISBANE_TASK_SUBMIT_MODE == 1
-    		brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, (brisbane_task_kernel_cmd_only(task) != BRISBANE_OK));
-#else
-    		brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
-#endif
 #ifdef _OPENARC_PROFILE_
 			tconf->BTaskCnt++;	
 #endif

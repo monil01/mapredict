@@ -178,9 +178,6 @@ HI_error_t OpenCLDriver::init(int threadID) {
 			exit(1);
 		}
 		platformName = namestr;
-#ifdef PRINT_DEBUG
-		fprintf(stderr, "[DEBUG in OpenCLDriver::init()] Found one OpenCL platform: %s\n", platformName);
-#endif
 	} else {
 		bool foundPlatform = false;
 		for( unsigned i=0; i<num_platforms; i++ ) {
@@ -198,9 +195,6 @@ HI_error_t OpenCLDriver::init(int threadID) {
 				exit(1);
 			}
 			platformName = namestr;
-#ifdef PRINT_DEBUG
-			fprintf(stderr, "[DEBUG in OpenCLDriver::init()] Found OpenCL platform[%d]: %s\n",i , platformName);
-#endif
 			std::string name = namestr;
 			std::transform(name.begin(), name.end(), name.begin(), tolower);
 			std::string search;
@@ -223,12 +217,6 @@ HI_error_t OpenCLDriver::init(int threadID) {
 				if( name.find(search) != std::string::npos ) {
 					foundPlatform = true;
 					break;
-				} else {
-					search = "snapdragon";
-					if( name.find(search) != std::string::npos ) {
-						foundPlatform = true;
-						break;
-					}
 				}
 			}
 			delete [] namestr;
@@ -446,21 +434,12 @@ HI_error_t OpenCLDriver::init(int threadID) {
     cl_command_queue s0, s1;
     cl_event e0, e1;
 	//for ( int i=0; i<HI_num_hostthreads; i++ ) {
-		//[DEBUG on Feb. 9, 2021] clCreateCommandQueue() is deprecated on OpenCL V2.0
-#if defined(CL_VERSION_2_0) 
-    	s0 = clCreateCommandQueueWithProperties(clContext, clDevice, NULL, &err);
-#else
     	s0 = clCreateCommandQueue(clContext, clDevice, 0, &err);
-#endif
     	if(err != CL_SUCCESS) {
         	fprintf(stderr, "[ERROR in OpenCLDriver::init()] failed to create OPENCL queue with error %d (%s)\n", err, opencl_error_code(err));
 			exit(1);
     	}
-#if defined(CL_VERSION_2_0)
-    	s1 = clCreateCommandQueueWithProperties(clContext, clDevice, NULL, &err);
-#else
     	s1 = clCreateCommandQueue(clContext, clDevice, 0, &err);
-#endif
     	if(err != CL_SUCCESS) {
         	fprintf(stderr, "[ERROR in OpenCLDriver::init()] failed to create OPENCL queue with error %d (%s)\n", err, opencl_error_code(err));
 			exit(1);
@@ -570,20 +549,12 @@ HI_error_t OpenCLDriver::createKernelArgMap(int threadID) {
     int thread_id = tconf->threadID;
     if( queueMap.count(0+thread_id*MAX_NUM_QUEUES_PER_THREAD) == 0 ) {
     	cl_command_queue s0, s1;
-#if defined(CL_VERSION_2_0)
-    	s0 = clCreateCommandQueueWithProperties(clContext, clDevice, NULL, &err);
-#else
     	s0 = clCreateCommandQueue(clContext, clDevice, 0, &err);
-#endif
     	if(err != CL_SUCCESS) {
         	fprintf(stderr, "[ERROR in OpenCLDriver::init()] failed to create OPENCL queue with error %d (%s)\n", err, opencl_error_code(err));
 			exit(1);
     	}
-#if defined(CL_VERSION_2_0)
-    	s1 = clCreateCommandQueueWithProperties(clContext, clDevice, NULL, &err);
-#else
     	s1 = clCreateCommandQueue(clContext, clDevice, 0, &err);
-#endif
     	if(err != CL_SUCCESS) {
         	fprintf(stderr, "[ERROR in OpenCLDriver::init()] failed to create OPENCL queue with error %d (%s)\n", err, opencl_error_code(err));
 			exit(1);
@@ -725,9 +696,6 @@ int OpenCLDriver::HI_get_num_devices(acc_device_t devType, int threadID) {
 				exit(1);
 			}
 			platformName = namestr;
-#ifdef PRINT_DEBUG
-			fprintf(stderr, "[DEBUG in OpenCLDriver::HI_get_num_devices()] Found OpenCL platform: %s\n", platformName);
-#endif
 		} else {
 			bool foundPlatform = false;
 			for( unsigned i=0; i<num_platforms; i++ ) {
@@ -745,9 +713,6 @@ int OpenCLDriver::HI_get_num_devices(acc_device_t devType, int threadID) {
 					exit(1);
         		}
 				platformName = namestr;
-#ifdef PRINT_DEBUG
-				fprintf(stderr, "[DEBUG in OpenCLDriver::HI_get_num_devices()] Found OpenCL platform[%d]: %s\n",i , platformName);
-#endif
 				std::string name = namestr;
 				std::transform(name.begin(), name.end(), name.begin(), tolower);
 				std::string search;
@@ -770,12 +735,6 @@ int OpenCLDriver::HI_get_num_devices(acc_device_t devType, int threadID) {
 					if( name.find(search) != std::string::npos ) {
 						foundPlatform = true;
 						break;
-					} else {
-						search = "snapdragon";
-						if( name.find(search) != std::string::npos ) {
-							foundPlatform = true;
-							break;
-						}
 					}
 				}
 				delete [] namestr;
@@ -2579,11 +2538,7 @@ void OpenCLDriver::HI_set_async(int asyncId, int threadID) {
 
         if(it == queueMap.end()) {
             cl_command_queue queue;
-#if defined(CL_VERSION_2_0)
-    		queue = clCreateCommandQueueWithProperties(clContext, clDevice, NULL, &err);
-#else
             queue = clCreateCommandQueue(clContext, clDevice, 0, &err);
-#endif
             if(err != CL_SUCCESS) {
                 fprintf(stderr, "[ERROR in OpenCLDriver::HI_set_async()] failed to create OPENCL queue with error %d (%s)\n", err, opencl_error_code(err));
 				exit(1);
@@ -3028,7 +2983,7 @@ void OpenCLDriver::HI_wait_for_events(int async, int num_waits, int* waits, int 
             event_wait_list[num_events_in_wait_list++] = *getEvent(waits[i], tconf->threadID);
         }
         if (num_events_in_wait_list > 0) {
-#if defined(CL_VERSION_1_2)
+#ifdef CL_VERSION_1_2
             err = clEnqueueMarkerWithWaitList(queue, num_events_in_wait_list, event_wait_list, NULL);
 #else
             err = clEnqueueWaitForEvents(queue, num_events_in_wait_list, event_wait_list);

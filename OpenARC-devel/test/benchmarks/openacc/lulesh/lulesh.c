@@ -148,7 +148,6 @@ Additional BSD Notice
 #define LULESH_DUMP_OUTPUT  0
 #endif
 
-
 /*********************************/
 /* Data structure implementation */
 /*********************************/
@@ -1438,11 +1437,7 @@ void CalcFBHourglassForceForElems(
     ss1 = ss[i2];
     mass1 = elemMass[i2];
     
-#ifdef USE_SINGLE_PRECISION
-    volume13 = powf(determ[i2], (1.0F / 3.0F));
-#else
     volume13 = pow(determ[i2], (1.0 / 3.0));
-#endif
 
     Index_t n0si2 = elemToNode[0];
     Index_t n1si2 = elemToNode[1];
@@ -1737,7 +1732,6 @@ void CalcHourglassControlForElems(
 #pragma acc wait(0)
 #endif
 
-#ifndef DISABLE_EXIT
   if(abort) {
 #if USE_MPI         
     MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
@@ -1745,7 +1739,6 @@ void CalcHourglassControlForElems(
     exit(VolumeError);
 #endif
   }
-#endif
 
   if ( hgcoef > (Real_t)(0.) ) {
     CalcFBHourglassForceForElems(nodelist, nodeElemCount,
@@ -1817,7 +1810,6 @@ void CalcVolumeForceForElems(Real_t *fx, Real_t *fy, Real_t *fz)
 #pragma acc wait(0)
 #endif
 
-#ifndef DISABLE_EXIT
     if(abort == 1) {
 #if USE_MPI            
       MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
@@ -1825,7 +1817,7 @@ void CalcVolumeForceForElems(Real_t *fx, Real_t *fy, Real_t *fz)
       exit(VolumeError);
 #endif
     }
-#endif
+
 
     CalcHourglassControlForElems(x, y, z, fx, fy, fz, determ, hgcoef, 
                                  nodelist, nodeElemCount, nodeElemStart, 
@@ -2850,7 +2842,6 @@ void CalcLagrangeElements(Real_t* vnew)
 #ifdef USE_ASYNC
 #pragma acc wait(0)
 #endif
-#ifndef DISABLE_EXIT
     if(abort) {
 #if USE_MPI
         MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
@@ -2858,7 +2849,6 @@ void CalcLagrangeElements(Real_t* vnew)
         exit(VolumeError);
 #endif
     }
-#endif
 
   } // end if numElem > 0
 }
@@ -3414,7 +3404,6 @@ void CalcQForElems(Real_t vnew[])
       }
     }
 
-#ifndef DISABLE_EXIT
     if(idx >= 0) {
 #if USE_MPI         
       MPI_Abort(MPI_COMM_WORLD, QStopError) ;
@@ -3422,7 +3411,6 @@ void CalcQForElems(Real_t vnew[])
       exit(QStopError);
 #endif
     }
-#endif
   }
 }
 
@@ -4117,7 +4105,6 @@ void ApplyMaterialPropertiesForElems(Real_t vnew[])
 #pragma acc wait(0)
 #endif
 
-#ifndef DISABLE_EXIT
       if (vc <= 0.) {
 #if USE_MPI             
         MPI_Abort(MPI_COMM_WORLD, VolumeError) ;
@@ -4125,7 +4112,6 @@ void ApplyMaterialPropertiesForElems(Real_t vnew[])
         exit(VolumeError);
 #endif
       }
-#endif
     } // end acc data
 
     Int_t r;
@@ -4899,8 +4885,6 @@ int main(int argc, char *argv[])
   elapsed_time = MPI_Wtime() - start;
 #else
   elapsed_time = (clock() - start) / CLOCKS_PER_SEC;
-  //[DEBUG for Snapdragon]
-  //elapsed_time = (clock() - start) / 1000000;
 #endif
   double elapsed_timeG;
 #if USE_MPI   

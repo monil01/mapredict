@@ -118,8 +118,6 @@ void HI_hostinit(int threadID) {
 			//Default behavior is changed to no-prepinning.
 			HI_prepin_host_memory = 0;
 		}
-		//[DEBUG on Feb. 5, 2021] explicitly reset the devMap not to have any garbage data.
-		HostConf::devMap.clear();
     	HI_hostinit_done = 1;
 		if( HI_prepin_host_memory == 1 ) {
 #ifdef _OPENARC_PROFILE_
@@ -528,7 +526,6 @@ void HostConf::HI_init(int devNum) {
 		{ //starts critical section.
 			if( HostConf::devMap.count(ttDevType) > 0 ) {
 				numDevices = HostConf::devMap.at(ttDevType).size();
-				if( numDevices < 0 ) { numDevices = 0; }
 			} else {
 				numDevices = 0;
 			}
