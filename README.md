@@ -31,6 +31,7 @@
         3.1.2 Java
         3.1.3 Bison
         3.1.4 python 3.6 or higher.
+        3.1.5 cuda-10 or higher
         
     3.2 Getting the code
         3.2.1 git clone https://github.com/monil01/mapmc.git
@@ -44,8 +45,12 @@
         3.3.2 ./configure
         3.3.3 make all -j (it should build libaspen.a in the lib folder)
         3.3.4 cd .. (come out of aspen directory)
-        3.3.5 Modify the python path in the Makefile.
-        3.3.6 make (it should build the MAPredict binary)
+        3.3.5 cd OpenARC-devel
+        3.3.5 export openarc=`pwd`
+        3.3.6 make (it will create all openarc binaries and drivers)
+        3.3.7 cd ..
+        3.3.8 Modify the python path in the Makefile.
+        3.3.9 make (it should build the MAPredict binary)
         
     3.4 testing
         3.4.1 run: ./scripts/stream_100.sh  , it should compile mapredict, generate the application model and generate a prediction result.
