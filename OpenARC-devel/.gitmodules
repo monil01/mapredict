@@ -1,8 +1,0 @@
-[submodule "llvm"]
-	path = llvm
-	url = ../LLVM.git
-	branch = openarc
-[submodule "nvl/pmem-nvml"]
-	path = nvl/pmem-nvml
-	url = ../../jum/pmem-nvml.git
-	branch = openarc

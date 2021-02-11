@@ -1,7 +1,0 @@
-#!/bin/bash
-cd ../src/
-sed -i 's/^# define APP.*/# define APP_'$1'/' app.cuh
-sed -i 's/^# define SCHED_POLICY.*/# define SCHED_POLICY '$2'/' rt.h
-cd ../Debug
-make clean  > /dev/null
-make -j 64 > /dev/null 2> /dev/null

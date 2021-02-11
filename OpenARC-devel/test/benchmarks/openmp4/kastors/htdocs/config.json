@@ -1,7 +1,0 @@
-{
-    "useSideMenu": true,
-    "lineBreaks": "gfm",
-    "additionalFooterText": "",
-    "anchorCharacter": "",
-    "title": "KaStORS, an OpenMP benchmark suite for dependent tasks"
-}

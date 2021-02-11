@@ -1,5 +1,0 @@
-Expected sum (regardless of RANKS or ITERS_PER_TX):
-
-N    | ITERS | sum
------+-------+------------
-1024 | 10    | 5512.098305
