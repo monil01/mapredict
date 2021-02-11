@@ -8,7 +8,7 @@ kernel grid_search {
 execute  "block_grid_search6" {
 flops [1] as integer
 flops [1] as integer
-loads [((1*aspen_param_sizeof_double)*aspen_param_length_array)] from unionize_array as stride(100000), pattern(random), algorithm(logarithm)
+loads [((1*aspen_param_sizeof_double)*aspen_param_length_array)] from unionize_array as stride((100000*0.71)), pattern(random), algorithm(logarithm)
 flops [(4*aspen_param_length_array)]
 flops [(2*aspen_param_lenght_array)] as sp, simd
 }

@@ -20,7 +20,7 @@
 #include "model/ASTMachModel.h"
 #include "app/ASTRequiresStatement.h"
 #include "walkers/AspenTool.h"
-#include "types.h"
+#include "Types.h"
 
 
 

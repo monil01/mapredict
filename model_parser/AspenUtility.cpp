@@ -16,9 +16,9 @@
 #include "model/ASTMachModel.h"
 #include "app/ASTRequiresStatement.h"
 #include "walkers/AspenTool.h"
-#include "types.h"
+#include "Types.h"
 #include "AspenUtility.h"
-#include "analytical_model.h"
+#include "AnalyticalModelIntel.h"
 
 
 

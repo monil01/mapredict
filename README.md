@@ -1,6 +1,6 @@
 <!-- # MAPredict -->
 
-![](model_parser/mapredict.png)
+![](model_parser/Mapredict.png)
 
 #### A static analysis driven memory access prediction framework for modern CPUs.
 
