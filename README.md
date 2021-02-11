@@ -7,7 +7,8 @@
 
 
 ```diff
-++ New: MAPredict now does the total nodal prediction of LULESH. > 90% accuracy in all intel micro-architecutres. Source code: [applications/memory_research_ornl/aspen_model_generation/lulesh_full]++ 
+++ New: MAPredict now does the total nodal prediction of LULESH. > 90% accuracy in all intel micro-architecutres. 
+        Source code: [applications/memory_research_ornl/aspen_model_generation/lulesh_full]++ 
 ```
 
 #### 1. Overview
