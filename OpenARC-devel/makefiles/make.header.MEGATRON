@@ -1,0 +1,264 @@
+####################################################################
+# - Modify the following makefile macros according to user's       #
+# environment.                                                     #
+# (Example settings can be found in the "Set the target system"    #
+#  section below.)                                                 # 
+#   - Set OPENARCLIB to the path to openarcrt directory.           #
+#       - Set OPENARC_ARCH to 0 if targeting CUDA GPUs             #
+#                         1 if targeting OpenCL devices            #
+#                         2 if targeting OpenCL for Xeon Phi       #
+#                         3 if targeting OpenCL for Intel FPGAs    #
+#                         4 if targeting MCL with OpenCL           #
+#                         5 if targeting AMD HIP                   #
+#                         6 if targeting Iris (Brisbane)           #
+#   - Modify target-specific compilation configuration.            #
+#       GOMP_FLAGS : compiler flag to enable OpenMP                #
+#       GOMP_LIBS  : library to add for OpenMP                     #
+#       GPTHREADS_FLAGS : compiler flag to enable Pthreads         #
+#       GPTHREADS_LIBS  : library to add for Pthreads              #
+#       CC         : frontend C compiler                           # 
+#       CXX        : frontend C++ compiler, used to compile        #
+#                    OpenARC-generated output program              #
+#       CPP        : C preprocessor called by OpenARC              #
+#       BACKENDCXX : backend compiler, used to compile OpenARC     #
+#                    runtimes (e.g., nvcc for CUDA runtimes)       #
+#       GMACROS    : global compiler flags                         #
+#       GPROFILEMACROS : macros used to compile profile-version of #
+#                        OpenARC runtimes, which should set macro  # 
+#                        _OPENARC_PROFILE_ to 1                    #
+#       GBACKEND_DEBUG : debug flags for the backend compiler      #
+#                     a debugger mode                              # 
+#       CC_FLAGS_PREFIX : prefix used to directly pass compiler    #
+#                         options in NVCC (Not needed for GCC)     #
+#       GBACKEND_FLAGS : flags for the backend compiler            #
+#       GBACKEND_INCLUDES : include path for the backend compiler  #
+#       GBACKEND_LIBS : libraries for the backend compiler         #
+#       GBACKEND_DEBUG : debug flags for the backend compiler      #
+#       GFRONTEND_FLAGS : flags for the frontend compiler          #
+#       GFRONTEND_INCLUDES : include path for the frontend compiler#
+#       GFRONTEND_LIBS : libraries for the frontend compiler       #
+#       GFRONTEND_DEBUG : debug flags for the frontend compiler    #
+#   - Modify target-specific LLVM backend configuration (required  #
+#     only if LLVM support is enabled):                            #
+#       LLVM_TARGET_TRIPLE      : LLVM target triple string        #
+#       LLVM_TARGET_DATA_LAYOUT : LLVM target data layout string   #
+#       PERL                    : location of perl                 #
+#   - Modify target-specific test configuration (required only for #
+#     some examples, benchmarks, or other tests):                  #
+#       MPI_FLAGS       : compiler flags for MPI                   #
+#       MPI_INCLUDES    : include path for MPI                     #
+#       MPI_LIBDIR      : library path for MPI                     #
+#       MPI_EXEC        : mpiexec command                          #
+#       FC              : fortran compiler                         #
+#       SPEC_CPU2006    : SPEC CPU 2006 installation directory     #
+#       SPEC_CFG        : SPEC CPU 2006 config file (if value does #
+#                         not contain "/", then it names a sample  #
+#                         file included with OpenARC)              #
+#       JUNIT_CLASSPATH : Java classpath when building and running #
+#                         JUnit test suite. See test/junit/README  #
+#                         for Java packages that must be located   #
+#                         here.                                    #
+#       NVM_TESTDIR     : directory for test suite to write files  #
+#                         intended for an NVM device. Defaults to  #
+#                         a temporary HDD directory. Setting this  #
+#                         to a directory on a RAM disk or on an    #
+#                         actual NVM device will accelerate the    #
+#                         NVM tests significantly.                 #
+#   - Specify availability of Intel's NVML libraries from pmem     #
+#     (required only for NVL runtime support):                     #
+#       HAVE_PMEM_NVML : whether OpenARC's nvl/pmem-nvml submodule #
+#                        has been cloned and built (1 for true and #
+#                        otherwise false)                          #
+#                                                                  #
+# When specifying CPP, you must specify a C preprocessor and       #
+# command-line options that disable C language extensions that     #
+# OpenARC does not support.  For example, on OS X when CPP is      #
+# clang, we have found that /usr/include/stdlib.h uses clang's     #
+# block reference extension.  To suppress that usage, we specify   #
+# CPP as gcc 4.2 (from MacPorts package apple-gcc42) or gcc 6.1.0  #
+# (from MacPorts package gcc6) with the -E and -std=c99 options.   #
+# (CF: GCC (Apple LLVM version 6.1.0) on OSX V10.10 ignores        #
+# -std=c99 option.)                                                #
+# ==> From OSX V10.14, clang and clang++ should be used for CC and #
+#     CXX, respectively, while still using gcc for CPP.            #
+#                                                                  #
+# LLVM_TARGET_TRIPLE and LLVM_TARGET_DATA_LAYOUT describe the      #
+# target platform to LLVM.  If you have clang installed, you can   #
+# usually use it to find the correct strings for your native       #
+# target.  For example, in our OS X installation, we see this:     #
+#                                                                  #
+#   $ echo 'int main() {return 0;}' > test.c                       #
+#   $ clang -S -emit-llvm -o- test.c | grep ^target                #
+#   target datalayout = "e-m:o-i64:64-f80:128-n8:16:32:64-S128"    #
+#   target triple = "x86_64-apple-macosx10.9.0"                    #
+#                                                                  #
+# For more information about these strings, see:                   #
+#                                                                  #
+#   http://llvm.org/docs/LangRef.html#target-triple                #
+#   http://llvm.org/docs/LangRef.html#data-layout                  #
+#                                                                  #
+# MPI_INCLUDES and MPI_LIBDIR are required to build MPI support    #
+# into the NVL runtime.                                            #
+#                                                                  #
+####################################################################
+###################
+# OpenARC Setting #
+###################
+OPENARCLIB ?= $(openarc)/openarcrt
+OPENARCINCLUDE ?= $(openarc)/openarcrt
+CETUS_OUTPUT = cetus_output
+
+########################################################################
+# Set the target system                                                #
+########################################################################
+# MEGATRON: Linux system with fusion-io ioScale2 SSD;                  #
+#                configuration is for LLVM backend                     #
+########################################################################
+TARGET_SYSTEM = MEGATRON
+
+################################
+# Target System: MEGATRON      #
+################################
+ifeq ($(TARGET_SYSTEM),MEGATRON)
+
+OPENARC_ARCH = 0
+GOMP_FLAGS = -fopenmp
+GOMP_LIBS = -lgomp
+GPTHREADS_FLAGS = 
+GPTHREADS_LIBS = -lpthread
+CC = gcc
+CXX = g++
+CPP = $(CC) -E
+GMACROS = -D OPENARC_ARCH=$(OPENARC_ARCH)
+GPROFILEMACROS = -D _OPENARC_PROFILE_=1
+BACKENDCXX = g++
+CC_FLAGS_PREFIX = 
+GBACKEND_FLAGS = -O3
+GBACKEND_INCLUDES = -I/opt/AMDAPPSDK-3.0/include
+GBACKEND_LIBS = -L/opt/AMDAPPSDK-3.0/lib/x86_64 -lOpenCL
+GBACKEND_DEBUG = -g
+GFRONTEND_FLAGS = -O3
+GFRONTEND_INCLUDES = 
+GFRONTEND_LIBS = -L/opt/AMDAPPSDK-3.0/lib/x86_64 -lOpenCL
+GFRONTEND_DEBUG = -g
+
+LLVM_TARGET_TRIPLE = x86_64-redhat-linux-gnu
+LLVM_TARGET_DATA_LAYOUT = e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128-p1:192:64:64-p2:192:64:64
+PERL = perl
+
+MPI_FLAGS =
+MPI_INCLUDES = /opt/shared/sw/x86_64-unknown-linux-gnu/openmpi/1.10.4-rhel7-gnu/include
+MPI_LIBDIR = /opt/shared/sw/x86_64-unknown-linux-gnu/openmpi/1.10.4-rhel7-gnu/lib
+MPI_EXEC = /opt/shared/sw/x86_64-unknown-linux-gnu/openmpi/1.10.4-rhel7-gnu/bin/mpiexec
+FC = gfortran
+SPEC_CPU2006 = /opt/proj-local/jum/spec-cpu2006-v1.0.1
+SPEC_CFG = spec-newark.cfg.in
+JUNIT_CLASSPATH = /opt/proj-local/jum/junit-4.11.jar:/opt/proj-local/jum/hamcrest-core-1.3.jar:/opt/proj-local/jum/system-rules-1.9.0.jar
+NVM_TESTDIR = /opt/fio/scratch/jum
+
+HAVE_PMEM_NVML = 1
+
+endif
+
+##############################################
+# Target System: Beacon MIC cluster          #
+##############################################
+ifeq ($(TARGET_SYSTEM),Beacon)
+
+OPENARC_ARCH = 2
+GOMP_FLAGS = -qopenmp
+GOMP_LIBS =
+GPTHREADS_FLAGS = 
+GPTHREADS_LIBS = -lpthread
+CC = icc
+CXX = icpc
+#CPP = $(CC) -E
+CPP = gcc -E -std=c99
+GMACROS = -DOPENARC_ARCH=$(OPENARC_ARCH)
+GPROFILEMACROS = -D_OPENARC_PROFILE_=1
+BACKENDCXX = icpc
+CC_FLAGS_PREFIX = 
+GBACKEND_FLAGS = -O3
+GBACKEND_INCLUDES = -I/nics/d/home/lees2/local/icd/include
+GBACKEND_LIBS = -L/nics/d/home/lees2/local/icd/bin -lOpenCL
+GBACKEND_DEBUG = -g
+GFRONTEND_FLAGS = -O3
+GFRONTEND_INCLUDES = -I/nics/d/home/lees2/local/icd/include
+GFRONTEND_LIBS = -L/nics/d/home/lees2/local/icd/bin -lOpenCL
+GFRONTEND_DEBUG = -g
+
+#LLVM_TARGET_TRIPLE =
+#LLVM_TARGET_DATA_LAYOUT =
+#PERL = perl
+
+#MPI_FLAGS =
+#MPI_INCLUDES =
+#MPI_LIBDIR =
+#MPI_EXEC =
+#FC =
+#SPEC_CPU2006 =
+#SPEC_CFG =
+#JUNIT_CLASSPATH =
+#NVM_TESTDIR =
+
+#HAVE_PMEM_NVML =
+
+endif
+
+#########################
+# Target System: Cooley #
+#########################
+ifeq ($(TARGET_SYSTEM),Cooley)
+
+OPENARC_ARCH = 0
+GOMP_FLAGS = -fopenmp
+GOMP_LIBS = -lgomp
+GPTHREADS_FLAGS = 
+GPTHREADS_LIBS = -lpthread
+CC = mpicc
+CXX = mpic++
+CPP = $(CC) -E
+GMACROS = -DOPENARC_ARCH=$(OPENARC_ARCH)
+GPROFILEMACROS = -D_OPENARC_PROFILE_=1
+ifeq ($(OPENARC_ARCH), 0)
+BACKENDCXX = g++
+CC_FLAGS_PREFIX =
+GBACKEND_FLAGS = -O3
+GBACKEND_INCLUDES = -I/soft/visualization/cuda-7.0.28/include
+GBACKEND_LIBS = 
+GBACKEND_DEBUG = -g -G
+GFRONTEND_FLAGS = -O3
+GFRONTEND_INCLUDES = 
+GFRONTEND_LIBS = 
+GFRONTEND_DEBUG = -g
+else
+BACKENDCXX = g++
+CC_FLAGS_PREFIX =
+GBACKEND_FLAGS = -O3
+GBACKEND_INCLUDES = -I/soft/visualization/cuda-7.0.28/include
+GBACKEND_LIBS =
+GBACKEND_DEBUG = -g
+GFRONTEND_FLAGS = -O3
+GFRONTEND_INCLUDES = 
+GFRONTEND_LIBS = 
+GFRONTEND_DEBUG = -g
+endif
+
+#LLVM_TARGET_TRIPLE =
+#LLVM_TARGET_DATA_LAYOUT =
+#PERL = perl
+
+#MPI_FLAGS =
+#MPI_INCLUDES =
+#MPI_LIBDIR =
+#MPI_EXEC =
+#FC =
+#SPEC_CPU2006 =
+#SPEC_CFG =
+#JUNIT_CLASSPATH =
+#NVM_TESTDIR =
+
+#HAVE_PMEM_NVML =
+
+endif
+

@@ -1,0 +1,233 @@
+# This is a very early attempt to wrap OpenARC+LLVM in a cc-like wrapper
+# script.  It does not yet support all features of a traditional C compiler.
+# Moreover, it does not always correctly quote command-line options it
+# passes through to other commands.
+
+use strict;
+use warnings;
+
+use Carp;
+use FindBin qw($RealBin);
+
+my $CPP = '@CPP@';
+my $CC = '@CC@';
+my $CETUS_OUTDIR = 'cetus_output';
+my $PMEM_INCLUDES = '@PMEM_INCLUDES@';
+my $PMEM_LIBDIR = '@PMEM_LIBDIR@';
+
+my $LLVM_BIN = "$RealBin/../llvm/install/bin";
+my $LLVM_LLC = "$LLVM_BIN/llc";
+my $LLVM_OPT = "$LLVM_BIN/opt";
+
+exit main(@ARGV);
+
+sub main {
+  print STDERR "$0: called with args: @ARGV\n";
+
+  # clean up
+  run("rm -rf ".shesc($CETUS_OUTDIR)
+      ." && mkdir -p ".shesc($CETUS_OUTDIR)."/opt-phase1"
+      ." ".shesc($CETUS_OUTDIR)."/opt-phase2",
+      "Cetus output directory cleanup");
+
+  # parse args
+  my $arcOpts = "";
+  my $outOptFile;
+  my $cppOpts = " -I. -D_OPENARC_";
+  my $ldOpts = "";
+  my $llcOpts = "";
+  my $optPhase2Opts = "";
+  my $inCFileArgs = "";
+  my $inObjFileArgs = "";
+  my $compileOnly = 0;
+  my $nvlAddTxsPass = 0;
+  my $nvlAddSafetyPass = 1;
+  my $nvlAddRefCountingPass = 1;
+  my $nvlAddPersistsPass = 0;
+  for (my $argi = 0; $argi <= $#_; ++$argi) {
+    my $arg = $_[$argi];
+    if ($arg eq "-o") {
+      die if $#_ < ++$argi;
+      $outOptFile = $_[$argi];
+    }
+    elsif ($arg =~ /^-Warc,/) {
+      # This is like gcc's "-Wl," except it passes its argument to OpenARC
+      # instead of the linker.
+      my $optArg = substr $arg, 6;
+      $arcOpts .= " " . shesc($optArg);
+    }
+    elsif ($arg eq "-ffitl") {
+      $arcOpts .= " -enableFaultInjection";
+    }
+    elsif ($arg eq "-fnvl-add-txs") {
+      $nvlAddTxsPass = 1;
+    }
+    elsif ($arg eq "-fno-nvl-add-txs") {
+      $nvlAddTxsPass = 0;
+    }
+    elsif ($arg eq "-fnvl-add-safety") {
+      $nvlAddSafetyPass = 1;
+    }
+    elsif ($arg eq "-fno-nvl-add-safety") {
+      $nvlAddSafetyPass = 0;
+    }
+    elsif ($arg eq "-fnvl-add-ref-counting") {
+      $nvlAddRefCountingPass = 1;
+    }
+    elsif ($arg eq "-fno-nvl-add-ref-counting") {
+      $nvlAddRefCountingPass = 0;
+    }
+    elsif ($arg eq "-fnvl-add-persists") {
+      $nvlAddPersistsPass = 1;
+    }
+    elsif ($arg eq "-fno-nvl-add-persists") {
+      $nvlAddPersistsPass = 0;
+    }
+    elsif ($arg =~ /^-D/ || $arg =~ /^-I/ || $arg =~ /^-U/) {
+      my $opt = substr $arg, 0, 2;
+      my $optArg = substr $arg, 2;
+      if ($optArg eq "") {
+        die if $#_ < ++$argi;
+        $optArg = $_[$argi];
+      }
+      $cppOpts .= " $opt$optArg";
+    }
+    elsif ($arg =~ /^-[lL]/) {
+      $ldOpts .= " $arg";
+    }
+    elsif ($arg eq "-c") {
+      $compileOnly = 1;
+    }
+    elsif ($arg =~ /^-O/) {
+      $llcOpts .= " " . shesc($arg);
+      # opt doesn't support -O0, so just don't call opt for that case.
+      if ($arg eq "-O0") {
+        $optPhase2Opts = "";
+      }
+      else {
+        $optPhase2Opts .= " " . shesc($arg);
+      }
+    }
+    elsif ($arg eq "-fPIC") {
+      $llcOpts .= " -relocation-model=pic";
+    }
+    elsif ($arg eq "-g") {
+    }
+    elsif ($arg =~ /^-/) {
+      die "unknown option: $arg\n";
+    }
+    elsif ($arg =~ /\.(?:o|a|so|dylib)$/) {
+      $inObjFileArgs .= " " . shesc($arg);
+    }
+    else {
+      $inCFileArgs .= " " . shesc($arg);
+    }
+  }
+  $cppOpts .= " -I$RealBin/../openarcrt -I$RealBin/../nvl/include";
+  if ($PMEM_INCLUDES) { $cppOpts .= " -I$PMEM_INCLUDES"; }
+  $ldOpts .= " -L$RealBin/../openarcrt -L$RealBin/../nvl/rt";
+  if ($PMEM_LIBDIR) { $ldOpts .= " -L$PMEM_LIBDIR"; }
+
+  # run openarc and llc
+  my $outFiles = "";
+  if ($inCFileArgs) {
+    my $cmd
+      = shesc("$RealBin/openarc")
+        . " -outdir=".shesc($CETUS_OUTDIR)
+        . " -preprocessor=".shesc($CPP.$cppOpts)
+        . " -emitLLVM"
+        . $arcOpts
+        . "$inCFileArgs";
+    run($cmd, "openarc");
+    for my $file (<$CETUS_OUTDIR/*.bc>) {
+      my $fileBase = $file; # no dir and no extension
+      $fileBase =~ s/(?:.*\/)?([^.]*|.*\.)(?:.*)?/$1/;
+      my $outFile;
+      if ($compileOnly && $outOptFile) {
+        $outFile = $outOptFile;
+      }
+      else {
+        $outFile = "$fileBase.o";
+        if (!$compileOnly) {
+          $outFile = "$CETUS_OUTDIR/$outFile";
+        }
+      }
+      $outFiles .= " ".shesc($outFile);
+      # For some reason, opt wants to run -O1, -O2, etc. passes before our
+      # passes regardless of the order in which we specify them on the
+      # command line, so we have to call opt twice.
+      my $optPhase1File = "$CETUS_OUTDIR/opt-phase1/$fileBase.bc";
+      $cmd = shesc($LLVM_OPT)
+        ." -fitl"
+        # Without -mem2reg -loop-rotate, the -nvl-hoist-tx-adds pass fails
+        # to optimize many loops. -inline can be quite important for
+        # enabling shadow updates because it can reduce the number of
+        # V-to-NV pointer isoalloc sets, but obviously it's generally good
+        # for SSA conversion and hoisting.
+        .($nvlAddTxsPass
+          ? " -nvl-add-txs -inline -mem2reg -loop-rotate -nvl-hoist-tx-adds"
+            . " -nvl-hoist-tx-adds-aggressive=true"
+          : "")
+        .($nvlAddSafetyPass ? " -nvl-add-safety" : "")
+        # -mem2reg -adce is not required, but running it before
+        # -nvl-add-ref-counting helps the latter to avoid inserting
+        # unnecessary V-to-NV inc/dec calls.
+        .($nvlAddRefCountingPass
+          ? " -mem2reg -adce -nvl-add-ref-counting" : "")
+        .($nvlAddPersistsPass ? " -nvl-add-persists" : "")
+        ." -nvl-lower-pointers"
+        ." ".shesc($file)." -o ".shesc($optPhase1File);
+      run($cmd, "opt phase 1 for $file");
+      my $optPhase2File;
+      if ($optPhase2Opts) {
+        $optPhase2File = "$CETUS_OUTDIR/opt-phase2/$fileBase.bc";
+        $cmd = shesc($LLVM_OPT).$optPhase2Opts." ".shesc($optPhase1File)
+               ." -o ".shesc($optPhase2File);
+        run($cmd, "opt phase 2 for $file");
+      }
+      else {
+        $optPhase2File = $optPhase1File;
+      }
+      $cmd = shesc($LLVM_LLC)." -filetype=obj".$llcOpts." "
+             .shesc($optPhase2File)." -o ".shesc($outFile);
+      run($cmd, "llc for $file");
+    }
+  }
+
+  # run linker
+  if (!$compileOnly) {
+    my $cmd = $CC;
+    if ($outOptFile) {
+      $cmd .= " -o ".$outOptFile;
+    }
+    $cmd .= $outFiles . $inObjFileArgs . $ldOpts;
+    run($cmd, "linking");
+  }
+
+  return 0;
+}
+
+sub run {
+  defined(my $cmd = shift(@_)) || croak;
+  defined(my $what = shift(@_)) || croak;
+  scalar(@_) == 0 || die;
+  print STDERR "$0: running $what: $cmd\n";
+  return if (system($cmd) == 0);
+  if ($? == -1) {
+    die "$what failed to execute: $!\n";
+  }
+  elsif ($? & 127) {
+    die "$what died with signal " . ($? & 127) . ", "
+        . (($? & 128) ? "with" : "without") . " coredump\n",
+  }
+  else {
+    die "$what exited with value ".($? >> 8)."\n";
+  }
+}
+
+sub shesc {
+  defined(my $arg = shift(@_)) || croak;
+  scalar(@_) == 0 || die;
+  $arg =~ s/'/'\\''/g;
+  return "'$arg'";
+}

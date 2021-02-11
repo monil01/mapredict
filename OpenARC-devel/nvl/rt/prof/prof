@@ -1,0 +1,785 @@
+#!/usr/bin/env perl
+
+use warnings;
+use strict;
+use Fcntl;
+
+sub usage {
+  !scalar(@_) || die();
+  print STDERR << "EOF"
+Usage: $0 [-qN] cfgFile oldFile   newFile [newRowVal...]
+       $0 [-qN] cfgFile /dev/null newFile [newRowVal...]
+
+-qN specifies that all configured commands with all new row values should be
+executed N times before repeating any command-row combination multiple times
+consecutively.  This gives quick results for all tables cells before
+beginning the configured repetitions for each cell. N is not constrained by
+\$Cfg::maxRuns or \$Cfg::maxMinutes, but it does count against
+\$Cfg::maxRuns.
+EOF
+  ;
+  exit 1;
+}
+
+# Used in this script and in cfg files to match values.
+package Run {
+  our $valRegex = '(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?';
+  our %v;
+}
+
+# Initialization of $nQuickRuns here overrides any assignment in BEGIN, so
+# initialize within BEGIN instead.
+my $nQuickRuns;
+BEGIN {
+  usage() if (scalar(@ARGV) < 1);
+  $nQuickRuns = 0;
+  if ($ARGV[0] =~ '^-q(0|[1-9][0-9]*)$') {
+    $nQuickRuns = $1;
+    shift(@ARGV);
+  }
+  elsif ($ARGV[0] eq "--") {
+    shift(@ARGV);
+  }
+  elsif ($ARGV[0] =~ "^-") {
+    usage();
+  }
+  my $cfgFn = $ARGV[0];
+  if (!defined(do($cfgFn))) {
+    if ($@) {
+      print STDERR "$0: $cfgFn: failure compiling config: $@\n";
+      exit 1;
+    }
+    if ($!) {
+      print STDERR "$0: $cfgFn: failure reading config: $!\n";
+      exit 1;
+    }
+    print STDERR "$0: $cfgFn: empty config\n";
+    exit 1;
+  }
+}
+
+# Computed from cfg file by compileConfig.
+my @hcmds;
+my @hformats;
+my $numCols;
+my @colTitles;
+my @colBracks;
+my $rowColi;
+my $rowID;
+my %colIdToI;
+
+exit main(@ARGV);
+
+sub main {
+  defined(my $cfgFn = shift(@_)) || usage();
+  defined(my $oldFn = shift(@_)) || usage();
+  defined(my $newFn = shift(@_)) || usage();
+  my @newRowVals = @_;
+
+  my $old_fh = select(STDOUT);
+  $| = 1;
+  select(STDERR);
+  $| = 1;
+  select($old_fh);
+
+  compileConfig();
+  my @data;
+  my @summaries;
+  readOldFile($oldFn, \@data);
+  computeFormulas(\@data);
+  sortData(\@data);
+  computeSummaries(\@data, \@summaries);
+  writeNewFile($newFn, \@data, \@summaries, 0);
+  for (my $quickRun = 0; $quickRun < $nQuickRuns+1; ++$quickRun) {
+    for my $rowVal (@newRowVals) {
+      for my $hcmd (@hcmds) {
+        executeCfg($rowVal, $hcmd->{"ID"}, "compile",
+                   $hcmd->{"compileShell"});
+        my $startTime = time();
+        for (my $run = $quickRun;
+             $quickRun < $nQuickRuns
+             ? ($run < $quickRun+1)
+             : ($run < $Cfg::minRuns
+                || ($run < $Cfg::maxRuns
+                    && (time()-$startTime)/60 < $Cfg::maxMinutes));
+             ++$run)
+        {
+          my $cmdOut = executeCfg($rowVal, $hcmd->{"ID"}, "run $run",
+                                  $hcmd->{"runShell"});
+          insertCfgOut($hcmd->{"ID"}, $rowVal, $cmdOut, \@data);
+          computeFormulas(\@data);
+          sortData(\@data);
+          computeSummaries(\@data, \@summaries);
+          writeNewFile($newFn, \@data, \@summaries, 1);
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+sub compileConfig {
+  !scalar(@_) || die();
+
+  # Compute @hcmds from @Cfg::cmds, and don't use the latter again because
+  # the former is easier to maintain.
+  foreach my $cmdi (0 .. $#Cfg::cmds) {
+    my $cmd = $Cfg::cmds[$cmdi];
+    my $hcmd = {};
+    push(@hcmds, $hcmd);
+    if (scalar(@$cmd) != 3) {
+      die("$0: config \"$cmdi\" has too few fields\n");
+    }
+    my $i = 0;
+    $hcmd->{"ID"} = $cmd->[$i++];
+    $hcmd->{"compileShell"} = $cmd->[$i++];
+    $hcmd->{"runShell"} = $cmd->[$i++];
+  }
+
+  # Compute @hformats from @Cfg::formats, and don't use the latter again
+  # because the former is easier to maintain.
+  foreach my $formati (0 .. $#Cfg::formats) {
+    my $format = $Cfg::formats[$formati];
+    my $hformat = {};
+    push(@hformats, $hformat);
+    my $i = 0;
+    my $mode = $hformat->{"mode"} = $format->[$i++];
+    if ($mode eq "r") {
+      if (scalar(@$format) != 3) {
+        die("$0: format $formati has wrong field count for mode \"r\"\n");
+      }
+      $hformat->{"ID"} = $format->[$i++];
+      $hformat->{"title"} = $format->[$i++];
+    }
+    elsif ($mode eq "|") {
+    }
+    elsif ($mode eq "~") {
+      if (scalar(@$format) != 6) {
+        die("$0: format $formati has wrong field count for mode \"~\"\n");
+      }
+      $hformat->{"ID"} = $format->[$i++];
+      $hformat->{"title"} = $format->[$i++];
+      $hformat->{"cmdID"} = $format->[$i++];
+      $hformat->{"updateID"} = $format->[$i++];
+      if (!defined($hformat->{"updateID"})) {
+        if (!defined($hformat->{"ID"})) {
+          die("$0: format $formati has undefined ID and updateID\n");
+        }
+        $hformat->{"updateID"} = $hformat->{"ID"};
+      }
+      $hformat->{"regex"} = $format->[$i++];
+    }
+    elsif ($mode eq "?~") {
+      if (scalar(@$format) != 3) {
+        die("$0: format $formati has wrong field count for mode \"?~\"\n");
+      }
+      $hformat->{"cmdID"} = $format->[$i++];
+      $hformat->{"regex"} = $format->[$i++];
+    }
+    elsif ($mode eq "=") {
+      if (scalar(@$format) != 4 && scalar(@$format) != 5) {
+        die("$0: format $formati has wrong field count for mode \"=\"\n");
+      }
+      $hformat->{"ID"} = $format->[$i++];
+      $hformat->{"title"} = $format->[$i++];
+      $hformat->{"formula"} = $format->[$i++];
+      my $conversion = $format->[$i++];
+      if (!defined($conversion)) {
+        $conversion = "%.${Cfg::sigDigits}g";
+      }
+      $hformat->{"conversion"} = $conversion;
+    }
+    elsif ($mode eq "-") {
+      if (scalar(@$format) != 5 && scalar(@$format) != 6) {
+        die("$0: format $formati has wrong field count for mode \"-\"\n");
+      }
+      $hformat->{"fn"} = $format->[$i++];
+      $hformat->{"titles"} = $format->[$i++];
+      $hformat->{"xColID"} = $format->[$i++];
+      $hformat->{"yColIDs"} = $format->[$i++];
+      my $conversion = $format->[$i++];
+      if (!defined($conversion)) {
+        $conversion = "%.${Cfg::sigDigits}g";
+      }
+      $hformat->{"conversion"} = $conversion;
+    }
+    else {
+      die("$0: unrecognized mode for format $formati: $mode\n");
+    }
+  }
+
+  # Compute data columns (not mode "|", "?~", or "-" formats).
+  my $rowFormati;
+  my $coli = 0;
+  foreach my $formati (0 .. $#hformats) {
+    my $hformat = $hformats[$formati];
+    my $mode = $hformat->{"mode"};
+    if ($mode eq "r" || $mode eq "~" || $mode eq "=") {
+      if ($mode eq "r") {
+        if (defined($rowFormati)) {
+          die("$0: multiple formats have mode \"r\": $rowFormati and"
+              ." $formati\n");
+        }
+        $rowFormati = $formati;
+        $rowColi = $coli;
+        $rowID = $hformat->{"ID"};
+      }
+      my $title = $hformat->{"title"};
+      if (!$title) {
+        die("$0: empty title for format $formati\n");
+      }
+      if ($title eq "[]") {
+        push(@colBracks, 1);
+        push(@colTitles, "  ");
+      }
+      else {
+        push(@colBracks, 0);
+        push(@colTitles, $title);
+      }
+      if ($hformat->{"ID"}) {
+        $colIdToI{$hformat->{"ID"}} = $coli;
+      }
+      ++$coli;
+    }
+    elsif ($mode ne "|" && $mode ne "?~" && $mode ne "-") {
+      die();
+    }
+  }
+  if (!defined($rowColi)) {
+    die("$0: no formats have mode \"r\"\n");
+  }
+  $numCols = scalar(@colTitles);
+}
+
+sub readOldFile {
+  defined(my $oldFn = shift(@_)) || die();
+  defined(my $data = shift(@_)) || die();
+  !scalar(@_) || die();
+
+  my $oldFh;
+  if (!open($oldFh, "<", $oldFn)) {
+    die("$0: $oldFn: failure opening for read: $!\n");
+  }
+  my $coli = 0;
+  my $line = readline($oldFh);
+  my $lineNum = 1;
+  if (!$line) {
+    # empty file
+    return;
+  }
+  foreach my $colTitle (@colTitles) {
+    next if ($colTitle =~ /^\s*$/);
+    my $match;
+    if ($line =~ /\G[|\s]*([^|\s]+)/g) {
+      $match = $1;
+    }
+    if (!$match || $match ne $colTitle) {
+      die("$0: $oldFn: column ".($coli+1)." title: expected"
+          ." \"$colTitle\" not ".($match?"\"$match\"":"empty string")."\n");
+    }
+    ++$coli;
+  }
+  if ($line !~ /\G[|\s]*$/) {
+    die("$0: $oldFn: text follows last expected column title\n");
+  }
+  $line = readline($oldFh);
+  ++$lineNum;
+  if (!$line || ($line !~ /^[-+]*$/g)) {
+    die("$0: $oldFn: line $lineNum is not a horizontal rule\n");
+  }
+  while ($line = readline($oldFh)) {
+    ++$lineNum;
+    last if ($line =~ /^[-+]*$/);
+    my $lineData = [];
+    push(@$data, $lineData);
+    $coli = 0;
+    foreach my $colBrack (@colBracks) {
+      $line =~ /\G[|\s]*(\[[^][|]*\]|[^][|\s]+)/g;
+      my $val = $1;
+      my $inBrackets = "";
+      my $unbracketed = "";
+      if ($colBrack) {
+        $inBrackets = "in brackets, ";
+        if ($val !~ s/\[\s*([^][|\s]*)\s*\]/$1/) {
+          die("$0: $oldFn, line $lineNum, column ".($coli+1)
+              .": expected bracketed value not ".($val?$val:"empty string")
+              ."\n");
+        }
+      }
+      else {
+        $unbracketed = "unbracketed ";
+      }
+      if (!defined($val) || $val !~ /^(?:\?|$Run::valRegex)$/) {
+        die("$0: $oldFn, line $lineNum, column ".($coli+1).":"
+            ." ${inBrackets}expected ${unbracketed}value not "
+            .($val?$val:"empty string") . "\n");
+      }
+      if ($val eq "?") {
+        push(@$lineData, undef);
+      }
+      else {
+        push(@$lineData, $val);
+      }
+      ++$coli;
+    }
+    if ($line !~ /\G[|\s]*$/) {
+      die("$0: $oldFn, line $lineNum, column $coli: text follows"
+          ." last value\n");
+    }
+  }
+  if (!close($oldFh)) {
+    die("$0: $oldFn: failure closing: $!\n");
+  }
+}
+
+sub sortData {
+  defined(my $data = shift(@_)) || die();
+  !scalar(@_) || die();
+  @$data = sort { -($a->[$rowColi] <=> $b->[$rowColi]) } @$data;
+}
+
+sub writeNewFile {
+  defined(my $newFn = shift(@_)) || die();
+  defined(my $data = shift(@_)) || die();
+  defined(my $summaries = shift(@_)) || die();
+  defined(my $overwrite = shift(@_)) || die();
+  !scalar(@_) || die();
+
+  # Open new file.
+  my $newFh;
+  my $fmode = O_WRONLY|O_TRUNC;
+  if (!$overwrite) {
+    print "$0: $newFn: creating...\n";
+    $fmode |= O_CREAT|O_EXCL;
+  }
+  else {
+    print "$0: $newFn: updating data...\n";
+  }
+  if (!sysopen($newFh, $newFn, $fmode)) {
+    die("$0: $newFn: failure opening for write: $!\n");
+  }
+
+  # Compute column widths from data and summaries.
+  my $coli = 0;
+  my @colWidths;
+  for my $formati (0 .. $#hformats) {
+    my $hformat = $hformats[$formati];
+    my $mode = $hformat->{"mode"};
+    next if ($mode eq "|" || $mode eq "?~" || $mode eq "-");
+    die() if ($mode ne "r" && $mode ne "~" && $mode ne "=");
+    my $widthMax = length($colTitles[$coli]);
+    foreach my $dataRow (@$data) {
+      my $val = $dataRow->[$coli];
+      my $width = defined($val) ? length($val) : 1;
+      if ($colBracks[$coli]) {
+        $width += 2;
+      }
+      if ($width > $widthMax) {
+        $widthMax = $width;
+      }
+    }
+    foreach my $summaryRowSet (@$summaries) {
+      foreach my $summaryRow (@$summaryRowSet) {
+        my $str = $summaryRow->[$coli];
+        my $width = defined($str) ? length($str) : 1;
+        if ($width > $widthMax) {
+          $widthMax = $width;
+        }
+      }
+    }
+    $colWidths[$coli] = $widthMax;
+    ++$coli;
+  }
+
+  # Print column title row.
+  $coli = 0;
+  for my $formati (0 .. $#hformats) {
+    my $hformat = $hformats[$formati];
+    my $mode = $hformat->{"mode"};
+    next if ($mode eq "?~" || $mode eq "-");
+    if ($mode eq "|") {
+      print $newFh "|";
+      next;
+    }
+    die() if ($mode ne "r" && $mode ne "~" && $mode ne "=");
+    for (my $i = $formati-1; $i >= 0; --$i) {
+      my $prevMode = $hformats[$i]->{"mode"};
+      next if ($prevMode eq "?~" || $prevMode eq "-");
+      if ($hformats[$i]->{"mode"} ne "|") {
+        print $newFh " ";
+      }
+      last;
+    }
+    my $title = $colTitles[$coli];
+    my $width = length($title);
+    print $newFh $title . " "x($colWidths[$coli]-$width);
+    ++$coli;
+  }
+  print $newFh "\n";
+
+  # Build and print horizontal rule.
+  $coli = 0;
+  my $hr = "";
+  for my $formati (0 .. $#hformats) {
+    my $hformat = $hformats[$formati];
+    my $mode = $hformat->{"mode"};
+    next if ($mode eq "?~" || $mode eq "-");
+    if ($mode eq "|") {
+      $hr .= "+";
+      next;
+    }
+    die() if ($mode ne "r" && $mode ne "~" && $mode ne "=");
+    for (my $i = $formati-1; $i >= 0; --$i) {
+      my $prevMode = $hformats[$i]->{"mode"};
+      next if ($prevMode eq "?~" || $prevMode eq "-");
+      if ($hformats[$i]->{"mode"} ne "|") {
+        $hr .= "-";
+      }
+      last;
+    }
+    $hr .= "-"x($colWidths[$coli]);
+    ++$coli;
+  }
+  $hr .= "\n";
+  print $newFh $hr;
+
+  # Print data rows.
+  foreach my $dataRow (@$data) {
+    $coli = 0;
+    for my $formati (0 .. $#hformats) {
+      my $hformat = $hformats[$formati];
+      my $mode = $hformat->{"mode"};
+      next if ($mode eq "?~" | $mode eq "-");
+      if ($mode eq "|") {
+        print $newFh "|";
+        next;
+      }
+      die() if ($mode ne "r" && $mode ne "~" && $mode ne "=");
+      for (my $i = $formati-1; $i >= 0; --$i) {
+        my $prevMode = $hformats[$i]->{"mode"};
+        next if ($prevMode eq "?~" || $prevMode eq "-");
+        if ($hformats[$i]->{"mode"} ne "|") {
+          print $newFh " ";
+        }
+        last;
+      }
+      my $val = $dataRow->[$coli];
+      if (!defined($val)) { $val = "?"; }
+      my $width = length($val);
+      my $colWidth = $colWidths[$coli];
+      my $colBrack = $colBracks[$coli];
+      if ($colBrack) {
+        $width += 2;
+        print $newFh "[";
+      }
+      print $newFh $val . " "x($colWidth-$width);
+      if ($colBrack) {
+        print $newFh "]";
+      }
+      ++$coli;
+    }
+    print $newFh "\n";
+  }
+
+  # Print summaries.
+  my $summaryi = 0;
+  for my $formati (0 .. $#hformats) {
+    my $hformat = $hformats[$formati];
+    next if ($hformat->{"mode"} ne "-");
+    print $newFh $hr;
+    my $summaryRowSet = $summaries->[$summaryi];
+    for my $summaryRow (@$summaryRowSet) {
+      $coli = 0;
+      for my $formati (0 .. $#hformats) {
+        my $hformat = $hformats[$formati];
+        my $mode = $hformat->{"mode"};
+        next if ($mode eq "?~" | $mode eq "-");
+        if ($mode eq "|") {
+          print $newFh "|";
+          next;
+        }
+        die() if ($mode ne "r" && $mode ne "~" && $mode ne "=");
+        for (my $i = $formati-1; $i >= 0; --$i) {
+          my $prevMode = $hformats[$i]->{"mode"};
+          next if ($prevMode eq "?~" || $prevMode eq "-");
+          if ($hformats[$i]->{"mode"} ne "|") {
+            print $newFh " ";
+          }
+          last;
+        }
+        my $val = $summaryRow->[$coli];
+        if (!defined($val)) { $val = ""; }
+        elsif (lc($val) eq lc("NaN")) { $val = "?"; }
+        my $width = length($val);
+        my $colWidth = $colWidths[$coli];
+        print $newFh $val . " "x($colWidth-$width);
+        ++$coli;
+      }
+      print $newFh "\n";
+    }
+    ++$summaryi;
+  }
+
+  # Close new file.
+  if (!close($newFh)) {
+    die("$0: $newFn: failure closing: $!\n");
+  }
+  if (!$overwrite) {
+    print "$0: $newFn: initial version complete\n";
+  }
+  else {
+    print "$0: $newFn: update complete\n";
+  }
+}
+
+sub executeCfg {
+  defined(my $rowVal = shift(@_)) || die();
+  defined(my $cmdID = shift(@_)) || die();
+  defined(my $shellKind = shift(@_)) || die();
+  defined(my $shell = shift(@_)) || die();
+  !scalar(@_) || die();
+
+  my $desc = "config \"$cmdID\" $shellKind shell at row=$rowVal";
+  print "$0: executing $desc at ".localtime(time()).": $shell\n";
+  my $outPipe;
+  if (!open($outPipe, "ROW=$rowVal; ($shell\n) |")) {
+    die("$0: failure executing $desc: $!\n");
+  }
+  my $out;
+  while (my $line = readline($outPipe)) {
+    print $line;
+    $out .= $line;
+  }
+  if (!close($outPipe)) {
+    if ($!) {
+      die("$0: failure terminating $desc: $!\n");
+    }
+    elsif ($?) {
+      die("$0: $desc terminated with status $?\n");
+    }
+  }
+  print "$0: done executing $desc at ".localtime(time())."\n";
+  return $out;
+}
+
+sub insertCfgOut {
+  defined(my $cmdID = shift(@_)) || die();
+  defined(my $rowVal = shift(@_)) || die();
+  defined(my $cmdOut = shift(@_)) || die();
+  defined(my $data = shift(@_)) || die();
+  !scalar(@_) || die();
+
+  # Get existing data row or insert new one.
+  my $dataRow;
+  for my $dataRowLook (@$data) {
+    if ($dataRowLook->[$rowColi] == $rowVal) {
+      $dataRow = $dataRowLook;
+    }
+  }
+  if (!$dataRow) {
+    $dataRow = [];
+    $#$dataRow = $numCols;
+    $dataRow->[$rowColi] = $rowVal;
+    push(@$data, $dataRow);
+  }
+
+  # Extract each mode "~" cell's value from the output to @dataRowNew.  If
+  # the extracted value for a cell is less than the old value or if the old
+  # value was not defined, set $cellIDToMinValUpdated{$cellID} to true.
+  my $coli = 0;
+  my @dataRowExtracted;
+  $#dataRowExtracted = $numCols;
+  my %cellIDToMinValUpdated;
+  foreach my $formati (0 .. $#hformats) {
+    my $hformat = $hformats[$formati];
+    my $mode = $hformat->{"mode"};
+    if ($mode eq "~") {
+      if ($hformat->{"cmdID"} eq $cmdID) {
+        my $match;
+        my $valExtracted;
+        pos($cmdOut) = 0;
+        eval "\$match = \$cmdOut =~ /$hformat->{'regex'}/mg;"
+             ." \$valExtracted = \$1;";
+        if ($@) {
+          die("$0: error while evaluating regex for format $formati: $@\n");
+        }
+        if (!$match) {
+          die("$0: regex for format $formati did not match config \"$cmdID\""
+              ." output\n");
+        }
+        $match = eval "\$cmdOut =~ /\\G(.|\\n)*(?:$hformat->{'regex'})/m";
+        if ($@) {
+          die("$0: error while evaluating regex for format $formati: $@\n");
+        }
+        if ($match) {
+          die("$0: regex for format $formati matched config \"$cmdID\""
+              ." output multiple times\n");
+        }
+        if (!defined($valExtracted)) {
+          die("$0: regex for format $formati matched config \"$cmdID\""
+              ." output but did not capture a value\n");
+        }
+        if ($valExtracted !~ /^(?:$Run::valRegex)$/) {
+          die("$0: regex for format $formati captured an invalid value from"
+              ." config \"$cmdID\" output: $valExtracted\n");
+        }
+        $valExtracted = sprintf("%.${Cfg::sigDigits}g", $valExtracted);
+        $dataRowExtracted[$coli] = $valExtracted;
+        my $valOld = $dataRow->[$coli];
+        if ($hformat->{"ID"}) {
+          $cellIDToMinValUpdated{$hformat->{"ID"}}
+            = !defined($valOld) || $valExtracted < $valOld;
+        }
+      }
+      ++$coli;
+    }
+    elsif ($mode eq "r" || $mode eq "=") {
+      ++$coli;
+    }
+    elsif ($mode ne "|" && $mode ne "?~" && $mode ne "-") {
+      die();
+    }
+  }
+
+  # Hash the row value by cell ID for the sake of mode "?~" regexes.
+  $Run::v{$rowID} = $rowVal;
+
+  # For each mode "~" cell, update old values with extracted values if
+  # dictated by the update IDs.
+  # For each mode "?~" format, check the regex.
+  $coli = 0;
+  foreach my $formati (0 .. $#hformats) {
+    my $hformat = $hformats[$formati];
+    my $mode = $hformat->{"mode"};
+    if ($mode eq "r" || $mode eq "=") {
+      ++$coli;
+    }
+    elsif ($mode eq "~") {
+      if ($hformat->{"cmdID"} eq $cmdID) {
+        if ($cellIDToMinValUpdated{$hformat->{"updateID"}}) {
+          $dataRow->[$coli] = $dataRowExtracted[$coli];
+        }
+      }
+      ++$coli;
+    }
+    elsif ($mode eq "?~") {
+      if ($hformat->{"cmdID"} eq $cmdID) {
+        my $match = eval "\$cmdOut =~ /$hformat->{'regex'}/m";
+        if ($@) {
+          die("$0: error while evaluating regex for format $formati: $@\n");
+        }
+        if (!$match) {
+          die("$0: regex for format $formati does not match config \"$cmdID\""
+              ." output\n");
+        }
+      }
+    }
+    elsif ($mode ne "|" && $mode ne "-") {
+      die();
+    }
+  }
+}
+
+sub computeFormulas {
+  defined(my $data = shift(@_)) || die();
+  !scalar(@_) || die();
+
+  # Hash the row value by cell ID for the sake of mode "=" formulas.
+  # For each mode "~" or "=" cell, hash the value by cell ID for the sake of
+  # subsequent mode "=" formulas.
+  # For each mode "=" cell, compute using the formula.
+  for my $dataRow (@$data) {
+    $Run::v{$rowID} = $dataRow->[$rowColi];
+    my $coli = 0;
+    foreach my $formati (0 .. $#hformats) {
+      my $hformat = $hformats[$formati];
+      my $mode = $hformat->{"mode"};
+      if ($mode eq "r") {
+        ++$coli;
+      }
+      elsif ($mode eq "~" || $mode eq "=") {
+        if ($mode eq "=") {
+          my $val = eval $hformat->{"formula"};
+          if ($@) {
+            warn("$0: error while evaluating formula for format $formati:"
+                 ." $@\n");
+          }
+          $dataRow->[$coli] = !defined($val) || lc($val) eq lc("NaN")
+                              ? undef
+                              : sprintf($hformat->{"conversion"}, $val);
+        }
+        if ($hformat->{"ID"}) {
+          my $val = $dataRow->[$coli];
+          $Run::v{$hformat->{"ID"}} = defined($val) ? $val : "NaN";
+        }
+        ++$coli;
+      }
+      elsif ($mode ne "?~" && $mode ne "|" && $mode ne "-") {
+        die();
+      }
+    }
+  }
+}
+
+sub computeSummaries {
+  defined(my $data = shift(@_)) || die();
+  defined(my $summaries = shift(@_)) || die();
+  !scalar(@_) || die();
+
+  @$summaries = ();
+  for my $formati (0 .. $#hformats) {
+    my $hformat = $hformats[$formati];
+    next if ($hformat->{"mode"} ne "-");
+    my $xColID = $hformat->{"xColID"};
+    my $xColi = $colIdToI{$xColID};
+    if (!defined($xColi)) {
+      die("$0: xColID \"$xColID\" for format $formati is unknown\n");
+    }
+    my @rowVals;
+    my @xVals;
+    for my $dataRow (@$data) {
+      push(@rowVals, $dataRow->[$rowColi]);
+      push(@xVals, $dataRow->[$xColi]);
+    }
+    my $summaryRowSet = [];
+    for my $i (0 .. $#{$hformat->{"titles"}}) {
+      push(@$summaryRowSet, []);
+      my $title = $hformat->{"titles"}->[$i];
+      $summaryRowSet->[$i][$rowColi] = $title;
+    }
+    for my $yColID (@{$hformat->{"yColIDs"}}) {
+      my $yColi = $colIdToI{$yColID};
+      if (!defined($yColi)) {
+        die("$0: yColID \"$yColID\" for format $formati is unknown\n");
+      }
+      my @yVals;
+      for my $dataRow (@$data) {
+        push(@yVals, $dataRow->[$yColi]);
+      }
+      my $summaryVals;
+      eval {
+        # Pass copy of @xVals and @rowVals so they cannot be modified. This
+        # is the last use of @yVals, so there's no need to copy it.
+        $summaryVals = $hformat->{"fn"}([@rowVals], [@xVals], \@yVals);
+      };
+      if ($@) {
+        warn("$0: error while executing function for format $formati:"
+             ." $@\n");
+        $summaryVals = [("NaN") x scalar(@{$hformat->{'titles'}})];
+      }
+      if ($#{$hformat->{"titles"}} != $#$summaryVals) {
+        die("$0: function for format $formati returned "
+            .scalar(@$summaryVals)." values but "
+            .scalar(@{$hformat->{'titles'}})." were expected\n");
+      }
+      for my $i (0 .. $#$summaryVals) {
+        my $val = $summaryVals->[$i];
+        if (defined($val) && lc($val) ne lc("NaN")) {
+          $val = sprintf($hformat->{"conversion"}, $val);
+        }
+        $summaryRowSet->[$i][$yColi] = $val;
+      }
+    }
+    push(@$summaries, $summaryRowSet);
+  }
+}

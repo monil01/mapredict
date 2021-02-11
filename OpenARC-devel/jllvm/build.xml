@@ -1,0 +1,28 @@
+<project name="jllvm">
+	<condition property="sosuffix" value="dylib" else="so">
+		<os family="mac" />
+	</condition>
+	<target name="build">
+		<exec dir="src/org/jllvm/bindings" executable="cmake">
+			<arg value="."/>
+		</exec>
+		<exec dir="src/org/jllvm/bindings" executable="make"/>
+		<mkdir dir="build"/>
+		<javac srcdir="src/org/jllvm/" destdir="build/" includeantruntime="false"/>
+		<jar destfile="jllvm.jar" basedir="build/" />
+		<copy file="src/org/jllvm/bindings/libjllvm.${sosuffix}" todir="." />
+	</target>
+	<target name="clean">
+		<delete file="jllvm.jar" />
+		<delete file="libjllvm.${sosuffix}" />
+		<delete dir="build/"/>
+		<delete file="src/org/jllvm/bindings/CMakeCache.txt" />
+		<delete dir="src/org/jllvm/bindings/CMakeFiles/" />
+		<delete file="src/org/jllvm/bindings/Makefile" />
+		<delete file="src/org/jllvm/bindings/cmake_install.cmake" />
+		<delete>
+			<fileset dir="src/org/jllvm/bindings" includes="*.o"/>
+			<fileset dir="src/org/jllvm/bindings" includes="*.${sosuffix}"/>
+		</delete>
+	</target>
+</project>

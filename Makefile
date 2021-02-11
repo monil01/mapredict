@@ -56,7 +56,7 @@ TESTS=mapmc
 #  stream_access
 
 
-OBJ=./model_parser/main.o ./model_parser/traverser.o ./model_parser/analytical_model.o
+OBJ=./model_parser/Main.o ./model_parser/Traverser.o ./model_parser/AnalyticalModelIntel.o ./model_parser/AspenUtility.o ./model_parser/AnalyticalModelUtility.o 
 
 #OBJ=./model_parser/$(TESTS:=.o)
 

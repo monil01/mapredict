@@ -1,0 +1,215 @@
+Overview
+--------
+
+This directory contains headers and source code for several versions and
+components of the NVL runtime, which is required by NVL-C applications.
+
+libnvlrt-pmemobj*
+-----------------
+
+These versions of the NVL runtime are wrappers around an extended version of
+Intel's libpmemobj version 1.2 (http://pmem.io/) and are the versions on
+which we are currently focusing our development. Of these,
+libnvlrt-pmemobj-txs-mpi is the most feature complete, and the others exist
+so we can measure the performance impact of various features.
+
+When compiling an application, you must run all LLVM passes that correspond
+to features included in the NVL runtime version you plan to link.
+Otherwise, those features can malfunction at run time. If, instead, you run
+an LLVM pass but link an NVL runtime version that does not support the
+features associated with the pass, linking will fail. The table below lists
+the runtime versions, the features they include, and the options that must
+be specified when compiling an application with OpenARC's openarc-cc script
+in order to run the appropriate LLVM passes:
+
+  +--------------------------+----------------+----------------------------+
+  | Runtime Version          | Features       | openarc-cc options         |
+  |--------------------------+----------------+----------------------------|
+  | libnvlrt-pmemobj-txs-mpi | refs, txs, mpi | -fnvl-add-txs              |
+  | libnvlrt-pmemobj-txs     | refs, txs      | -fnvl-add-txs              |
+  | libnvlrt-pmemobj         | refs           |                            |
+  | libnvlrt-pmemobj-norefs  |                | -fno-nvl-add-ref-counting  |
+  | libnvlrt-pmemobj-persist | refs, persists | -fnvl-add-persists         |
+  +--------------------------+----------------+----------------------------+
+
+where
+
+  * mpi = support for MPI features for transactions
+  * txs = transactions, both explicit with pragma and implicit
+  * refs = automatic reference counting for NVM allocations
+  * persists = persist call after every NVM store
+
+libnvlrt-pmemobj-txs-mpi is built if and only if both MPI_INCLUDES and
+MPI_LIBDIR are defined in OpenARC's make.header.
+
+The persists feature is likely to be removed in the future. It was added for
+a rough approximation of the performance impact of transactions, which were
+not implemented at the time.
+
+When linking an application, you must link the libpmemobj, libpmem, and
+standard math libraries in addition to the NVL runtime version you have
+selected.
+
+libnvlrt
+--------
+
+This fully home-grown version of the NVL runtime is very incomplete and
+might be abandoned. For now, use one of the above versions instead.
+
+libnvlrt-vmem
+-------------
+
+This is a separate component of the NVL runtime for supporting
+nvl_vheap_t-related functions. It is a very thin wrapper around Intel's
+libvmem, which, like libpmemobj, is part of Intel's larger NVML set of
+libraries for pmem. When linking an application, you must link the libvmem
+library in addition to libnvlrt-vmem.
+
+Building Intel's NVML
+---------------------
+
+To build any of libnvlrt-pmemobj* or libnvlrt-vmem, you must first set
+HAVE_PMEM_NVML=1 in OpenARC's make.header, and you must clone and build
+OpenARC's modified version of Intel's NVML.
+
+If you are working from a git clone of OpenARC, the nvl/pmem-nvml
+subdirectory is a git submodule, which is empty by default. The easiest way
+to populate OpenARC's submodules is to specify the --recursive option to
+"git clone" when cloning OpenARC. If you want to populate submodules for an
+existing git clone of OpenARC, you can run the following command at the root
+directory of the OpenARC git clone:
+
+$ git submodule update --init
+
+The last time we checked, NVML did not support macOS. The following build
+procedure works for us on linux except the test suite has some problems, as
+noted below:
+
+$ cd nvl/pmem-nvml
+$ make
+$ make check # optional and requires configuring src/test/testconfig.sh
+$ cd ../..
+
+The test suite runs with a modified LD_LIBRARY_PATH. If your C/C++ compiler
+normally requires a specific directory in LD_LIBRARY_PATH, you can work
+around this problem by specifying CC and CXX to both "make" and "make
+check". For example:
+
+$  make CC='gcc -Wl,-rpath=/opt/shared/sw/x86_64-unknown-linux-gnu/gcc/6.2.0-rhel7/lib64' \
+        CXX='g++ -Wl,-rpath=/opt/shared/sw/x86_64-unknown-linux-gnu/gcc/6.2.0-rhel7/lib64'
+
+The rpmemd_config/TEST4 test fails for us. So that the rest of the test
+suite runs, we have found we can bypass this failure by commenting out the
+first "check_user_home_dir" command and the "check" command in
+src/test/rpmemd_config/TEST4. We see no failures then.
+
+Each time you pull a new commit of OpenARC, you can run "git status" in the
+root directory of OpenARC to determine whether it now requires different
+commits in its submodules. If so, before you rebuild, you can execute the
+following command from the root directory of OpenARC to cause the required
+commits in its submodules to be fetched and checked out:
+
+$ git submodule update
+
+Run "git submodule --help" for further documentation on the use of git
+submodules.
+
+Building the Runtime
+--------------------
+
+First, configure make.header as described above for the NVL runtime versions
+and components you wish to build.
+
+Then, build the rest of OpenARC with LLVM support. See README.md in the root
+directory of OpenARC for details.
+
+Finally, from the root directory of OpenARC:
+
+$ cd nvl/rt
+$ make
+
+All configured versions of the runtime will build.
+
+Automatic Shadow Updates
+------------------------
+
+Automatic shadow updates are a feature of NVL-C transactions. Automatic
+shadow updates are disabled by default, even in versions of the NVL runtime
+that support transactions. To enable them, you must configure and rebuild
+the NVL runtime for a particular NVM device installed on a particular host.
+In the future, we hope to develop a means by which one version of the NVL
+runtime can support automatic shadow updates for multiple NVM device
+installations.
+
+Configuring the NVL runtime for an NVM device installation requires the
+following steps:
+
+1. Profile the NVM device installation:
+
+   For an NVM device installation that has previously been profiled (such as
+   the ioScale card installed on megatron), skip to step 2. Otherwise,
+   proceed as follows.
+   
+   First, as described above, build a version of the NVL runtime that
+   supports transactions. It doesn't matter whether you build it with an
+   existing NVM device installation profile as that profile will be ignored
+   during the following steps.
+
+   From the root directory of OpenARC:
+
+   $ cd nvl/rt/prof
+
+   To the working directory, download perl's Statistics::LineFit package from:
+
+     http://search.cpan.org/~randerson/Statistics-LineFit-0.07/
+
+   Install it:
+
+   $ tar xvfz Statistics-LineFit-0.07.tar.gz
+   $ cd Statistics-LineFit
+   $ perl Makefile.PL PREFIX=../perl LIB=../perl/lib
+   $ make
+   $ make test # all tests should pass
+   $ make install
+   $ cd ..
+
+   Set the NVLFILE and nvlFile variables in profile-tx.add.c and
+   profile-tx.add.cfg to an unused file name on the NVM device. Make sure
+   nobody will be using the NVM device (or hopefully the host machine) as
+   this might affect profile results. Where HOST-DEV is an identifier (like
+   megatron-ioscale) for your NVM device installation:
+
+   $ ./prof prof-tx-add.cfg /dev/null prof-tx-add-HOST-DEV-msync.txt 1 512 1024 2048 4096 8192 16384
+
+   That script can take many hours to run fully. The script collects
+   execution times and always uses the minimum execution time from many
+   iterations. If someone happened to use the NVM device while the script
+   was running, you can safely keep all the results you have but refine them
+   with another run, which will merge in new minimums as it finds them:
+
+   $ mv prof-tx-add-HOST-DEV-msync.txt old.txt
+   $ ./prof prof-tx-add.cfg old.txt prof-tx-add-HOST-DEV-msync.txt 1 512 1024 2048 4096 8192 16384
+   
+   Finally, set is_pmem=1 in prof-tx-add.cfg, and then:
+
+   $ ./prof prof-tx-add.cfg /dev/null prof-tx-add-HOST-DEV-clflush.txt 1 512 1024 2048 4096 8192 16384
+
+   Again, you can repeat as before to refine the results.
+
+   At this point, you might wish to undo your changes to prof-tx-add.c and
+   prof-tx-add.cfg.
+
+2. Generate prof-tx-add.h from your NVM device installation's profile:
+
+   From the root directory of OpenARC, where HOST-DEV is an identifier (like
+   megatron-ioscale) for your NVM device installation:
+
+   $ cd nvl/rt/prof
+   $ ./gen-header HOST-DEV > prof-tx-add.h
+
+3. Rebuild the NVL runtime:
+
+   From the root directory of OpenARC:
+
+   $ cd nvl/rt
+   $ make
