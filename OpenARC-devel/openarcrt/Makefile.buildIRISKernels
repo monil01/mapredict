@@ -1,0 +1,27 @@
+CC=gcc
+
+UNAME := $(shell which nvcc 2>&1 > /dev/null && echo -n CUDA)
+ifeq ($(UNAME),CUDA)
+CUDA_AVAILIBLE = YES
+endif
+UNAME := $(shell which hipcc 2>&1 > /dev/null && echo -n HIP)
+ifeq ($(UNAME),HIP)
+HIP_AVAILIBLE = YES
+endif
+
+all: kernel.cu kernel.hip.cpp 
+	if [ -f "kernel.cl.openmp.c" ]; then $(CC) -g -fopenmp -fPIC -shared -I. -o kernel.openmp.so kernel.cl.openmp.c; fi
+	if [ "$(CUDA_AVAILIBLE)" = "YES" ]; then nvcc -ptx kernel.cu; fi
+	if [ "$(HIP_AVAILIBLE)" = "YES" ]; then hipcc --genco --targets gfx906 -o kernel.hip kernel.hip.cpp; fi
+
+kernel.ptx: kernel.cu
+	nvcc -ptx $^
+
+kernel.hip: kernel.hip.cpp
+	hipcc --genco --targets gfx906 -o $@ $^
+
+kernel.openmp.so: kernel.cl.openmp.c
+	$(CC) -g -fopenmp -fPIC -shared -I. -o $@ $^
+
+clean:
+	rm -f kernel.openmp.so kernel.ptx kernel.hip

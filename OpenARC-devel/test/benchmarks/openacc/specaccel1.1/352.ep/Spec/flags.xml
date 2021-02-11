@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription SYSTEM
+       "http://www.spec.org/dtd/cpuflags2.dtd">
+
+<!-- This file defines portability flags that may be used when compiling
+     352.ep.
+
+  Copyright 2011 Standard Performance Evaluation Corporation
+
+  $Revision: 974 $
+  $Date: 2014-01-08 14:37:31 -0500 (Wed, 08 Jan 2014) $
+-->
+<flagsdescription>
+
+<filename>352.ep.flags</filename>
+<title>352.ep Approved Portability Flags</title>
+
+<header>
+<![CDATA[
+<p>This is the complete set of approved portability flags for 352.ep.</p>
+]]>
+</header>
+
+<!-- flag name="DSPEC_BLOCK_SIZE" class="portability" -->
+<flag name="DSPEC_BLOCK_SIZE" class="portability">
+The alogrithm uses blocks to compute portions of the data on the accelerator, 
+since the whole data set can not fit within the 2GB limit set for the OpenACC
+benchmarks.  The default block size is 1792 which uses approximately 1.8GB 
+of device data per block.
+Some accelerators may have further limitations where the size of a single object
+can not exceed more than a particular value, such as 1GB.  The default block 
+size can be reduced in these cases but will cause more blocks to be run on the 
+accelerator.
+</flag>
+
+<!-- flag name="DSPEC_NO_INLINE" class="portability" -->
+<flag name="DSPEC_NO_INLINE" class="portability">
+Do not use the C99 "inline" keyword.
+</flag>
+
+
+<!-- flag name="D__TIMERS_H__" class="forbidden" -->
+<flag name="D__TIMERS_H__" class="forbidden">
+Header file guard.
+</flag>
+
+<!-- flag name="DDOS" class="portability" -->
+<flag name="DDOS" class="portability">
+Don't include Linux specific header files.
+</flag>
+
+
+</flagsdescription>

@@ -1,0 +1,158 @@
+$ hostname
+megatron.ftpn.ornl.gov
+$ cat /etc/redhat-release
+CentOS Linux release 7.2.1511 (Core)
+$ git describe --always
+nvl-c.hpdc2016-82-gfefb22d
+
+$ git diff -U0 .
+diff --git a/test/benchmarks/nvl-c/lulesh/Makefile b/test/benchmarks/nvl-c/lulesh/Makefile
+index 4cd4c6e..d3a8206 100644
+--- a/test/benchmarks/nvl-c/lulesh/Makefile
++++ b/test/benchmarks/nvl-c/lulesh/Makefile
+@@ -2 +2 @@ include ../../../../make.header
+-_N_ ?= 10
++_N_ ?= 20
+diff --git a/test/benchmarks/nvl-c/lulesh/lulesh.c b/test/benchmarks/nvl-c/lulesh/lulesh.c
+index 408dab5..ef96e3b 100644
+--- a/test/benchmarks/nvl-c/lulesh/lulesh.c
++++ b/test/benchmarks/nvl-c/lulesh/lulesh.c
+@@ -102 +102,2 @@ Additional BSD Notice
+-#define NVLFILE "_NVLFILEPATH_"
++//#define NVLFILE "_NVLFILEPATH_"
++#define NVLFILE "/opt/fio/scratch/jum/lulesh.nvl"
+
+$ rm -f /opt/fio/scratch/jum/lulesh.nvl && make -s run-lulesh-safe-refs-poor
+edgeElemes = 20
+iterations: 1041
+Init time = 0.027344 sec
+Main Comp. time = 9.094383 sec
+Total elapsed time = 9.121727 sec
+
+$ rm -f /opt/fio/scratch/jum/lulesh.nvl && make -s run-lulesh-safe-refs
+edgeElemes = 20
+iterations: 1041
+Init time = 0.037820 sec
+Main Comp. time = 9.079100 sec
+Total elapsed time = 9.116920 sec
+
+-txs3 and -txs2 are the same because clobber is never specified.
+
+$ rm -f /opt/fio/scratch/jum/lulesh.nvl && make -s run-lulesh-safe-refs-txs2-poor
+edgeElemes = 20
+iterations: 1041
+Init time = 0.071994 sec
+Main Comp. time = 18.268023 sec
+Total elapsed time = 18.340017 sec
+
+$ rm -f /opt/fio/scratch/jum/lulesh.nvl && make -s run-lulesh-safe-refs-txs2
+edgeElemes = 20
+iterations: 1041
+Init time = 0.080202 sec
+Main Comp. time = 19.118392 sec
+Total elapsed time = 19.198594 sec
+
+
+
+Adding the following shows that all allocations are freed in all of
+the above cases:
+
+diff --git a/test/benchmarks/nvl-c/lulesh/lulesh.c b/test/benchmarks/nvl-c/lulesh/lulesh.c
+index 408dab5..d606869 100644
+--- a/test/benchmarks/nvl-c/lulesh/lulesh.c
++++ b/test/benchmarks/nvl-c/lulesh/lulesh.c
+@@ -4368,2 +4369,5 @@ void LagrangeLeapFrog()
+ 
++size_t nvlrt_get_numAllocNV();
++size_t nvlrt_get_numFreeNV();
++
+ int main(int argc, char *argv[])
+@@ -4725,2 +4729,33 @@ int main(int argc, char *argv[])
+ 
++#if POOR
++   root_p = 0;
++   m_x = 0;
++   m_y = 0;
++   m_z = 0;
++   m_xd = 0;
++   m_yd = 0;
++   m_zd = 0;
++   m_e = 0;
++   m_p = 0;
++   m_q = 0;
++   m_v = 0;
++   m_ss = 0;
++#else
++   root_p_nv = 0;
++   m_x_nv = 0;
++   m_y_nv = 0;
++   m_z_nv = 0;
++   m_xd_nv = 0;
++   m_yd_nv = 0;
++   m_zd_nv = 0;
++   m_e_nv = 0;
++   m_p_nv = 0;
++   m_q_nv = 0;
++   m_v_nv = 0;
++   m_ss_nv = 0;
++#endif
++   nvl_set_root(heap, 0);
++   printf("nallocs=%zu\n", nvlrt_get_numAllocNV());
++   printf("nfrees=%zu\n", nvlrt_get_numFreeNV());
++
+    return 0 ;
+
+
+
+To check overhead of automatic reference counting:
+
+$ rm -f /opt/fio/scratch/jum/lulesh.nvl && make -s run-lulesh-safe-norefs-poor
+edgeElemes = 20
+iterations: 1041
+Init time = 0.019215 sec
+Main Comp. time = 9.129463 sec
+Total elapsed time = 9.148678 sec
+
+
+
+To check tx.add hoisting:
+
+$ rm -f /opt/fio/scratch/jum/lulesh.nvl && make -s run-lulesh-safe-refs-txs1-poor
+edgeElemes = 20
+iterations: 1041
+Init time = 0.077771 sec
+Main Comp. time = 18.322215 sec
+Total elapsed time = 18.399986 sec
+
+
+
+Automatic Shadow Updates
+------------------------
+
+For a detailed discussion of automatic shadow update results for lulesh, see
+our submission to CGO'17.
+
+The results below were collected at various stages of development of NVL-C's
+automatic shadow update implementation, so many are out of date.
+
+For -poor versions, pointers to allocations are passed as arguments to
+functions containing transactions. Without inlining, this would suppress
+automatic shadow updates.
+
+V-to-NV pointers to allocations are also stored in global variables. This
+would suppress automatic shadow updates if automatic reference counting
+didn't record one reg V-to-NV pointer plus one mem V-to-NV pointer per
+allocation.
+
+The largest and, by far, the most common allocation size is (N+1)^3 * 8
+bytes.  Our cost model then predicts that shadow updates should benefit
+execution time on megatron for roughly N > 60. The results below agree:
+
+N   without  with   ratio
+-------------------------
+20  18.8s    32.9s  1.75
+40  144s     159s   1.10
+50  291s     301s   1.03
+60  528s     531s   1.01
+70  882s     868s   0.984
+80  1420s    1390s  0.979

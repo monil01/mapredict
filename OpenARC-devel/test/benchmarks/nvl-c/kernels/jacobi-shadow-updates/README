@@ -1,0 +1,32 @@
+This version of jacobi is different than ../jacobi-txs-amortized in the
+following ways:
+
+1. ITERS_PER_TX=1 by default so that transaction overhead is not well
+amortized so that we can see a performance benefit from shadow updates.
+Reducing transaction granularity in this way might be needed in a real
+application if frequent failures are possible. 
+
+2. In each iteration, the NVM-stored b is copied to the
+volatile-memory-stored a, and then the new b is computed from a. (In
+contrast, ../jacobi-txs-amortized computes the new a from b, and then copies
+a to b.) This change means that the stencil read is now performed on a
+instead of on b, which is now always read linearly. If the NVM read latency
+is longer than the DRAM read latency and if the matrices are very large
+relative to the cache/buffer, this change should improve performance.
+However, I haven't collected results yet to prove that it helps.
+Nevertheless, it makes the next change a little cleaner.
+
+3. TXS=4 enables the use of backup_writeFirst to improve the performance of
+shadow updates, especially for byte-addressable NVM (emulated using
+PMEM_IS_PMEM_FORCE=1). In order for backup_writeFirst to be valid, two
+modifications are made for the first jacobi iteration within each
+transaction: (1) the b-to-a copy is moved before the transaction, and (2)
+the undo-logged boundary of a is written within the transaction.
+
+4. Many versions of the code (selected via the preprocessor) have been
+eliminated to make the code more readable:
+  - It no longer seems interesting to compare poor and non-poor versions as
+    they normally have the same performance these days (now that V-to-NV
+    pointers have absolute fields), so bare NVM pointers are now never used.
+  - The -persist version has been removed. It's not clear it's meaningful
+    given that we have full transaction support now.

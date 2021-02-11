@@ -1,0 +1,74 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+  <title>352.ep:  SPEC ACCEL Benchmark Description</title>
+<META REVISION="$Id: ep.html 1286 2015-03-02 20:15:22Z CloyceS $">
+
+</head>
+<body>
+	<h1 style="text-align: center;">352.ep<br>
+SPEC ACCEL Benchmark Description File</h1>
+
+<h2>Benchmark Name</h2>
+<p>352.ep</p>
+
+<hr>
+<h2>Benchmark Author</h2>
+
+<p>Serial C version was developed the Center for Manycore Programming at Seoul National University and derived from the serial Fortran versions in "NPB3.3-SER" developed by NAS.</p>
+
+<p>OpenACC version was developed by Rengan Xu and Sunita Chandrasekaran from University of Houston and Mathew Colgrove from NVIDIA.</p>
+
+<hr>
+<h2>Benchmark Program General Category</h2>
+
+<p>Embarrassingly Parallel</p>
+
+<hr>
+<h2>Benchmark Description</h2>
+<p>EP kernel benchmark is an embarrassingly parallel algorithm with a
+reduction.  The algorithm generates n pairs of uniform (0,1) pseudorandom
+deviates (xj,yj). Then for each j the condition tj = x2j + yj2 &lt;= 1 is
+checked. If the condition is satisfied, Xk = xj sqrt(-2log(tj))/tj and
+Yk = yj sqrt(-2log(tj))/tj , where k starts from 1 and increments after
+each step. Finally Ql (0 &lt;= l &lt;= 9) counts the pairs (Xk,Yk) that lie
+in the square annulus l &lt;= max(|Xk, Yk|) &lt;= l + 1. Then Sum(Xk) 
++ Sum(Yk) are then calculated. In this algorithm, Ql(0 &lt;= l &lt;= 9)
+performs the reduction of all the pairs.</p>
+
+<hr>
+<h2>Input Description</h2>
+<p>The input dataset size is comprised of W, A through E classes. We
+have used the 3 classes in our experiments:</p>
+<ul>
+<p>Class W: reference data for n = 2^25 pairs of (xj,yj) (1 &lt;= j &lt;= n)</p>
+<p>Class C: reference data for n = 2^32 pairs of (xj,yj) (1 &lt;= j &lt;= n)</p>
+<p>Class D: references data for n = 2^36 pairs of (xj,yj) (1 &lt;= j &lt;= n)</p>
+<p>Class W is used by the test workload, Class C by train, and Class D by ref.</p>
+</ul>
+<hr>
+<h2>Output Description</h2>
+<p>Ql (0 &lt;= l &lt;= 9) that counts the pairs (Xk,Yk) that lie in
+the square annulus l &lt;= max(|Xk, Yk|) &lt;= l + 1, 
+and Sum(Xk) + Sum(Yk).
+
+<hr>
+<h2>Programming Language</h2>
+<p>C</p>
+
+<hr>
+<h2>Threading Model</h2>
+<p>OpenACC</p>
+
+<hr>
+<h2>Known portability issues</h2>
+<p>None.</p>
+
+<hr>
+<h2>Reference</h2>
+<ol class="ol1">
+  <li class="li8">Information on NPB 3.3, including the technical report, the original specifications, source code, results and information on how to submit new results, is available at: <a href="http://www.nas.nasa.gov/Software/NPB/"><span class="s6">http://www.nas.nasa.gov/Software/NPB/</span></a></li>
+  <li class="li8">Information about the C version developed by the Center for Manycore Programming can be found at: <a href="http://aces.snu.ac.kr/Center_for_Manycore_Programming/Home.html"><span class="s6">http://aces.snu.ac.kr/Center_for_Manycore_Programming/Home.html</span></a></li>
+</ol>
+</body>
+</html>

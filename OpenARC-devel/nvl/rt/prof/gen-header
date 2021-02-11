@@ -1,0 +1,134 @@
+#!/usr/bin/env perl
+
+use warnings;
+use strict;
+
+my $fnPrefix = "prof-tx-add";
+my $fnSuffix = "txt";
+
+my $headerRegex = 'N *size\(bytes\) *\| *undo\(s\) *shdw\(s\) *write\(s\)'
+                  .' *sbwf\(s\) *sbwf\/undo *';
+my $hrRegex = '[-+]+';
+my $valRegex = '[-+.eE0-9]+';
+my $paramRowRegex = ':y=a\*x\^b\+c *\|'
+                    ." *($valRegex) *($valRegex) *($valRegex) *";
+my $cutoffRowRegex = 'cutoff size *\| *'."($valRegex) *";
+
+exit main(@ARGV);
+
+sub usage {
+  !scalar(@_) || usage();
+  print STDERR <<"EOF"
+Usage: $0 profileName
+
+Where profileName is something like "megatron-ioscale". In that case, the
+following files will be read:
+
+  $fnPrefix-megatron-ioscale-msync.$fnSuffix
+  $fnPrefix-megatron-ioscale-cflush.$fnSuffix
+
+and text appropriate for $fnPrefix.h will be written to stdout.
+EOF
+  ;
+  exit 1;
+}
+
+sub main {
+  defined(my $profileName = shift(@_)) || usage();
+  !scalar(@_) || usage();
+
+  print STDOUT <<"EOF";
+// In the future, this data should be replaced based on NVM device. See
+// related todo in nvlrt_tx_tryShadowUpdate in ../nvlrt-pmemobj.c. See
+// ../../README for instructions on generating this data.
+
+#define SHADOW_UPDATE_COST_MODE_DEFAULT NVLRT_COST_COMPUTE
+EOF
+  ;
+
+  my @fns = ("$fnPrefix-$profileName-msync.$fnSuffix",
+             "$fnPrefix-$profileName-clflush.$fnSuffix");
+  my @vars = ("Msync", "Clflush");
+  for my $i (0 .. $#fns) {
+    my $fn = $fns[$i];
+    my $var = $vars[$i];
+    my $fh;
+    if (!open($fh, "<", $fn)) {
+      die("$0: $fn: failure opening for read: $!\n");
+    }
+    transform($fn, $fh, $var);
+    if (!close($fh)) {
+      die("$0: $fn: failure closing: $!\n");
+    }
+  }
+}
+
+sub transform {
+  defined(my $fn = shift(@_)) || usage();
+  defined(my $fh = shift(@_)) || usage();
+  defined(my $var = shift(@_)) || usage();
+  !scalar(@_) || usage();
+
+  my $line;
+  if (!defined($line = readline($fh)) || $line !~ /^$headerRegex$/) {
+    die("$0: $fn: header row is missing or invalid\n");
+  }
+  if (!defined($line = readline($fh)) || $line !~ /^$hrRegex$/) {
+    die("$0: $fn: first horizontal rule is missing\n");
+  }
+
+  while (defined($line = readline($fh)) && $line !~ /^$hrRegex$/) {
+  }
+  if (!defined($line)) {
+    die("$0: $fn: second horizontal rule is missing\n");
+  }
+
+  if (!defined($line = readline($fh)) || $line !~ /^a$paramRowRegex$/) {
+    die("$0: $fn: parameter a row is missing\n");
+  }
+  my @aParams = ($1, $2, $3);
+  if (!defined($line = readline($fh)) || $line !~ /^b$paramRowRegex$/) {
+    die("$0: $fn: parameter b row is missing\n");
+  }
+  my @bParams = ($1, $2, $3);
+  if (!defined($line = readline($fh)) || $line !~ /^c$paramRowRegex$/) {
+    die("$0: $fn: parameter c row is missing\n");
+  }
+  my @cParams = ($1, $2, $3);
+
+  my $i = 0;
+  my @undoParam  = ($aParams[$i], $bParams[$i], $cParams[$i++]);
+  my @writeParam = ($aParams[$i], $bParams[$i], $cParams[$i++]);
+  my @sbwfParam  = ($aParams[$i], $bParams[$i], $cParams[$i++]);
+
+  if (!defined($line = readline($fh)) || $line !~ /^$hrRegex$/) {
+    die("$0: $fn: third horizontal rule is missing\n");
+  }
+
+  if (!defined($line = readline($fh)) || $line !~ /^$cutoffRowRegex$/) {
+    die("$0: $fn: cutoff row is missing\n");
+  }
+  my $cutoff = $1;
+
+  if (defined(readline($fh))) {
+    die("$0: $fn: unexpected text after cutoff row\n");
+  }
+
+  print <<"EOF"
+
+static const size_t shadowUpdate${var}Cutoff = $cutoff;
+
+static const double shadowUpdate${var}UndoA = $undoParam[0];
+static const double shadowUpdate${var}UndoB = $undoParam[1];
+static const double shadowUpdate${var}UndoC = $undoParam[2];
+
+static const double shadowUpdate${var}SbwfA = $sbwfParam[0];
+static const double shadowUpdate${var}SbwfB = $sbwfParam[1];
+static const double shadowUpdate${var}SbwfC = $sbwfParam[2];
+
+static const double shadowUpdate${var}WriteA = $writeParam[0];
+static const double shadowUpdate${var}WriteB = $writeParam[1];
+static const double shadowUpdate${var}WriteC = $writeParam[2];
+EOF
+  ;
+}

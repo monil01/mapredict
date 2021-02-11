@@ -1,0 +1,24 @@
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+# Unignore all dirs
+!*/
+
+*.o
+*.d
+Release/
+.*lock*
+*.out
+*ptp-sync*
+*.dSYM
+
+.~lock.output#
+
+!Debug/exp
+!Debug/run
+!Debug/switchApp
+
+

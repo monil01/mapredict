@@ -1,0 +1,122 @@
+Overview
+--------
+
+This copy of jllvm is based on jllvm 3.2.2, downloaded from:
+
+  https://code.google.com/p/jllvm/
+
+We have modified it for the purposes of OpenARC.
+
+If you wish to use OpenARC's LLVM support, you must build jllvm
+separately from the rest of OpenARC, as described below.  Then, you
+can build OpenARC using OpenARC's build.sh script, which automatically
+detects whether jllvm is built in order to enable LLVM support.
+
+Prerequisites
+-------------
+
+* OS:
+
+  Currently, we have tested jllvm only on:
+
+    - CentOS Linux release 7.2.1511 (Core)
+    - macOS Version 10.12 (Sierra)
+
+  We will support other platforms in the future.
+
+* Apache Ant and CMake:
+
+  Using yum in linux:
+
+  $ sudo yum install ant cmake
+
+  Using MacPorts in macOS:
+
+  $ sudo port install apache-ant cmake
+
+* Java:
+
+  Make sure $JAVA_HOME is set to the home directory of the same Java
+  version you use to build the rest of OpenARC.  For example, from
+  bash, one of these work for us:
+
+  $ export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.101-2.6.6.1.el7_2.x86_64 # linux
+  $ export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_60.jdk/Contents/Home # macOS
+
+* C/C++ compilers:
+
+  In linux, we have tested with GCC 4.8.5.
+
+  When using MacPorts in macOS 10.12 (Sierra), we have tested with GCC
+  6.1.0, which you can install as follows:
+
+  $ sudo port install gcc6
+
+  That GCC also works for building the rest of OpenARC.
+
+Building LLVM
+-------------
+
+OpenARC uses LLVM 3.2 with extensions to support NVL.  We will update
+OpenARC and jllvm to use more recent versions of LLVM in the future.
+
+The source code for this extended LLVM is located in OpenARC's llvm
+subdirectory.  It must be built before building jllvm.
+
+If you are working from a git clone of OpenARC, the llvm subdirectory is a
+git submodule, which is empty by default.  The easiest way to populate
+OpenARC's submodules is to specify the --recursive option to "git clone"
+when cloning OpenARC.  If you want to populate submodules for an existing
+git clone of OpenARC, you can run the following command at the root
+directory of the OpenARC git clone:
+
+$ git submodule update --init
+
+The following build procedure works for us on macOS.  The exact set of
+configure options you need might be different.  If you plan to modify LLVM
+code, you might want to consider options like "--enable-debug-symbols
+--enable-debug-runtime --with-optimize-option=-O0" to facilitate debugging.
+See LLVM documentation for details.  Also, our LLVM extensions use C++11
+features, so you might need to adjust the CXX configure option to force
+use of a modern C++ compiler if you get compile errors.
+
+$ mkdir llvm/build
+$ cd llvm/build
+$ ../configure --prefix=`pwd`/../install --enable-keep-symbols \
+  CC=gcc-mp-6 CXX=g++-mp-6
+$ make
+# make check-all # this is optional
+$ make install
+$ cd ../..
+
+Each time you pull a new commit of OpenARC, you can run "git status" in the
+root directory of OpenARC to determine whether it now requires different
+commits in its submodules.  If so, before you rebuild LLVM and jllvm, you
+can execute the following command from the root directory of OpenARC to
+cause the required commits in its submodules to be fetched and checked out:
+
+$ git submodule update
+
+Run "git submodule --help" for further documentation on the use of git
+submodules.
+
+Building jllvm
+--------------
+
+While building jllvm, $PATH should be set to locate the LLVM
+installation's bin directory and your C and C++ compilers.  If it does
+not locate your desired C or C++ compiler, you can instead specify it
+via $CC or $CXX.  For example:
+
+$ cd jllvm
+$ LLVM_HOME=`pwd`/../llvm/install
+
+And one of:
+
+$ PATH=$LLVM_HOME/bin:$PATH ant build # linux
+$ PATH=$LLVM_HOME/bin:$PATH CC=gcc-mp-6 CXX=g++-mp-6 ant build # macOS
+
+If your build attempt fails because it finds the wrong tools, you
+should clean your build before trying again:
+
+$ ant clean

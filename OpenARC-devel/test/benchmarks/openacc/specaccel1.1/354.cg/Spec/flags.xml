@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription SYSTEM
+       "http://www.spec.org/dtd/cpuflags2.dtd">
+
+<!-- This file defines portability flags that may be used when compiling
+     354.cg.
+
+  Copyright 2011 Standard Performance Evaluation Corporation
+
+  $Revision: 864 $
+  $Date: 2013-11-01 14:36:29 -0400 (Fri, 01 Nov 2013) $
+-->
+<flagsdescription>
+
+<filename>354.cg.flags</filename>
+<title>354.cg Approved Portability Flags</title>
+
+<header>
+<![CDATA[
+<p>This is the complete set of approved portability flags for 354.cg.</p>
+]]>
+</header>
+
+<!-- flag name="D__OPENACC" class="forbidden" -->
+<flag name="D__OPENACC" class="forbidden">
+Added by compilers when OpenACC is enabled.
+</flag>
+
+<!-- flag name="D__PRINT_RESULTS_H__" class="forbidden" -->
+<flag name="D__PRINT_RESULTS_H__" class="forbidden">
+Header file guard.
+</flag>
+
+<!-- flag name="D__RANDDP_H__" class="forbidden" -->
+<flag name="D__RANDDP_H__" class="forbidden">
+Header file guard.
+</flag>
+
+<!-- flag name="D__TIMERS_H__" class="forbidden" -->
+<flag name="D__TIMERS_H__" class="forbidden">
+Header file guard.
+</flag>
+
+<!-- flag name="D__TYPE_H__" class="forbidden" -->
+<flag name="D__TYPE_H__" class="forbidden">
+Header file guard.
+</flag>
+
+<!-- flag name="DDOS" class="portability" -->
+<flag name="DDOS" class="portability">
+Don't include Linux specific header files.
+</flag>
+
+
+</flagsdescription>

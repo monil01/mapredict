@@ -1,0 +1,53 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+
+  <title>357.csp:  SPEC ACCEL Benchmark Description File</title>
+<META REVISION="$Id: csp.html 1286 2015-03-02 20:15:22Z CloyceS $">
+</head>
+
+<body>
+<h1 style="text-align: center; ">357.csp<br>
+SPEC ACCEL Benchmark Description File</h1>
+
+<h2>Benchmark Name</h2>
+<p>357.csp</p>
+<hr>
+<h2>Benchmark Author</h2>
+<p>Serial C version was developed the Center for Manycore Programming at Seoul National University and derived from the serial Fortran versions in "NPB3.3-SER" developed by NAS.</p>
+<p>OpenACC version was developed by Rengan Xu and Sunita Chandrasekaran from University of Houston.</p>
+<hr>
+<h2>Benchmark Program General Category</h2>
+<p>Scalar Penta-diagonal solver</p>
+<hr>
+<h2>Benchmark Description</h2>
+<p>This performs a synthetic CFD problem by solving multiple, independent systems of non diagonally dominant, scalar, pentadiagonal equations.</p>
+<hr>
+<h2>Input Description</h2>
+<p>The input dataset size is comprised of W, A through E classes. We have used 3 classes in our experiments.</p>
+<ul>
+<p>Class A: reference data of 100 time steps, dt=0.015 and 12x12x12 grids</p>
+<p>Class B: reference data of 400 time steps, dt=0.0015 and 64x64x64 grids</p>
+<p>Class C: reference data of 400 time steps, dt=0.00067 and 162x162x162 grids</p>
+<p>Class A is used by the test workload, Class B by train, and Class C by ref.</p>
+</ul>
+<hr>
+<h2>Output Description</h2>
+<p>It prints out the 5x1 vector in u.</p>
+<hr>
+<h2>Programming Language</h2>
+<p>C</p>
+<hr>
+<h2>Threading Model</h2>
+<p>OpenACC</p>
+<hr>
+<h2>Known portability issues</h2>
+<p>None.</p>
+<hr>
+<h2>Reference</h2>
+<ol >
+  <li>Information on NPB 3.3, including the technical report, the original specifications, source code, results and information on how to submit new results, is available at: <a href="http://www.nas.nasa.gov/Software/NPB/">http://www.nas.nasa.gov/Software/NPB/</a></li>
+  <li>Information about the C version developed by the Center for Manycore Programming can be found at: <a href="http://aces.snu.ac.kr/Center_for_Manycore_Programming/Home.html">http://aces.snu.ac.kr/Center_for_Manycore_Programming/Home.html</a></li>
+</ol>
+</body>
+</html>

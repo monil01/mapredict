@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription SYSTEM
+       "http://www.spec.org/dtd/cpuflags2.dtd">
+
+<!-- This file defines portability flags that may be used when compiling
+     303.ostencil     
+
+  Copyright 2010 Standard Performance Evaluation Corporation
+
+  $Revision: 968 $
+  $Date: 2014-01-06 11:11:32 -0500 (Mon, 06 Jan 2014) $
+-->
+<flagsdescription>
+
+<filename>303.ostencil.flags</filename>
+
+<title>303.ostencil Approved Portability Flags</title>
+
+<header>
+<![CDATA[
+<p>This is the complete set of approved portability flags for 303.ostencil.</p>
+]]>
+</header>
+
+<!-- flag name="D__MINGW32__" class="portability" -->
+<flag name="D__MINGW32__" class="forbidden">
+Implicitly defined in the MINGW32 build environment.
+</flag>
+
+<!-- flag name="D__BYTE_ORDER" class="portability" -->
+<flag name="D__BYTE_ORDER" class="forbidden">
+Implicitly defined by the system header files.
+</flag>
+
+<!-- flag name="D__LITTLE_ENDIAN" class="portability" -->
+<flag name="D__LITTLE_ENDIAN" class="forbidden">
+Implicitly defined by the system header files.
+</flag>
+
+<!-- flag name="D__cplusplus" class="portability" -->
+<flag name="D__cplusplus" class="forbidden">
+Implicitly defined by a C++ compiler. 
+</flag>
+
+<!-- flag name="D_COMMON_H_" class="portability" -->
+<flag name="D_COMMON_H_" class="forbidden">
+Header file guard. 
+</flag>
+
+<!-- flag name="D__FILEH__" class="portability" -->
+<flag name="D__FILEH__" class="forbidden">
+Header file guard. 
+</flag>
+
+<flag name="IncludePath" class="mandatory"
+  regexp="-I\.\/ -I\.\/pbcommon_sources\b">
+  <![CDATA[
+   <p>Include path to parboil include files</p>
+   ]]>
+</flag>
+
+
+</flagsdescription>

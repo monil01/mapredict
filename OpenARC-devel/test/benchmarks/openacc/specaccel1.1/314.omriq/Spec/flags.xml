@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<!DOCTYPE flagsdescription SYSTEM
+       "http://www.spec.org/dtd/cpuflags2.dtd">
+
+<!-- This file defines portability flags that may be used when compiling
+     314.omriq     
+
+  Copyright 2010 Standard Performance Evaluation Corporation
+
+  $Revision: 974 $
+  $Date: 2014-01-08 14:37:31 -0500 (Wed, 08 Jan 2014) $
+-->
+<flagsdescription>
+
+<filename>314.omriq.flags</filename>
+
+<title>314.omriq Approved Portability Flags</title>
+
+<header>
+<![CDATA[
+<p>This is the complete set of approved portability flags for 314.omriq.</p>
+]]>
+</header>
+
+<!-- flag name="DSPEC_NO_INLINE" class="portability" -->
+<flag name="DSPEC_NO_INLINE" class="portability">
+Do not use the C99 "inline" keyword.
+</flag>
+
+<!-- flag name="D__BYTE_ORDER" class="portability" -->
+<flag name="D__BYTE_ORDER" class="forbidden">
+Implicitly defined by the system header files.
+</flag>
+
+<!-- flag name="D_POSIX_VERSION" class="portability" -->
+<flag name="D_POSIX_VERSION" class="forbidden">
+Implicitly defined by the system header files.
+</flag>
+
+<!-- flag name="D__cplusplus" class="portability" -->
+<flag name="D__cplusplus" class="forbidden">
+Implicitly defined by a C++ compiler. 
+</flag>
+
+<!-- flag name="DPARBOIL_HEADER" class="portability" -->
+<flag name="DPARBOIL_HEADER" class="forbidden">
+Header file guard.
+</flag>
+
+<flag name="Inlclude" class="mandatory"
+  regexp="\-I\. \-I\.\/pbcommon_sources\b">
+  <![CDATA[
+  <p>Include path to parboil include files</p>
+  ]]>
+</flag>
+
+
+</flagsdescription>

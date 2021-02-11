@@ -1,0 +1,97 @@
+[Nested Parallel Loops Mapping Strategy]
+- OpenMP on CPU (convertOpenMPtoOpenMP, convertOpenACCtoOpenMP4, convertOpenACCtoOpenMP3, deviceType = 1)
+	- Apply simd clause to the inner-most loop if vector-friendly.
+		- Apply independent clause otherwise (if parallelizable).
+	- Collapse all parallelizble loops except for the innermost simd loop if existing
+- OpenMP on GPU (convertOpenMPtoOpenMP, convertOpenACCtoOpenMP4, convertOpenACCtoOpenMP3, deviceType = 0)
+	- Collapse all parallelizble loops ignoring simd clause.
+	- If there exist multiple nested parallelizable loops, apply the teams distribute and parallel for directives in a nested fashion, starting from the outermost loop
+- OpenACC (convertOpenMP3toOpenACC, convertOpenMP4toOpenACC, defaults)
+	- Apply simd clause to the inner-most loop if vector-friendly.
+		- Apply independent clause otherwise (if parallelizable).
+	- Collapse all parallelizble loops except for the innermost simd loop if existing
+		- Apply independent directive to each parallelizable loop.
+
+[Default nested-parallel loop mapping strategy in OpenARC]
+ - Apply gang clause to the outermost loop.
+ - If a worker clause does not exist in any of inner loops, collapse all the inner loops and apply worker clause.
+
+[Commandline Option: parallelismMappingStrat]
+- Syntax: 
+	parallelismMappingStrat=enableAdvancedMapping=number:vectorize=number:vectorfriendlyanalysis=number:devicetype=number
+- Brief description: Set preferred parallelism mapping strategies
+- Suboptions:
+	- enabledadvancedmapping = 0 (disable all advanced mapping strategies (default))
+	                           1 (enable advanced mapping strategies)
+	- vectorize = 0 (vectorize vector or simd loops only if they are vector-friendly (default))
+	              1 (vectorize all the loops with explicit vector or simd clauses)
+	- vectorfriendlyanalysis = 0 (most conservative analysis (default))
+	                           1 (allow loops with non-constant bounds)
+	                           2 (allow non-constant loop bounds and inner loops)
+	- devicetype = 0 (choose mapping strategies preferred for GPU architectures (default))
+	               1 (choose mapping strategies preferred for CPU architectures)
+	               2 (choose mapping strategies preferred for FPGA architectures)
+
+[Commandline Option: ompaccInter]
+- Syntax: 
+	ompaccInter=N
+- Brief description: Interchange OpenACC directives with OpenMP 3.0 or OpenMP 4.0 directives
+- Options:
+	- ompaccInter=0 disable this option (default)
+	              1 generate OpenACC directives from OpenMP 3.0 directives
+	              2 generate OpenACC directives from OpenMP 4.0 directives
+	              3 generate OpenMP 3.0 directives from OpenACC directives
+	              4 generate OpenMP 4.0 directives from OpenACC directives
+	              5 generate optimized OpenMP directives from OpenMP directives
+
+[Commandline Option: AccParallelization]
+- Syntax: 
+	AccParallelization=N
+- Brief description: Find parallelizable loops
+- Options:
+	- AccParallelization=0 disable automatic parallelization analysis (default) 
+	                     1 add independent clauses to existing OpenACC loop constructs if they are parallelizable 
+	                     2 add independent clauses to any loops in compute contructs if they are parallelizable
+	                       and do not have seq clauses.
+
+[ParallelimMappingMode] 
+- The OpenARC ACCLoopDirectivePreprocessor pass prints out the following message during compilation for debugging purpose.
+ParallelismMappingMode = 0 //disable advanced mapping
+ParallelismMappingMode = 1 //for OpenMP on CPU
+ParallelismMappingMode = 2 //for OpenMP on GPU
+ParallelismMappingMode = 3 //for OpenACC
+
+[Example Commandline Options]
+- To translate from OpenMP3 to OpenACC
+	ompaccInter=1 //Not supported yet
+- To translate from OpenMP4 to OpenACC (generate output OpenACC)
+	ompaccInter=2
+	SkipGPUTranslation=1 //without this option, OpenARC will further translate OpenACC to CUDA,OpenCL, or HIP.
+	//To apply advanced mapping strategy, add the following option too.
+	parallelismMappingStrat=enableAdvancedMapping=1:vectorize=0:vectorfriendlyanalysis=1:devicetype=0 
+	AccParallelization=2
+- To translate from OpenACC to OpenACC (generate output OpenACC)
+	SkipGPUTranslation=1 //without this option, OpenARC will further translate OpenACC to CUDA,OpenCL, or HIP.
+	//To apply advanced mapping strategy, add the following option too.
+	parallelismMappingStrat=enableAdvancedMapping=1:vectorize=0:vectorfriendlyanalysis=1:devicetype=0 
+	AccParallelization=2
+- To translate from OpenACC to OpenMP3
+	ompaccInter=3
+	//To apply advanced mapping strategy, add the following option too.
+	parallelismMappingStrat=enableAdvancedMapping=1:vectorize=0:vectorfriendlyanalysis=1:devicetype=1 //for CPU target
+	AccParallelization=2
+- To translate from OpenACC to OpenMP4
+	ompaccInter=4
+	AccParallelization=2
+	//To apply advanced mapping strategy, add the following option too.
+	parallelismMappingStrat=enableAdvancedMapping=1:vectorize=0:vectorfriendlyanalysis=1:devicetype=0 //for GPU target
+	or 
+	parallelismMappingStrat=enableAdvancedMapping=1:vectorize=0:vectorfriendlyanalysis=1:devicetype=1 //for CPU target
+- To translate from OpenMP to OpenMP
+	ompaccInter=5
+	AccParallelization=2
+	//To apply advanced mapping strategy, add the following option too.
+	parallelismMappingStrat=enableAdvancedMapping=1:vectorize=0:vectorfriendlyanalysis=1:devicetype=0 //for GPU target
+	or 
+	parallelismMappingStrat=enableAdvancedMapping=1:vectorize=0:vectorfriendlyanalysis=1:devicetype=1 //for CPU target
+

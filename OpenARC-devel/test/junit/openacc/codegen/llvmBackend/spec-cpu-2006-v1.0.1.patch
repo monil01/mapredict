@@ -1,0 +1,266 @@
+--- /dev/null	2015-05-15 11:42:23.000000000 -0400
++++ WARNING-ALTERED-FOR-OPENARC	2015-05-15 11:42:22.000000000 -0400
+@@ -0,0 +1,7 @@
++WARNING
++
++This installation of SPEC CPU 2006 v1.0.1 has been altered for the purposes
++of testing OpenARC's LLVM backend.  As a result, it does NOT obey the SPEC
++rules for reporting performance measurements.  However, the only source code
++modified is covered under an open license, so these modifications do not
++violate the SPEC license.
+--- benchspec/CPU2006/456.hmmer/src/tophits.c	2006-02-21 13:57:33.000000000 -0500
++++ benchspec/CPU2006/456.hmmer/src/tophits.c	2015-03-29 14:47:58.000000000 -0400
+@@ -285,6 +285,7 @@
+   /*NOTREACHED*/
+   return 0;
+ }
++void specqsort(char *base, int n, int size, int (*compar)());
+ void
+ FullSortTophits(struct tophit_s *h)
+ {
+--- MANIFEST	2015-03-16 11:44:45.000000000 -0400
++++ MANIFEST	2015-05-15 11:24:13.000000000 -0400
+@@ -6843,7 +6843,7 @@
+ 4a4e55aa9256de899cd66a151dbea7e7 * 00004B2C benchspec/CPU2006/456.hmmer/src/stockholm.c
+ 7a9183137b02dea41d49a09d5e3d23d0 * 000007B1 benchspec/CPU2006/456.hmmer/src/stopwatch.h
+ 1f6815e3e6d0c78ce1173eaf177d7bb4 * 0000617D benchspec/CPU2006/456.hmmer/src/structs.h
+-6d13250adaa934e59b8a764765b67b00 * 00002EEC benchspec/CPU2006/456.hmmer/src/tophits.c
++dd2658992ac8b34956bbe1a874620707 * 00002F2A benchspec/CPU2006/456.hmmer/src/tophits.c
+ 3c2a00c8c1b33b39cf8ef2e93c9aeb08 * 0000909F benchspec/CPU2006/456.hmmer/src/trace.c
+ 9130e4c6b37e35e12d9fb9f849eddedc * 000009BB benchspec/CPU2006/456.hmmer/src/translate.c
+ 29aecd7f41be7db607379f8f618f2dfe * 0000144B benchspec/CPU2006/456.hmmer/src/types.c
+--- benchspec/CPU2006/456.hmmer/src/gsi.c	2006-02-21 13:57:33.000000000 -0500
++++ benchspec/CPU2006/456.hmmer/src/gsi.c	2015-03-29 15:09:18.000000000 -0400
+@@ -255,6 +255,7 @@
+   key2 = (struct gsikey_s *) k2;
+   return strcmp(key1->key, key2->key);
+ }
++void specqsort(char *base, int n, int size, int (*compar)());
+ void
+ GSISortIndex(struct gsiindex_s *g)
+ {
+--- MANIFEST	2015-03-16 11:44:45.000000000 -0400
++++ MANIFEST	2015-05-15 11:30:46.000000000 -0400
+@@ -6800,7 +6800,7 @@
+ 87a3126ae7ba08526393a42d29ce2f1c * 00002C87 benchspec/CPU2006/456.hmmer/src/gki.c
+ 9697ac2b73eaca277dc705802389882e * 0000052A benchspec/CPU2006/456.hmmer/src/gki.h
+ 464301daf25a16ed9f88382971677368 * 000003DD benchspec/CPU2006/456.hmmer/src/globals.h
+-4931b640ba7c32adc407b92bfe07c181 * 00002D5A benchspec/CPU2006/456.hmmer/src/gsi.c
++0657a71e056e38447d35904b4773e58a * 00002D98 benchspec/CPU2006/456.hmmer/src/gsi.c
+ 1c51ab5130aa4d1e3af3fd23ad43162c * 00000CB2 benchspec/CPU2006/456.hmmer/src/gsi.h
+ a44235c4fc921db411fa4b30791098dd * 0000A676 benchspec/CPU2006/456.hmmer/src/histogram.c
+ 752b4d55a2f80010415f01a0db7d0193 * 00007F97 benchspec/CPU2006/456.hmmer/src/hmmcalibrate.c
+--- benchspec/CPU2006/456.hmmer/src/hsregex.c	2005-06-02 22:43:52.000000000 -0400
++++ benchspec/CPU2006/456.hmmer/src/hsregex.c	2015-03-29 21:46:19.000000000 -0400
+@@ -711,7 +711,7 @@
+ static char *			/* Location. */
+ regnode(cp, op)
+ register struct comp *cp;
+-char op;
++int op;
+ {
+ 	register char *const ret = cp->regcode;
+ 	register char *ptr;
+@@ -736,7 +736,7 @@
+ static void
+ regc(cp, b)
+ register struct comp *cp;
+-char b;
++int b;
+ {
+ 	if (EMITTING(cp))
+ 		*cp->regcode++ = b;
+@@ -752,7 +752,7 @@
+ static void
+ reginsert(cp, op, opnd)
+ register struct comp *cp;
+-char op;
++int op;
+ char *opnd;
+ {
+ 	register char *place;
+--- MANIFEST	2015-03-16 11:44:45.000000000 -0400
++++ MANIFEST	2015-05-15 11:47:37.000000000 -0400
+@@ -6806,7 +6806,7 @@
+ 752b4d55a2f80010415f01a0db7d0193 * 00007F97 benchspec/CPU2006/456.hmmer/src/hmmcalibrate.c
+ 82fb6fca5f279652d9b2bac7484e5706 * 0000EC2D benchspec/CPU2006/456.hmmer/src/hmmio.c
+ aaa23a87bf06c26810f5ce0b0a484993 * 0000B5AD benchspec/CPU2006/456.hmmer/src/hmmsearch.c
+-16337cc917c58e08109f18a6c3e0e8b6 * 000086A4 benchspec/CPU2006/456.hmmer/src/hsregex.c
++316f5cd02c94079c027f148c75cd6647 * 000086A1 benchspec/CPU2006/456.hmmer/src/hsregex.c
+ 1c097d97b6d337f3dd75aaef576d62fa * 000013F9 benchspec/CPU2006/456.hmmer/src/iupac.c
+ bb6bd7836007e1dc7006346585d599ca * 000033FA benchspec/CPU2006/456.hmmer/src/masks.c
+ 4b55e7dd09e7d51c8f32637d69e9afaf * 000025FC benchspec/CPU2006/456.hmmer/src/mathsupport.c
+--- benchspec/CPU2006/456.hmmer/src/ssi.c	2006-02-21 13:57:33.000000000 -0500
++++ benchspec/CPU2006/456.hmmer/src/ssi.c	2015-03-29 21:49:26.000000000 -0400
+@@ -874,6 +874,7 @@
+   key2 = (struct ssiskey_s *) k2;
+   return strcmp(key1->key, key2->key);
+ }
++void specqsort(char *base, int n, int size, int (*compar)());
+ int
+ SSIWriteIndex(char *file, SSIINDEX *g)
+ {
+--- MANIFEST	2015-03-16 11:44:45.000000000 -0400
++++ MANIFEST	2015-05-15 11:54:48.000000000 -0400
+@@ -6837,7 +6837,7 @@
+ 0f98444b13fdbbe40204b5530c774f34 * 0000204B benchspec/CPU2006/456.hmmer/src/sre_random.c
+ 6f555909790ea2bf281451f3761cd2c3 * 000001EA benchspec/CPU2006/456.hmmer/src/sre_random.h
+ 6b619d25a9ef33a933cbfa31f5581aeb * 00003799 benchspec/CPU2006/456.hmmer/src/sre_string.c
+-4afd45e08eaad2d54386da458208eaf4 * 0000D8C0 benchspec/CPU2006/456.hmmer/src/ssi.c
++82a1c338a31b0b18d2e28a89338ec831 * 0000D8FE benchspec/CPU2006/456.hmmer/src/ssi.c
+ 31b81cca22c4e2575975c259cf2a2295 * 00001DD7 benchspec/CPU2006/456.hmmer/src/ssi.h
+ 4ed56d33261f25dd007f563b2c79f39e * 000009D8 benchspec/CPU2006/456.hmmer/src/stack.c
+ 4a4e55aa9256de899cd66a151dbea7e7 * 00004B2C benchspec/CPU2006/456.hmmer/src/stockholm.c
+--- benchspec/CPU2006/481.wrf/src/wrf_num_bytes_between.c	2005-06-02 22:43:52.000000000 -0400
++++ benchspec/CPU2006/481.wrf/src/wrf_num_bytes_between.c	2015-03-17 13:56:30.000000000 -0400
+@@ -23,10 +23,7 @@
+ #endif
+ #endif /* !SPEC_CPU_WINDOWS_ICL */
+ 
+-WRF_NUM_BYTES_BETWEEN ( a , b , n )
+-  char * a ;
+-  char * b ;
+-  int * n ;
++void WRF_NUM_BYTES_BETWEEN (char * a , char *b , int * n )
+ {
+   *n = a - b ;
+   if ( *n < 0 ) *n = -(*n) ;
+@@ -34,21 +31,18 @@
+ 
+ /*#define NAN_VALUE */
+ #ifdef NAN_VALUE
+-GET_INITIAL_DATA_VALUE ( n )
+-  int * n ;
++void GET_INITIAL_DATA_VALUE ( int * n )
+ {
+   *n = 0xffc00000 ;
+ }
+ #else
+-GET_INITIAL_DATA_VALUE ( n )
+-  float * n ;
++void GET_INITIAL_DATA_VALUE ( float * n )
+ {
+   *n = 0. ;
+ }
+ #endif
+ 
+-WHAT_IS_A_NAN ( n )
+-  int * n ;
++void WHAT_IS_A_NAN ( int * n )
+ {
+   *n = 0xffc00000 ;
+ #if 0
+@@ -67,10 +61,7 @@
+     RETURN
+     END SUBROUTINE wrf_mem_copy */
+ 
+-WRF_MEM_COPY ( a , b, n )
+-  char * a ; 
+-  char * b ; 
+-  int * n ;
++void WRF_MEM_COPY ( char * a , char * b, int * n )
+ {
+   int i ;
+   for ( i = 0 ; i < *n ; i++ )
+--- MANIFEST	2015-03-16 11:44:45.000000000 -0400
++++ MANIFEST	2015-05-15 11:59:21.000000000 -0400
+@@ -8007,7 +8007,7 @@
+ b7946e7c1560ee0fbbd89965f04f0097 * 0002E821 benchspec/CPU2006/481.wrf/src/wrf_inputout.inc
+ 4b2eb60b71cdfc2e6acb1b9fb1c9557b * 00044EE0 benchspec/CPU2006/481.wrf/src/wrf_io.f90
+ 200f6fa15ecec3c9c192925f0f92957f * 0000030C benchspec/CPU2006/481.wrf/src/wrf_io_flags.h
+-8aed22abd56d0830a18cfb870ad95dd5 * 00000613 benchspec/CPU2006/481.wrf/src/wrf_num_bytes_between.c
++87e6fb5c426b0f0e730709afcbf9faca * 000005F2 benchspec/CPU2006/481.wrf/src/wrf_num_bytes_between.c
+ c503555d7f56077bf10186a4c81172a1 * 00000777 benchspec/CPU2006/481.wrf/src/wrf_restartin.F90
+ be49cfecd57aa64d0126c3d104f7ddb7 * 0002F083 benchspec/CPU2006/481.wrf/src/wrf_restartin.inc
+ 3220fcffa0b06c4484fd3c2fc0a5bbe3 * 00000794 benchspec/CPU2006/481.wrf/src/wrf_restartout.F90
+--- benchspec/CPU2006/481.wrf/src/pack_utils.c	2005-06-02 22:43:52.000000000 -0400
++++ benchspec/CPU2006/481.wrf/src/pack_utils.c	2015-03-29 10:00:00.000000000 -0400
+@@ -39,6 +39,7 @@
+ 
+ /*    CALL int_pack_data ( hdrbuf , hdrbufsiz * inttypesize , int_local_output_buffer, int_local_output_cursor ) */
+ 
++void
+ INT_PACK_DATA ( unsigned char *buf , int *ninbytes , unsigned char *obuf, int *cursor )
+ {
+   int i, lcurs ;
+--- MANIFEST	2015-03-16 11:44:45.000000000 -0400
++++ MANIFEST	2015-05-15 12:02:20.000000000 -0400
+@@ -7938,7 +7938,7 @@
+ ea0a5bec48f4099a07487b02f119a878 * 0000678F benchspec/CPU2006/481.wrf/src/netcdf/v1hpg.c
+ effa653e6fe96e6f55e140cadc45e3eb * 00003BEC benchspec/CPU2006/481.wrf/src/netcdf/v2i.c
+ 353afe87cc1f41c3214a72165cfc9e12 * 000037BD benchspec/CPU2006/481.wrf/src/netcdf/var.c
+-a13a51d42eebd9dd7c0ab30c6fc6d1ab * 00001F2B benchspec/CPU2006/481.wrf/src/pack_utils.c
++aa2c1c1e54b06292b15bb993f1b4168e * 00001F30 benchspec/CPU2006/481.wrf/src/pack_utils.c
+ e66c81c3d1c9da66f179acb3ad97f460 * 00002ED3 benchspec/CPU2006/481.wrf/src/scalar_indices.inc
+ 4275a5f74d5a0e2224e013ac705707d2 * 0000015B benchspec/CPU2006/481.wrf/src/scalar_indices_init.inc
+ 5478e624ff79718bb3b4525494549f17 * 000001D8 benchspec/CPU2006/481.wrf/src/scalar_tables.inc
+--- benchspec/CPU2006/481.wrf/src/collect_on_comm.c	2005-06-02 22:43:52.000000000 -0400
++++ benchspec/CPU2006/481.wrf/src/collect_on_comm.c	2015-03-29 10:00:35.000000000 -0400
+@@ -34,7 +34,10 @@
+ # endif
+ #endif
+ 
+-COLLECT_ON_COMM ( int * comm, int * typesize ,
++int col_on_comm ( int * comm, int * typesize ,
++              void * inbuf, int *ninbuf , void * outbuf, int * noutbuf, int sw );
++
++void COLLECT_ON_COMM ( int * comm, int * typesize ,
+                  void * inbuf, int *ninbuf , void * outbuf, int * noutbuf )
+ {
+   col_on_comm ( comm, typesize ,
+@@ -42,14 +45,14 @@
+ }
+ 
+ /* collect on node 0*/
+-COLLECT_ON_COMM0 ( int * comm, int * typesize ,
++void COLLECT_ON_COMM0 ( int * comm, int * typesize ,
+                  void * inbuf, int *ninbuf , void * outbuf, int * noutbuf )
+ {
+   col_on_comm ( comm, typesize ,
+                 inbuf, ninbuf , outbuf, noutbuf, 0 ) ;
+ }
+ 
+-col_on_comm ( int * comm, int * typesize ,
++int col_on_comm ( int * comm, int * typesize ,
+               void * inbuf, int *ninbuf , void * outbuf, int * noutbuf, int sw )
+ {
+ #if defined( DM_PARALLEL ) && !(STUBMPI)
+@@ -101,22 +104,24 @@
+   return(0) ;
+ }
+ 
++int dst_on_comm ( int * comm, int * typesize ,
++              void * inbuf, int *ninbuf , void * outbuf, int * noutbuf, int sw );
+ 
+-DIST_ON_COMM ( int * comm, int * typesize ,
++void DIST_ON_COMM ( int * comm, int * typesize ,
+                  void * inbuf, int *ninbuf , void * outbuf, int * noutbuf )
+ {
+   dst_on_comm ( comm, typesize ,
+                 inbuf, ninbuf , outbuf, noutbuf, 1 ) ;
+ }
+ 
+-DIST_ON_COMM0 ( int * comm, int * typesize ,
++void DIST_ON_COMM0 ( int * comm, int * typesize ,
+                  void * inbuf, int *ninbuf , void * outbuf, int * noutbuf )
+ {
+   dst_on_comm ( comm, typesize ,
+                 inbuf, ninbuf , outbuf, noutbuf, 0 ) ;
+ }
+ 
+-dst_on_comm ( int * comm, int * typesize ,
++int dst_on_comm ( int * comm, int * typesize ,
+               void * inbuf, int *ninbuf , void * outbuf, int * noutbuf, int sw )
+ {
+ #if defined(DM_PARALLEL) && ! defined(STUBMPI)
+--- MANIFEST	2015-03-16 11:44:45.000000000 -0400
++++ MANIFEST	2015-05-15 12:05:17.000000000 -0400
+@@ -7781,7 +7781,7 @@
+ 509aee02aa964ceb63180d321117404f * 00000420 benchspec/CPU2006/481.wrf/src/ESMF_TimeMgr.inc
+ d84b4ba86f793c8e9c8f2eb4dcb7b461 * 000000DF benchspec/CPU2006/481.wrf/src/Makefile
+ 191bf0e1e125a7b1d7b46aee900a2ca5 * 000057D1 benchspec/CPU2006/481.wrf/src/Meat.F90
+-ebf6aa01f0ce1e8a98192df466e139a4 * 00001349 benchspec/CPU2006/481.wrf/src/collect_on_comm.c
++fc520aecc6657d99d35c4388bdb65f5e * 00001468 benchspec/CPU2006/481.wrf/src/collect_on_comm.c
+ 11c3ceddd6391c5c5d38887a0b18df27 * 000082BF benchspec/CPU2006/481.wrf/src/config_assigns.inc
+ 2e0ebcd66ce6b89d2c89ca7f824bfdba * 00000549 benchspec/CPU2006/481.wrf/src/config_reads.inc
+ d9d510acb7b026fe1ec88b1f3cb4bbbc * 00001E81 benchspec/CPU2006/481.wrf/src/couple_or_uncouple_em.F90

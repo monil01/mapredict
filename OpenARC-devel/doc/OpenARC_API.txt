@@ -1,0 +1,600 @@
+[OpenARC API]
+
+****************************************************
+** The following OpenACC directives are supported **
+****************************************************
+
+#pragma acc parallel [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following:
+if( condition )
+async [( scalar-integer-expression )]
+num_gangs( scalar-integer-expression )
+num_workers( scalar-integer-expression )
+vector_length( scalar-integer-expression )
+reduction( operator:list )
+copy( list ) 
+copyin( list ) 
+copyout( list ) 
+create( list ) 
+present( list ) 
+present_or_copy( list ) 
+pcopy( list ) 
+present_or_copyin( list ) 
+pcopyin( list ) 
+present_or_copyout( list ) 
+pcopyout( list ) 
+present_or_create( list ) 
+pcreate( list ) 
+deviceptr( list ) 
+private( list ) 
+firstprivate( list ) 
+pipein (list)
+pipeout (list)
+
+
+#pragma acc kernels [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following:
+if( condition )
+async [( scalar-integer-expression )]
+copy( list ) 
+copyin( list ) 
+copyout( list ) 
+create( list ) 
+present( list ) 
+present_or_copy( list ) 
+pcopy( list ) 
+present_or_copyin( list ) 
+pcopyin( list ) 
+present_or_copyout( list ) 
+pcopyout( list ) 
+present_or_create( list ) 
+pcreate( list ) 
+deviceptr( list ) 
+pipein (list)
+pipeout (list)
+
+
+#pragma acc data [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following:
+if( condition )
+copy( list ) 
+copyin( list ) 
+copyout( list ) 
+create( list ) 
+present( list ) 
+present_or_copy( list ) 
+pcopy( list ) 
+present_or_copyin( list ) 
+pcopyin( list ) 
+present_or_copyout( list ) 
+pcopyout( list ) 
+present_or_create( list ) 
+pcreate( list ) 
+deviceptr( list ) 
+pipe (list)
+
+#pragma acc loop [clause[[,] clause]...]
+	for loop
+
+where clause is one of the following:
+collapse( n )
+gang [( scalar-integer-expression )]
+worker [( scalar-integer-expression )]
+vector [( scalar-integer-expression )]
+seq
+independent
+private( list )
+reduction( operator:list )
+
+
+#pragma acc parallel loop [clause[[,] clause]...]
+	for loop
+
+where clause is any clause allowed on a parallel or loop directive.
+
+
+#pragma acc kernels loop [clause[[,] clause]...]
+	for loop
+
+where clause is any clause allowed on a kernels or loop directive.
+
+
+#pragma acc declare declclause [[,] declclause]...
+
+where declclause is one of the following:
+copy( list ) 
+copyin( list ) 
+copyout( list ) 
+create( list ) 
+present( list ) 
+present_or_copy( list ) 
+pcopy( list ) 
+present_or_copyin( list ) 
+pcopyin( list ) 
+present_or_copyout( list ) 
+pcopyout( list ) 
+present_or_create( list ) 
+pcreate( list ) 
+deviceptr( list ) 
+device_resident( list ) 
+
+
+#pragma acc update clause[[,] clause]...
+
+where clause is one of the following:
+host( list )
+device( list )
+if( condition )
+async [( scalar-integer-expression )]
+
+
+#pragma acc wait [( scalar-integer-expression )]
+
+
+#pragma acc host_data [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following:
+use_device( condition )
+
+#pragma acc enter data clause[[,] clause]...
+
+where clause is one of the following:
+if( condition )
+async [( scalar-integer-expression )]
+wait [( scalar-integer-expression )]
+copyin( list )
+present_or_copyin( list )
+create( list )
+present_or_create( list )
+
+#pragma acc exit data clause[[,] clause]...
+
+where clause is one of the following:
+if( condition )
+async [( scalar-integer-expression )]
+wait [( scalar-integer-expression )]
+copyout( list )
+delete( list )
+finalize
+
+#pragma acc routine [clause[[,] clause]...]
+
+where clause is one of the following
+gang
+worker
+vector
+seq
+bind(name)
+nohost
+device_type(device-type)     
+
+#pragma acc set [clause[[,] clause]...]
+
+where clause is one of the following
+default_async ( scalar-integer-expression )
+device_num ( scalar-integer-expression )
+device_type ( device-type )
+
+
+
+**************************************************
+** List of OpenACC constructs not yet supported **
+**************************************************
+#pragma acc cache ( list )
+
+***************************************************************
+** List of OpenACC constructs added as experimental features **
+***************************************************************
+#pragma acc barrier [( mem-fence-flag )] //replaced with device-specific local synchronization call. 
+					                     //(e.g., in CUDA, "__syncthreads()")
+					                     //(e.g., in OpenCL, "barrier(CLK_LOCAL_MEM_FENCE|CLK_GLOBAL_MEM_FENCE)")
+										 //If no argument is passed, both global and local 
+										 //memory fences are enforced.
+where mem-fence-flag is one of the following:
+acc_mem_fence_local
+acc_mem_fence_global
+
+#pragma acc mpi [clause[[,] clause]...]
+
+where clause is one of the following
+sendbuf ( [device] [,] [readonly] )
+recvbuf ( [device] [,] [readonly] )
+async [(int-expr)]    
+
+
+*********************************
+** OpenARC Directive Extension **
+*********************************
+#pragma openarc #define macro val
+
+//used to pass macro values to OpenACC/OpenARC directives.
+
+#pragma openarc cuda [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following
+registerRO(list)  // R/O shared scalar or array data in the list are cached 
+				  // on the CUDA registers.
+registerRW(list)  // R/W shared scalar or array data in the list are cached
+				  // on the CUDA registers.
+noregister(list)  // Variables in the list will not be cached on CUDA registers.
+sharedRO(list)    // R/O shared data in the list are cached on the CUDA shared memory.
+                  // R/O worker-private data in the list will be allocated on the 
+				  // CUDA shared memory by replicating them as necessary.
+                  // R/O gang-private data in the list will be allocated on the 
+				  // CUDA shared memory.
+sharedRW(list)    // R/W shared data in the list are cached on the CUDA shared memory.
+                  // R/W worker-private data in the list will be allocated on the 
+				  // CUDA shared memory by replicating them as necessary.
+                  // R/W gang-private data in the list will be allocated on the 
+				  // CUDA shared memory.
+noshared(list)    // Variables in the list will not be cached on the CUDA shared 
+				  // memory.
+texture(list)     // R/O 1-dim shared arrays in the list are cached on the CUDA 
+				  // texture cache.
+notexture(list)   // Variables in the list will not be cached on the CUDA texture cache.
+constant(list)    // R/O shared scalar or array data in the list are allocated
+				  // on the CUDA constant memory
+noconstant(list)  // Variables in the list will not be allocated on CUDA constant memory
+global(list)      // Worker-private variables in the list are allocated on the 
+				  // global memory using array expansion.
+//openarc cuda directives can be used for OpenCL targets too; the compiler 
+//may ignore some clauses if not applicable to the target OpenCL device.
+
+
+#pragma openarc opencl [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following
+num_simd_work_items(exp)  //Set number of work-items executed in an SIMD fashion; used only for Altera OpenCL devices.
+num_compute_units(exp)  //Set number of compute units that the Altera OpenCL compiler should create to execute work groups; used only for Altera OpenCL devices.
+
+
+#pragma openarc transform [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following
+permute(list)    // for loop permutation transformation, resulting loops
+                 // have loops nesting in the order of index variables in
+                 // the argument list.
+unroll(unrollfactor)
+noreductionunroll(list)
+noploopswap
+noloopcollapse
+window(input-variable, output-variable)
+novectorize
+vectorfriendly
+
+
+#pragma openarc ainfo procname(proc-name) kernelid(kernel-id)
+	structured block
+//Internally used by the compiler to label each compute region.
+
+
+#pragma openarc devicetask [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following
+map(task-mapping-scheme) //task-mapping-scheme: included, coarse_grained, fine_grained
+schedule(task-scheduling-scheme) //task-scheduling-scheme: LRR, GRR, LF
+
+
+#pragma openarc resilience [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following
+ftcond(condition)
+num_faults(scalar-integer-expression)
+num_ftbits(scalar-integer-expression)
+repeat(scalar-integer-expression)
+ftprofile(scalar-integer-variable)
+ftpredict(scalar-integer-constant)
+ftregion // this and the following clauses imply a nested ftregion pragma
+ftdata(list) // cannot be combined with ftkind
+ftkind(identifier-list) // see ftkind documentation below
+ftthread(scalar-integer-expression)
+
+
+#pragma openarc ftinject [clause[[,] clause]...]
+
+where clause is one of the following
+ftdata(list)
+ftthread(scalar-integer-expression)
+
+
+#pragma openarc ftregion [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following
+ftdata(list) // cannot be combined with ftkind
+ftkind(identifier-list) // see ftkind documentation below
+ftthread(scalar-integer-expression)
+
+
+Each identifier in the identifier-list for an ftkind clause is one of the following
+integer_arg
+integer_res
+floating_arg
+floating_res
+arithmetic_arg
+arithmetic_res
+pointer_arg
+pointer_res
+
+
+#pragma openarc profile region label(name) [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following
+mode(list) 	//a list consists of the following:
+			//memory, instructions, occupancy, memorytransfer, all
+event(list) //a list consists of expressions
+verbosity(arg) //an arg is a non-negative integer where
+			   //0 is the least verbose mode. 
+
+
+#pragma openarc enter profile region label(name) [clause[[,] clause]...]
+
+where clause is one of the following
+mode(list) 	//a list consists of the following:
+			//memory, instructions, occupancy, memorytransfer, all
+event(list) //a list consists of expressions
+verbosity(arg) //an arg is a non-negative integer where
+			   //0 is the least verbose mode. 
+
+
+#pragma openarc exit profile region label(name)
+
+
+#pragma openarc profile track label(name) [clause[[,] clause]...]
+	structured block
+
+where clause is one of the following
+event(list) //a list consists of expressions
+induction(induction-expression)
+profcond(expression) 
+mode(list) 	//a list consists of the following:
+			//memory, instructions, occupancy, memorytransfer, all
+
+
+#pragma openarc profile measure label(name) [clause[[,] clause]...]
+
+where clause is one of the following
+event(list) //a list consists of expressions
+induction(induction-expression)
+profcond(expression) 
+
+#pragma openarc impacc [clause[[,] clause]...]
+where clause is one of the following
+ignoreglobal(list) //a list of global symbols to be ignored by IMPACC.
+
+
+***************************************************************
+** OpenARC Internal Directives (used internally by compiler) **
+***************************************************************
+#pragma acc internal [clause[[,] clause]...]
+	structured block
+
+where clause can be anyone including
+accglobal(list) // The list contains the String names of global symbols.
+accshared(list) // The list contains shared symbols.
+accexplicitshared(list) // The list contains shared symbols explicilty 
+						// specified by users.
+accprivate(list) // The list contains private symbols.
+accreduction(list) // The list contains reduction symbols.
+accdeviceptr(list) // The list contains deviceptr symbols.
+accreadonly(list) // The list contains R/O symbols.
+accpreadonly(list) // The list contains symbols that are R/O in the parent data region.
+rcreate(list) 	// The list contains reduction symbols whose GPU memory will 
+				//be allocated at the attached annotatable.
+iterspace(exp) // exp is the iteration size expression for a gang loop.
+gangdim(integer) // Contains the dimension of the attached gang loop. In a triply 
+				 // nested gang loops, the outermost gang loop will have 
+				 // gangdim(3), while the innermost gang loop will have gangdim(1).
+workerdim(integer) 	// contains the dimension of the attached worker loop. 
+				   	// In a triply nested worker loops, the outermost worker 
+					// loop will have workerdim(3), while the innermost worker 
+					// loop will have workerdim(1).
+gangconf(list) 	// The list contains the numbers of gangs for each gang loop in 
+				// the reverse order (the innermost gang loop first).
+				// - In nested gang loops, only the outermost gang loop contains 
+				// this clause. 
+				// - Added by CompRegionConfAnalysis pass to each kernels loop.
+workerconf(list) 	// The list contains the numbers of workers for each worker 
+					// loop in the reverse order (the innermost worker loop first).
+					// - In nested worker loops, only the outermost worker loop 
+					// contains this clause. 
+					// - Added by CompRegionConfAnalysis pass to each kernels 
+					// loop.
+totalnumgangs(exp) 	// The exp is the total number of gangs for the attached 
+					// nested gang loops.
+					// - In nested gang loops, only the outermost gang loop 
+					// contains this clause. 
+					// - Added by CompRegionConfAnalysis pass to each kernels loop.
+totalnumworkers(exp) 	// The exp is the total number of workers for the attached
+						// nested worker loops.
+						// - In nested worker loops, only the outermost worker 
+						// loop contains this clause. 
+						// - Added by CompRegionConfAnalysis pass to each 
+						// kernels loop
+kernelConfPt_[kernelname] 	// Indicate the point where the CUDA 
+							// kernel-configuration-related statements are 
+							// inserted.
+refname(refname) 	// contains a string that can be used as a reference to 
+					// identify a location in a program.
+					// 	- For compute regions,
+					//		- use "${procedure}_kernel${counter}" as names.
+					//  - For data regions,
+					//		- use "${procedure}_data${counter}" as names.
+					//	- For update directives,
+					//		- use "{$procedure}_update${counter}" as names.
+					//	- For declare directives in a procedure,
+					//		- use "{$procedure}_declare${counter}" as names.
+					//	- For declare directives out of a procedure, 
+					//		- use "{$filename}_declare${counter}" as names.
+					//	- For each check_read() or check_write() call, 
+					//		- Use "${procedure}_hostcheck${counter}" 
+					//	- For CPU-access checking
+					//		- Use "${procedure}_kernel${counter}" for GPU-access checking
+innergang		//Indicate that the attached loop is the inner loop of a stripmined gang loop.
+
+
+******************************
+** ASPEN Modeling Directive **
+******************************
+**********************************************************
+** ASPEN directives to specify a target region to model **
+**********************************************************
+#pragma aspen enter modelregion [label(model-name)]
+
+
+#pragma aspen exit modelregion [label(model-name)]
+
+
+#pragma aspen modelregion [label(model-name)]
+//atached to structured block
+
+
+///////////
+//Example//
+///////////
+#pragma aspen  modelregion label(block_main23)
+
+
+**************************************************
+** ASPEN directives to declare ASPEN param/data **
+**************************************************
+#pragma aspen declare [clause[[,] clause]...]
+
+where clause is one of the following
+param(param-arg-list) 
+	where param-arg is one of the following:
+	identifier[:init-exp] //ASPENParam
+		//contains a list of Aspen parameters, 
+		//where each parameter is in the form of identifier[:expression]
+		//e.g., param(n:1000, ntimes:0)
+data(data-arg-list)	
+	where data-arg is one of the following:
+	identifier:traits(trait-list)	//ASPENData
+		//contains a list of Aspen data, where each data is 
+		//in the form of identifier:traits(trait-list)
+		//e.g., data(matA:traits(Matrix(n, n, wordSize)),
+		//      matB:capacity(n*n*wordSize))
+
+///////////
+//Example//
+///////////
+// To add Aspen parameter that does not exist in the input program,
+// the param name should start with "aspen_".
+#pragma aspen  declare param(aspen_param_float:4)
+#pragma aspen  declare data(a:capacity(4*M*N))
+
+
+******************************************************
+** ASPEN directives to describe ASPEN control flows **
+** and modeling properties                          **
+******************************************************
+#pragma aspen control [clause[[,] clause]...]
+//atached to structured block
+
+where clause is one of the following
+ignore
+		//skips Aspen model generation for the attached statement
+execute
+		//does not analyze the attached statement; instead generates 
+		//Aspen model only with annotated Aspen directives
+loop [(itr-size)]
+		//contains iteration counts of the attached loop
+if (cond-exp-list)
+		//contains a list of condition expressions
+probability (prob-exp-list)
+		//contains a list of the probability expressions
+parallelism (para-arg)
+		//expresses the amount of independent work 
+		//in the attached statement, in the form of
+		//expression[:traits(trait-list)]
+flops (flops-arg-list)
+		//contains a list of Aspen flop resources, 
+		//in the form of expression[:traits(trait-list)]
+loads (loads-arg-list)
+		//contains a list of memory loads, in the form of 
+		//expression[:from(ID)][:traits(trait-list)]
+stores (stores-arg-list)
+		//contains a list of memory stores, in the form of 
+		//expression[:to(ID)][:traits(trait-list)]
+messages (message-arg-list)
+		//contains a list of internode communications, 
+		//in the form of expression [:traits(trait-list)]
+intracomm (message-arg-list)
+		//contains a list of intranode transfers, 
+		//in the form of expression[:traits(trait-list)]
+allocates (memory-arg-list)
+		//contains a list of allocated data, in the form of 
+		//ID:capacity(expression)[:traits(trait-list)]
+resizes (memory-arg-list)
+		//contains a list of resized data, in the form of 
+		//ID:capacity(expression)[:traits(trait-list)]
+frees (memory-arg-list)
+		//contains a list of freed data, in the form of 
+		//ID:capacity(expression)[:traits(trait-list)]
+label (name)
+		//contains the label of the attached statement
+
+where para-arg is one of the following:
+exp[:traits(trait-list)]	//ASPENResource
+
+where flops-arg is one of the following:
+size-exp[:traits(trait-list)]	//ASPENResource
+
+where loads-arg is one of the following:
+size-exp[:from(ID)][:traits(trait-list)]	//ASPENResource
+
+where stores-arg is one of the following:
+size-exp[:to(ID)][:traits(trait-list)]	//ASPENResource
+
+where message-arg is one of the following:
+size-exp[:to(ID)][:traits(trait-list)]	//ASPENResource
+
+where memory-arg is one of the following:
+identifier:capacity(exp)[:traits(trait-list)]	//ASPENData
+
+///////////
+//Example//
+///////////
+// A label clause is optional in the Aspen control directive; if not specified, 
+// the compiler will automatically add a unique label to each control directive.
+// To see more examples, run the example in ${openarc}/test/matmul_aspen and see 
+// the output C file in the cetus_output directory.
+#pragma aspen control ignore
+
+#pragma aspen  control label(block_MatrixMultiplication_openacc8) loop(M) parallelism(M)
+
+#pragma aspen  control execute label(block_MatrixMultiplication_openacc13) flops((2*P):traits(sp, simd)) loads(((1*aspen_param_float)*P):from(b):traits(stride(1)), ((1*aspen_param_float)*P):from(c))
+
+#pragma aspen  control execute label(block_MatrixMultiplication_openacc14) stores((1*aspen_param_float):to(a):traits(stride(1)))
+
+#pragma aspen declare param(aspen_param_loopcnt:1)
+#pragma aspen control loop(aspen_param_loopcnt)
+        while ( ...) { ...}
+
+#pragma aspen control probability(1)
+        if( ...) { ... }
+
+#pragma aspen declare param(aspen_param_ifprob:0.5)
+#pragma aspen control probability(aspen_param_ifprob)
+        if(...) { ... }
+
+#pragma aspen control probability(0.4, 0.4) 
+		if(...) { ... }
+		else if(...) { ...}
+		else { ... }
+
+//In the above examples, the compiler does not check the corresponding variable declaration in the  input program if variables start with "aspen_param_". 
+//Therefore, variables starting with "aspen_param_" provide a way for programmers to insert a new Aspen parameter into the input program without creating corresponding variable declaration in the input program.

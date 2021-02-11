@@ -1,0 +1,21 @@
+src/jacobi_taskdep-jacobi-task-dep.o: src/jacobi-task-dep.c \
+ /usr/include/stdc-predef.h include/poisson.h /usr/include/assert.h \
+ /usr/include/features.h /usr/include/sys/cdefs.h \
+ /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
+ /usr/include/gnu/stubs-64.h
+
+/usr/include/stdc-predef.h:
+
+include/poisson.h:
+
+/usr/include/assert.h:
+
+/usr/include/features.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/bits/wordsize.h:
+
+/usr/include/gnu/stubs.h:
+
+/usr/include/gnu/stubs-64.h:
