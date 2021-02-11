@@ -9,9 +9,6 @@
 ```diff
 + New: MAPredict now does the total nodal prediction of LULESH. > 90% accuracy in Intel micro-architecutres.
 ```
-```diff
-+ Source code lulesh with annotation :[master branch of the submodule: applications/memory_research_ornl/aspen_model_generation/lulesh_full]
-```
 
 
 #### 1. Overview
@@ -71,9 +68,11 @@
             [applications/memory_research_ornl/aspen_model_generation].
     4.2 Memory prediction for all applications: [MAPredict_root]/scripts directory has scripts for all applications 
             that generate memory prediction.
-    4.3 #### Lulesh : source code annotation processor for lulesh can be found in 
-            [applications/memory_research_ornl/aspen_model_generation/lulesh_full].
-    
+    4.3 Lulesh : run ./scripts/lulesh_full.sh 
+
+```diff
++ Source code lulesh with annotation :[master branch of the submodule: applications/memory_research_ornl/aspen_model_generation/lulesh_full]
+```
 
 #### 5. Data for ICS21
     5.1 ICS21 submission data is available at [applications/memory_research_ornl/data_paper/Data_for_ICS21.xlsx].
