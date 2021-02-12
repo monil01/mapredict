@@ -25,7 +25,7 @@
     2.3 [OpenARC-devel]: Contains the source code for OpenARC and COMPASS framework. 
     2.4 [model_parser]: Contains MAPredict's model parser that traverses the application and machine model 
             and invokes an appropriate analytical model.
-    2.5 [models]: This folder contains the application and machine model which are passes to MAPredict for prediction.
+    2.5 [models]: This folder contains the application and machine models which are passes to MAPredict for prediction.
     2.6 [scripts]: These scripts are used to compile MAPredict and invoke appropriate machine and application models.
     
 
@@ -68,10 +68,10 @@
             [applications/memory_research_ornl/aspen_model_generation].
     4.2 Memory prediction for all applications: [MAPredict_root]/scripts directory has scripts for all applications 
             that generate memory prediction.
-    4.3 Lulesh : run ./scripts/lulesh_full.sh 
+    4.3 run ./scripts/lulesh_full_nodal.sh 
 
 ```diff
-+ Source code lulesh with annotation :[master branch of the submodule: applications/memory_research_ornl/aspen_model_generation/lulesh_full]
++ Source code lulesh with annotation :[master branch of the submodule: applications/memory_research_ornl/aspen_model_generation/lulesh_full_nodal]
 ```
 
 #### 5. Data for ICS21
