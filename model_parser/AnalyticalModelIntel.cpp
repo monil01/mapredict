@@ -71,6 +71,10 @@ AnalyticalModelIntel::AnalyticalModelIntel(
     _initialized = _analytical_model_utility_obj->findInitialized(_traits);
     if(DEBUG_MAPMC == true) std::cout << " Analytical model access pattern " <<  _access_pattern << " init " << _initialized << std::endl;
 
+    _pattern_string = _analytical_model_utility_obj->findPatternString(_traits);
+    if(DEBUG_MAPMC == true) std::cout << " Analytical model pattern string " <<  _pattern_string << std::endl;
+
+
 
     if ( _element_size * _data_structure_size > 4 * KB ) _page_size = 2 * MB;
 
@@ -347,17 +351,25 @@ std::int64_t AnalyticalModelIntel::stencilAccess(){
     int CL = _cache_line_size;
     int ES = _element_size;
     // converting the stride and data size to bytes
+
     if (_pattern_string == "stencil4"){
+
         _data_structure_size = _data_structure_size / 4;
+
+        if(DEBUG_MAPMC == true) std::cout << " Stencil data size reduction  : " << _pattern_string << " data size " << _data_structure_size << std::endl;
+
     }
     if (_pattern_string == "stencil5"){
         _data_structure_size = _data_structure_size / 5;
+        if(DEBUG_MAPMC == true) std::cout << " Stencil data size reduction  : " << _pattern_string << " data size " << _data_structure_size << std::endl;
     }
     if (_pattern_string == "stencil8"){
         _data_structure_size = _data_structure_size / 8;
+        if(DEBUG_MAPMC == true) std::cout << " Stencil data size reduction  : " << _pattern_string << " data size " << _data_structure_size << std::endl;
     }
     if (_pattern_string == "stencil27"){
         _data_structure_size = _data_structure_size / 27;
+        if(DEBUG_MAPMC == true) std::cout << " Stencil data size reduction  : " << _pattern_string << " data size " << _data_structure_size << std::endl;
     }
   
     memory_access = streamAccess() * CL;

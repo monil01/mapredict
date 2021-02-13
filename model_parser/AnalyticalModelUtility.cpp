@@ -91,6 +91,21 @@ int AnalyticalModelUtility::findPattern(vector<ASTTrait*> traits){
     return pattern;
 }
 
+std::string AnalyticalModelUtility::findPatternString(vector<ASTTrait*> traits){
+    std::string pattern_string = "stream";
+    if (traits.size() < 1) return pattern_string;
+    for (int k = 0; k < traits.size(); k++){
+        std::string ttrait = traits[k]->GetName();
+        if (ttrait == "pattern"){
+            //if(DEBUG_MAPMC == true) std::cout << "traits Name " << ttrait;
+            pattern_string = traits[k]->GetValue()->GetText();
+            if(DEBUG_MAPMC == true) std::cout << " Pattern string trait value " << pattern_string << std::endl;
+        }
+    }
+    return pattern_string;
+}
+
+
 int AnalyticalModelUtility::findStride(vector<ASTTrait*> traits){
     int stride = 1;
     for (int k = 0; k < traits.size(); k++){

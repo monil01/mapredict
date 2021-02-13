@@ -46,6 +46,7 @@ std::string findAlgorithm(vector<ASTTrait*> traits);
 std::string generateCorrectionString();
 std::string generateCorrectionString(int microarchitecture_value, 
     int prefetch_enabled);
+std::string findPatternString(vector<ASTTrait*> traits);
 
 };
 
