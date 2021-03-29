@@ -142,6 +142,8 @@ double Traverser::getExecuteBlockReuse( std::string execute_block_name, std::str
 
     if(DEBUG_MAPMC == true) std::cout << " Reuse block factor : " << reuse_block << std::endl; 
 
+    if (reuse_block < 0) reuse_block = 1;
+
    return reuse_block; 
 }
 
@@ -287,8 +289,6 @@ Traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
             if (req->GetResource() != "loads" && req->GetResource() != "stores") continue;
             if (req->GetToFrom().length() < 1) continue;
 
-            double reuse_block = getExecuteBlockReuse(exec->GetName(), socket);
-            exit(0);
             if(DEBUG_MAPMC == true) std::cout << " Variable name: To to from: " << req->GetToFrom() << " -- instruction type " << req->GetResource() << "\n";
             // calling the analytical model
 			std::int64_t memory_access_statement =  predictMemoryStatement(req, socket, inner_parallelism);
@@ -302,6 +302,9 @@ Traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
             if(DEBUG_MAPMC == true) std::cout << " Upto now Executive block memory access : " << total_memory_access << "\n \n";
         }
     } 
+
+    double reuse_block = getExecuteBlockReuse(exec->GetName(), socket);
+    total_memory_access *= reuse_block;
 
     total_memory_access *= outer_parallelism;
 

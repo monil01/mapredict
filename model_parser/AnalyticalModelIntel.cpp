@@ -373,14 +373,10 @@ std::int64_t AnalyticalModelIntel::stencilAccess(){
     }
   
     memory_access = streamAccess() * CL;
-    /************* TODO ***************
- *
- *  need to implement the probability when the size of stencil is bigger than the cache.
- *  This is unrealistic and for the ICS submission it's not required since none of the apps
- *  go that big. 
- *  This can be useful only for massive application where the data structure size is 500GB,
- *  which is very unlikely.
- * ***********************************/
+
+    std::string reuse_str = _analytical_model_utility_obj->generateReuseString(_microarchitecture, _prefetch_enabled);
+    double reuse_factor = _analytical_model_utility_obj->findReuseFactor(_traits, reuse_str);
+
 
     //return memory_access; 
     /* 
@@ -402,6 +398,8 @@ std::int64_t AnalyticalModelIntel::stencilAccess(){
     } 
     */
     
+    if(reuse_factor > 1) memory_access = memory_access * reuse_factor;
+
     memory_access = ceil( memory_access / (double) CL );
     if(DEBUG_MAPMC == true) std::cout << " Analytical Model STENCIL " << memory_access << " data size "  
         <<  N  << " element size " << ES << " cacheline " 

@@ -157,7 +157,22 @@ double AnalyticalModelUtility::findCorrection(vector<ASTTrait*> traits, std::str
     return correction;
 }
 
-
+double AnalyticalModelUtility::findReuseFactor(vector<ASTTrait*> traits, std::string reuse_str){
+    double reuse = 0;
+    for (int k = 0; k < traits.size(); k++){
+        std::string ttrait = traits[k]->GetName();
+        if (ttrait == reuse_str){
+            //if(DEBUG_MAPMC == true) std::cout << "traits Name " << ttrait;
+            reuse = (double) traits[k]->GetValue()->Evaluate();
+            if(DEBUG_MAPMC == true) std::cout << " Reuse trait name " << reuse_str << " Reuse trait value " << reuse << std::endl;
+        }
+    }
+    if(reuse == 0)  {
+        std::cout << " WARNING Factor not found and set the correction to 1 " << std::endl;
+        reuse = 1;
+    }
+    return reuse;
+}
 
 
 
@@ -189,4 +204,33 @@ std::string AnalyticalModelUtility::generateCorrectionString(int microarchitectu
     else correction_str = correction_str + "_noprefetch";
     if(DEBUG_MAPMC == true) std::cout << " Correction STR " << correction_str << " micro architecture " << microarchitecture_value << std::endl;
     return correction_str;
+}
+
+std::string AnalyticalModelUtility::generateReuseString(int microarchitecture_value, 
+    int prefetch_enabled)
+{
+    std::string reuse_str = "reuse_";
+    switch(microarchitecture_value){
+        case microarchitecture::BW:
+            reuse_str = reuse_str + "BW";
+            break;
+        case microarchitecture::SK:
+            reuse_str = reuse_str + "SK";
+            break;
+        case microarchitecture::CS:
+            reuse_str = reuse_str + "CS";
+            break;
+        case microarchitecture::CP:
+            reuse_str = reuse_str + "CP";
+            break;
+        default:
+            reuse_str="";
+    }
+
+    if(DEBUG_MAPMC == true) std::cout << " Reuse String " << reuse_str << std::endl;
+     
+    if (prefetch_enabled == true) reuse_str = reuse_str + "_prefetch";
+    else reuse_str = reuse_str + "_noprefetch";
+    if(DEBUG_MAPMC == true) std::cout << " Reuse STR " << reuse_str << " micro architecture " << microarchitecture_value << std::endl;
+    return reuse_str;
 }

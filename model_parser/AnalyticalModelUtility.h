@@ -41,10 +41,13 @@ int findPattern(vector<ASTTrait*> traits);
 int findStride(vector<ASTTrait*> traits);
 double findFactor(vector<ASTTrait*> traits);
 double findCorrection(vector<ASTTrait*> traits, std::string correction_str);
+double findReuseFactor(vector<ASTTrait*> traits, std::string reuse_str);
 
 std::string findAlgorithm(vector<ASTTrait*> traits);
 std::string generateCorrectionString();
 std::string generateCorrectionString(int microarchitecture_value, 
+    int prefetch_enabled);
+std::string generateReuseString(int microarchitecture_value, 
     int prefetch_enabled);
 std::string findPatternString(vector<ASTTrait*> traits);
 
