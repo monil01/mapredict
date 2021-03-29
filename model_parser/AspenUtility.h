@@ -49,6 +49,7 @@ AspenUtility(ASTAppModel *app, ASTMachModel *mach);
 ~AspenUtility();
 
 std::int64_t  getApplicationParam(ASTAppModel *app, std::string param);
+double  getApplicationParamDouble(ASTAppModel *app, std::string param);
 std::string  getNameOfDataType(std::string str_expression);
 
 const ASTMachComponent* getSocketComponent(ASTMachModel *mach, std::string socket);
@@ -59,6 +60,8 @@ std::int64_t getAnyMachineProperty(ASTMachModel *mach,
 
 int getMicroarchitecture(std::string socket);
 
+std::string  getStringMicroarchitecture(int integer_microarchitecture);
+std::string  getStringPrefetch(int integer_prefetch);
 
 ASTAppModel*  getAppModel() { return app;}
 ASTMachModel*  getMachineModel() {return mach;}

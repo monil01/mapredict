@@ -42,6 +42,8 @@ private:
 //TODo
 // All the private varialbe required to call the analytical model function
     AspenUtility *_aspen_utility = NULL;
+    std::int64_t _total_loads;
+    std::int64_t _total_stores;
 
 
 public:
@@ -74,6 +76,10 @@ std::int64_t executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
 
 ASTAppModel*  getAppModel() { return app;}
 ASTMachModel*  getMachineModel() {return mach;}
+
+std::int64_t getTotalLoads() { return _total_loads;}
+std::int64_t getTotalStores() { return _total_stores;}
+double getExecuteBlockReuse(std::string execute_block_name, std::string socket);
 
 };
 

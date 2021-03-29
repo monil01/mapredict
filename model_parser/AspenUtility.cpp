@@ -101,6 +101,45 @@ AspenUtility::getApplicationParam(ASTAppModel *app, std::string param)
 } 
 
 
+double  
+AspenUtility::getApplicationParamDouble(ASTAppModel *app, std::string param)
+{
+    double param_value = -1;
+    if (app)
+    {
+        //cout << "\n ------  Application model search:param search function called ------\n";
+        try
+        {
+            vector<ASTStatement*> globals = app->GetGlobals();
+
+            //if(DEBUG_MAPMC == true) std::cout <<  "Size globals" << globals.size() << std::endl;
+
+            for (unsigned int i=0; i<globals.size(); ++i)
+            {
+                //const ASTDataStatement *data = dynamic_cast<const ASTDataStatement*>(globals[i]);
+                const ASTAssignStatement *data = dynamic_cast<const ASTAssignStatement*>(globals[i]);
+                if (!data)
+                    continue;
+                std::string temp = data->GetName();
+                //if(DEBUG_MAPMC == true) std::cout << "Identifier name " << data->GetName() << std::endl;
+                //if(DEBUG_MAPMC == true) std::cout << "Identifier Value " << data->GetValue()->Evaluate() << std::endl;
+                if (temp.find(param) != std::string::npos) {
+                    param_value = data->GetValue()->Evaluate();
+                    //if(DEBUG_MAPMC == true) std::cout << "param " << temp << " : " << param_value << std::endl;
+                    return param_value; 
+                }
+            }  
+
+        }
+        catch (const AspenException& exc)
+        {
+            cerr << exc.PrettyString() <<endl;
+        }
+    }
+    if(DEBUG_MAPMC == true) std::cout << " Param: "  << param << " not found" << std::endl;
+    return param_value; 
+} 
+
 
 /*
  * Function name: get_socket_component
@@ -290,5 +329,48 @@ std::string  AspenUtility::getNameOfDataType(std::string str_expression){
         if(DEBUG_MAPMC == true) std::cout << " type " << str_expression << " " << str_expression.find("aspen_param_sizeof_float") << std::endl;
        return "aspen_param_sizeof_float";
     }
+}
+
+std::string  AspenUtility::getStringMicroarchitecture(int integer_microarchitecture){
+    std::string microarchitecture = "";
+    
+    switch(integer_microarchitecture) {
+        case 0: 
+            microarchitecture = "BW";
+            break;
+        case 1: 
+            microarchitecture = "SK";
+            break;
+        case 2: 
+            microarchitecture = "CS";
+            break;
+        case 3: 
+            microarchitecture = "CP";
+            break;
+        defualt: 
+            microarchitecture = "NOTHING-ERROR";
+            break;
+    }
+    
+    return microarchitecture; 
+}
+
+
+std::string  AspenUtility::getStringPrefetch(int integer_prefetch){
+    std::string prefetch = "";
+    
+    switch(integer_prefetch) {
+        case 0: 
+            prefetch = "noprefetch";
+            break;
+        case 1: 
+            prefetch = "prefetch";
+            break;
+        defualt: 
+            prefetch = "NOTHING-ERROR";
+            break;
+    }
+    
+    return prefetch; 
 }
 

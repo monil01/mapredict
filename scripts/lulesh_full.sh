@@ -13,6 +13,7 @@ popd
 pwd
 
 
-time ./mapmc models/application/lulesh_full.aspen models/machine/apachepass.aspen
+./mapmc models/application/lulesh_full.aspen models/machine/quad00.aspen
+#./mapmc models/application/lulesh_full.aspen models/machine/quad00_noprefetch.aspen
 
 

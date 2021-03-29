@@ -30,6 +30,8 @@ Traverser::Traverser(ASTAppModel *app, ASTMachModel *mach):AspenTool(app,mach){
     //app = app;
     //mach = mach;
     _aspen_utility = new AspenUtility(app, mach);
+    _total_loads = 0;
+    _total_stores = 0;
 
 }
 
@@ -117,6 +119,31 @@ Traverser::analyticalStreamingAccess(std::int64_t D, std::int64_t E, std::int64_
     return memory_access * CL;
 }
 */
+double Traverser::getExecuteBlockReuse( std::string execute_block_name, std::string socket) {
+
+    double reuse_block = 2;
+
+    std::string microarchitecture = _aspen_utility->getStringMicroarchitecture(
+                 _aspen_utility->getMicroarchitecture(socket));
+ 
+    // getting prefetch 
+    std::string property = "prefetch";
+    std::string component = "cache";
+
+    std::string prefetch_enabled = _aspen_utility->getStringPrefetch(
+            (int) _aspen_utility->getAnyMachineProperty(mach, socket, component, property));
+
+
+    std::string variable_name = "aspen_param_reuse_"+execute_block_name+"_"+microarchitecture+"_"+prefetch_enabled;
+    
+    if(DEBUG_MAPMC == true) std::cout << " Microarchitecture : " << microarchitecture << " : prefetch: " << prefetch_enabled << " variable string : " << variable_name << std::endl; 
+    
+    reuse_block = _aspen_utility->getApplicationParamDouble(app, variable_name);
+
+    if(DEBUG_MAPMC == true) std::cout << " Reuse block factor : " << reuse_block << std::endl; 
+
+   return reuse_block; 
+}
 
 std::int64_t Traverser::predictMemoryStatement(const ASTRequiresStatement *req, std::string socket,
     std::int64_t inner_parallelism){
@@ -260,18 +287,27 @@ Traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
             if (req->GetResource() != "loads" && req->GetResource() != "stores") continue;
             if (req->GetToFrom().length() < 1) continue;
 
+            double reuse_block = getExecuteBlockReuse(exec->GetName(), socket);
+            exit(0);
             if(DEBUG_MAPMC == true) std::cout << " Variable name: To to from: " << req->GetToFrom() << " -- instruction type " << req->GetResource() << "\n";
             // calling the analytical model
 			std::int64_t memory_access_statement =  predictMemoryStatement(req, socket, inner_parallelism);
 			if(DEBUG_MAPMC == true) std::cout << " memory access statement : " << memory_access_statement << "\n";
+
+            if (req->GetResource() == "loads") _total_loads += memory_access_statement;
+            if (req->GetResource() == "stores") _total_stores += memory_access_statement;
+
             total_memory_access += memory_access_statement;
+            if(DEBUG_MAPMC == true) std::cout << " Upto now total program Total loads : " << _total_loads << " Total sotres: " << _total_stores << "\n";
             if(DEBUG_MAPMC == true) std::cout << " Upto now Executive block memory access : " << total_memory_access << "\n \n";
         }
     } 
 
     total_memory_access *= outer_parallelism;
 
+
     if(DEBUG_MAPMC == true) std::cout << " Execute Block name: " << exec->GetName() << "\n";
+    if(DEBUG_MAPMC == true) std::cout << " Total program total loads : " << _total_loads << " total stores " << _total_stores << "\n";
     if(DEBUG_MAPMC == true) std::cout << " Total executive block memory access : " << total_memory_access << "\n \n";
 
     //exit(0);
