@@ -3,6 +3,7 @@
 #include <deque>
 #include <cstdio>
 #include <map>
+#include <sys/time.h>
 
 #include "model/ASTAppModel.h"
 #include "model/ASTMachModel.h"
@@ -20,8 +21,11 @@
 
 
 //global debug to print values
-bool DEBUG_MAPMC = true;
+bool DEBUG_MAPMC = false;
+std::string PRINT_MODE = "kernel";
+//std::string PRINT_MODE = "execute_block";
 //bool DEBUG_MAPMC = false;
+double getTime();
 
 #define Finegrained_RSC_Print
 
@@ -30,6 +34,9 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
+  double seconds = 0;
+  double startTime, endTime;
+  startTime = getTime();
   try {
     ASTAppModel *app = NULL;
     ASTMachModel *mach = NULL;
@@ -76,9 +83,11 @@ int main(int argc, char **argv)
     if(DEBUG_MAPMC == true) std::cout << "\n-----------------------------------------------------\n\n";
     
 
+
     if (mach)
     {
         cout << "\n ------  Memory Analysis ------\n";
+
         for (unsigned int i=0; i<mach->socketlist.size(); ++i)
         {
           try
@@ -86,9 +95,12 @@ int main(int argc, char **argv)
             const ASTMachComponent *machine = mach->GetMachine();
             string socket = mach->socketlist[i];
 
-            cout << "\n\n>> for socket type '"<<socket<<"' <<\n\n";
+            if(DEBUG_MAPMC == true) std::cout << "\n\n>> for socket type '"<<socket<<"' <<\n\n";
 
             std::int64_t memory = Traverser_obj->predictMemoryAccess(app, mach, socket); 
+            if(DEBUG_MAPMC == true) std::cout << " Total Loads  : " << Traverser_obj->getTotalLoads() << "\n";
+            if(DEBUG_MAPMC == true) std::cout << " Total Stores : " << Traverser_obj->getTotalStores() << "\n";
+
             std::cout << " Total Memory access : " << memory << "\n";
             //if(DEBUG_MAPMC == true) std::cout << " for Double data type : " << memory * 2 << "\n";
             //if(DEBUG_MAPMC == true) std::cout << " Total bytes accessed : " << memory << "\n";
@@ -102,7 +114,9 @@ int main(int argc, char **argv)
     }
     
 
-
+    endTime = getTime();
+    seconds += (double)(endTime - startTime);
+    printf(" Total time (millisecond): %15.6lf \n", seconds);
 
     if (app)
         delete app;
@@ -891,4 +905,10 @@ GetExpression(ASTAppModel *app,
 */
 
 
-
+double getTime() {
+    double time;
+    struct timeval tm;
+    gettimeofday(&tm, NULL);
+    time = tm.tv_sec + (tm.tv_usec / 1000.0);
+    return time;
+}

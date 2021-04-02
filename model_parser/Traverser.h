@@ -79,7 +79,7 @@ ASTMachModel*  getMachineModel() {return mach;}
 
 std::int64_t getTotalLoads() { return _total_loads;}
 std::int64_t getTotalStores() { return _total_stores;}
-double getExecuteBlockReuse(std::string execute_block_name, std::string socket);
+double getBlockReuseFactor(std::string execute_block_name, std::string socket);
 
 };
 

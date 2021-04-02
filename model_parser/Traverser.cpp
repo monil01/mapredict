@@ -4,6 +4,11 @@
 #include <cstdio>
 #include <map>
 
+#include <cstdio>
+#include <limits>
+#include <cstdint>
+#include <cinttypes>
+
 #include "model/ASTAppModel.h"
 #include "model/ASTMachModel.h"
 #include "parser/Parser.h"
@@ -119,9 +124,9 @@ Traverser::analyticalStreamingAccess(std::int64_t D, std::int64_t E, std::int64_
     return memory_access * CL;
 }
 */
-double Traverser::getExecuteBlockReuse( std::string execute_block_name, std::string socket) {
+double Traverser::getBlockReuseFactor( std::string execute_block_name, std::string socket) {
 
-    double reuse_block = 2;
+    double reuse_block = -1;
 
     std::string microarchitecture = _aspen_utility->getStringMicroarchitecture(
                  _aspen_utility->getMicroarchitecture(socket));
@@ -303,7 +308,7 @@ Traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
         }
     } 
 
-    double reuse_block = getExecuteBlockReuse(exec->GetName(), socket);
+    double reuse_block = getBlockReuseFactor(exec->GetName(), socket);
     total_memory_access *= reuse_block;
 
     total_memory_access *= outer_parallelism;
@@ -312,6 +317,14 @@ Traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
     if(DEBUG_MAPMC == true) std::cout << " Execute Block name: " << exec->GetName() << "\n";
     if(DEBUG_MAPMC == true) std::cout << " Total program total loads : " << _total_loads << " total stores " << _total_stores << "\n";
     if(DEBUG_MAPMC == true) std::cout << " Total executive block memory access : " << total_memory_access << "\n \n";
+
+    //if(PRINT_MODE == "execute_block") std::cout << " Execution Block : " <<  exec->GetName() << " : " <<  total_memory_access << std::endl;
+    if(PRINT_MODE == "execute_block") {
+        int len = exec->GetName().length();
+        //if ( total_memory_access > 0)
+        std::cout << " Execution Block : " <<  exec->GetName() << " : " << std::setw(60-len) <<  total_memory_access << std::endl;
+        //std::printf(" Execution Block : %s : %d"PRId64" \n", len, exec->GetName().c_str(), total_memory_access);
+    }
 
     //exit(0);
     return total_memory_access;
@@ -418,7 +431,24 @@ Traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
         const ASTControlStatement *s_new
             = dynamic_cast<const ASTControlStatement*>(seq_statements);
 
-        total_memory_access += recursiveBlock(app, mach, socket, outer_parallelism, s_new);
+        std::int64_t kernel_total_memory_access = recursiveBlock(app, mach, socket, outer_parallelism, s_new);
+
+        double reuse_block = getBlockReuseFactor(k->GetName(), socket);
+        kernel_total_memory_access *= reuse_block;
+
+        if(DEBUG_MAPMC == true) std::cout << " Kernel Name : " << k->GetName() << " total memory : " <<  kernel_total_memory_access << " Reuse Factor : " << reuse_block<< std::endl;
+        //if(PRINT_MODE == "kernel") std::cout << " Kernel Name : " << k->GetName() << " : " <<  kernel_total_memory_access << std::endl;
+
+        if(PRINT_MODE == "kernel") {
+            int len = k->GetName().length();
+            //if ( total_memory_access > 0)
+            std::cout << " Kernel Name : " <<  k->GetName() << " : " << std::setw(50-len) <<  kernel_total_memory_access << std::endl;
+        }
+
+
+
+        total_memory_access += kernel_total_memory_access;
+        //total_memory_access += recursiveBlock(app, mach, socket, outer_parallelism, s_new);
 
     } 
 

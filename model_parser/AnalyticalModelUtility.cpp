@@ -168,7 +168,7 @@ double AnalyticalModelUtility::findReuseFactor(vector<ASTTrait*> traits, std::st
         }
     }
     if(reuse == 0)  {
-        std::cout << " WARNING Factor not found and set the correction to 1 " << std::endl;
+            if(DEBUG_MAPMC == true) std::cout << " WARNING Factor not found and set the correction to 1 " << std::endl;
         reuse = 1;
     }
     return reuse;

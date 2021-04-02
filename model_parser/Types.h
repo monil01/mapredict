@@ -3,6 +3,7 @@
 
 
 extern bool DEBUG_MAPMC;
+extern std::string PRINT_MODE;
 
 typedef enum access_patterns{
 STREAM,
