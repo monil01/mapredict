@@ -56,11 +56,12 @@
         3.3.6 make (it will create all openarc binaries and drivers)
         3.3.7 cd ..
         3.3.8 Modify the python path in the Makefile.
-        3.3.9 make (it should build the MAPredict binary)
+        3.3.9 make (it should build the MAPredict binary : mapmc)
         
     3.4 testing
-        3.4.1 run: ./scripts/stream_100.sh  , it compiles mapredict, generates the model and generate a prediction result.
-        3.4.2 convention of running MAPredict: ./[MAPredict_binary] [application_model] [machine_model]
+        3.4.1 run: [MAPredict_root]/scripts/stream_100.sh, it compiles mapredict, generates the model and generate a prediction result.
+        3.4.2
+        3.4.3 convention of running MAPredict: ./[MAPredict_binary] [application_model] [machine_model]
   
   
 #### 4. Examples
