@@ -7,7 +7,7 @@
 
 
 ```diff
-+ New: MAPredict now does the total nodal prediction of LULESH. > 90% accuracy in Intel micro-architecutres.
++ New: MAPredict now does full prediction of LULESH. > 90% accuracy in Intel micro-architecutres.
 ```
 
 
@@ -60,7 +60,7 @@
         
     3.4 testing
         3.4.1 run: [MAPredict_root]/scripts/stream_100.sh, it compiles mapredict, generates the model and generate a prediction result.
-        3.4.2
+        3.4.2 run: [MAPredict_root]/scripts/lulesh_full_quad_prefetch.sh, it provides the static analysis of full lulesh.
         3.4.3 convention of running MAPredict: ./[MAPredict_binary] [application_model] [machine_model]
   
   
@@ -70,11 +70,8 @@
             [applications/memory_research_ornl/aspen_model_generation].
     4.2 Memory prediction for all applications: [MAPredict_root]/scripts directory has scripts for all applications 
             that generate memory prediction.
-    4.3 run ./scripts/lulesh_full_nodal.sh 
+    4.3 run [MAPredict_root]/scripts/lulesh_full_quad_prefetch.sh
 
-```diff
-+ Source code lulesh with annotation :[master branch of the submodule: applications/memory_research_ornl/aspen_model_generation/lulesh_full_nodal]
-```
 
 
 
