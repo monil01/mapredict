@@ -21,6 +21,7 @@
 
 
 //global debug to print values
+//bool DEBUG_MAPMC = true;
 bool DEBUG_MAPMC = false;
 std::string PRINT_MODE = "kernel";
 //std::string PRINT_MODE = "execute_block";
@@ -86,8 +87,12 @@ int main(int argc, char **argv)
 
     if (mach)
     {
-        cout << "\n ------  Memory Analysis ------\n";
+        if(PRINT_MODE == "kernel") 
+        std::cout << "\n <<<<<<<<<  MAPredict 0.9 - Kernel Level Memory Access Analysis >>>>>>>>>>>\n";
+        if(PRINT_MODE == "execute_block") 
+        std::cout << "\n <<<<<<<<<  MAPredict 0.9 - Execution Block Level Memory Access Analysis >>>>>>>>>>>\n";
 
+ 
         for (unsigned int i=0; i<mach->socketlist.size(); ++i)
         {
           try

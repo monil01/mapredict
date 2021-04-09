@@ -322,7 +322,7 @@ Traverser::executeBlock(ASTAppModel *app, ASTMachModel *mach, std::string socket
     if(PRINT_MODE == "execute_block") {
         int len = exec->GetName().length();
         //if ( total_memory_access > 0)
-        std::cout << " Execution Block : " <<  exec->GetName() << " : " << std::setw(60-len) <<  total_memory_access << std::endl;
+        std::cout << "   " <<  exec->GetName() << " : " << std::setw(60-len) <<  total_memory_access << std::endl;
         //std::printf(" Execution Block : %s : %d"PRId64" \n", len, exec->GetName().c_str(), total_memory_access);
     }
 
@@ -442,7 +442,8 @@ Traverser::recursiveBlock(ASTAppModel *app, ASTMachModel *mach, std::string sock
         if(PRINT_MODE == "kernel") {
             int len = k->GetName().length();
             //if ( total_memory_access > 0)
-            std::cout << " Kernel Name : " <<  k->GetName() << " : " << std::setw(50-len) <<  kernel_total_memory_access << std::endl;
+            //std::cout << " Kernel Name : " <<  k->GetName() << " : " << std::setw(50-len) <<  kernel_total_memory_access << std::endl;
+            std::cout << "   " <<  k->GetName() << " : " << std::setw(50-len) <<  kernel_total_memory_access << std::endl;
         }
 
 
