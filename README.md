@@ -16,9 +16,7 @@
 
 #### 2. Organization of the Repository
     2.1 [applications]: Please follow the installation procedure to get all the content of this folder.  
-          2.1.1 [applications/memory_research_ornl/all_apps_experiments]: TAU-PAPI script to generate LLC-DRAM traffic 
-                    data for applications. Scripts are also available for different micro-architechtures of Intel and 
-                    also for OpenMP execution.
+          2.1.1 [applications/memory_research_ornl/all_apps_experiments]: All applications used for exeperiments. Each folder contains TAU-PAPI script to generate                      LLC-DRAM traffic data for applications. Scripts are also available for different micro-architechtures of Intel and also for OpenMP execution.
           2.1.2 [applications/memory_research_ornl/aspen_model_generation]: This folder contains all model generation 
                     source code (annotated source code) which is used by MAPredict to generate application model.
     2.2 [aspen]: contains aspen source code. Aspen abstract models enable the creation of performance models.
@@ -33,17 +31,20 @@
 
     3.1 Prerequisite
         3.1.1 GCC 5.4 or higher.
-        3.1.2 Java
-        3.1.3 Bison
+        3.1.2 Java 1.8.0_282 or higher.
+        3.1.3 Bison 3.0.4 or higher.
         3.1.4 python 3.6 or higher.
-        3.1.5 cuda-10 or higher
+        3.1.5 cuda-9 or higher
         
     3.2 Getting the code
-        3.2.1 git clone https://github.com/monil01/mapmc.git
-        3.2.2 cd mapmc
+        3.2.1 git clone https://github.com/monil01/mapmc.git mapredict
+        3.2.2 cd mapredict  [ this is the MAPredict_root ]
         3.2.3 git checkout master
         3.2.4 git submodule init
         3.2.5 git submodule update
+        3.2.6 cd applications/memory_research_ornl/
+        3.2.7 git checkout master
+        3.2.8 cd ../.. 
         
     3.3 installing
         3.3.1 cd [MAPredict_root]/aspen
