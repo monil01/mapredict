@@ -15,7 +15,7 @@
 ##### MAPredict, a static analysis driven framework that provides memory access prediction by gathering application and machines properties at compile time. MAPredict invokes an analytical model to predict LLC-DRAM traffic by combining the application model, the machine model, and user-provided hints for capturing dynamic information. MAPredict is tested on different micro-architectures of Intel and provided high accuracy for applications with different access patterns.
 
 #### 2. Organization of the Repository
-    2.1 [applications]: Follow the installation procedure to get all the content of this folder.  
+    2.1 [applications]: Please follow the installation procedure to get all the content of this folder.  
           2.1.1 [applications/memory_research_ornl/all_apps_experiments]: TAU-PAPI script to generate LLC-DRAM traffic 
                     data for applications. Scripts are also available for different micro-architechtures of Intel and 
                     also for OpenMP execution.
