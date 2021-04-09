@@ -141,9 +141,11 @@ HI_error_t OpenCLDriver::init(int threadID) {
     const char *filename = outFile.c_str();
 	char kernel_keyword[] = "__kernel";
     char *platformName;
+	acc_device_t devType = dev;
+	cl_device_id devices[num_devices];
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 2 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\t\tenter OpenCLDriver::init(%d, %s)\n", device_num, HI_get_device_type_string(dev));
+		fprintf(stderr, "[OPENARCRT-INFO]\t\tenter OpenCLDriver::init(%d, %s)\n", device_num, HI_get_device_type_string(devType));
 	}
 #endif
 	cl_int err = CL_SUCCESS;
@@ -163,84 +165,169 @@ HI_error_t OpenCLDriver::init(int threadID) {
 		fprintf(stderr, "[ERROR in OpenCLDriver::init()] Failed to get the list of platforms IDs available on this device\n");
 		exit(1);
 	}
-	if( num_platforms == 1) {
-		size_t sz; 
-		clPlatform = platforms[0];
-		err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, 0, NULL, &sz);
-		if (err != CL_SUCCESS) {
-			fprintf(stderr, "[ERROR in OpenCLDriver::init()] Failed to get the platform name size\n");
+	bool foundPlatform = false;
+    cl_uint numDevices = 0;
+	for( unsigned i=0; i<num_platforms; i++ ) {
+  		size_t sz; 
+		clPlatform = platforms[i];
+  		err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, 0, NULL, &sz);
+        if (err != CL_SUCCESS) {
+            fprintf(stderr, "[ERROR in OpenCLDriver::init()] Failed to get the platform name size\n");
 			exit(1);
-		}
-		char* namestr = new char[sz];
-		err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, sz, namestr, NULL);
-		if (err != CL_SUCCESS) {
-			fprintf(stderr, "[ERROR in OpenCLDriver::init()] Failed to get the platform name\n");
+        }
+        char* namestr = new char[sz];
+  		err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, sz, namestr, NULL);
+        if (err != CL_SUCCESS) {
+            fprintf(stderr, "[ERROR in OpenCLDriver::init()] Failed to get the platform name\n");
 			exit(1);
-		}
+        }
 		platformName = namestr;
-	} else {
-		bool foundPlatform = false;
-		for( unsigned i=0; i<num_platforms; i++ ) {
-			size_t sz; 
-			clPlatform = platforms[i];
-			err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, 0, NULL, &sz);
-			if (err != CL_SUCCESS) {
-				fprintf(stderr, "[ERROR in OpenCLDriver::init()] Failed to get the platform name size\n");
-				exit(1);
-			}
-			char* namestr = new char[sz];
-			err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, sz, namestr, NULL);
-			if (err != CL_SUCCESS) {
-				fprintf(stderr, "[ERROR in OpenCLDriver::init()] Failed to get the platform name\n");
-				exit(1);
-			}
-			platformName = namestr;
-			std::string name = namestr;
-			std::transform(name.begin(), name.end(), name.begin(), tolower);
-			std::string search;
-			if(dev == acc_device_altera) {
-				search = "fpga";
-			} else if(dev == acc_device_altera_emulator) {
-				search = "emulation";
-			} else if(dev == acc_device_xeonphi) {
-				search = "intel";
-			} else if(dev == acc_device_gpu) {
-				search = "nvidia";
+#ifdef PRINT_DEBUG
+		fprintf(stderr, "[DEBUG in OpenCLDriver::init()] Found OpenCL platform[%d]: %s\n",i , platformName);
+#endif
+		std::string name = namestr;
+		std::transform(name.begin(), name.end(), name.begin(), tolower);
+		std::string search;
+        if(devType == acc_device_altera) {
+			search = "fpga";
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
 			} else {
-				search = "unknown";
-			}
-			if( name.find(search) != std::string::npos ) {
-				foundPlatform = true;
-				break;
-			} else if( dev == acc_device_gpu ) {
-				search = "advanced";
-				if( name.find(search) != std::string::npos ) {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ALL, num_devices, devices, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
 					foundPlatform = true;
 					break;
 				}
 			}
+		} else if(devType == acc_device_altera_emulator) {
+			search = "emulation";
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ALL, num_devices, devices, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					foundPlatform = true;
+					break;
+				}
+			}
+        } else if( devType == acc_device_xeonphi ) {
+			search = "intel";
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ACCELERATOR, num_devices, devices, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					foundPlatform = true;
+					break;
+				}
+			}
+        } else if( devType == acc_device_intelgpu ) {
+			search = "intel";
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, num_devices, devices, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					foundPlatform = true;
+					break;
+				}
+			}
+		} else if( devType == acc_device_nvidia ) {
+			search = "nvidia";
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, num_devices, devices, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					foundPlatform = true;
+					break;
+				}
+			}
+		} else if( devType == acc_device_radeon ) {
+			search = "amd";
+			if( name.find(search) == std::string::npos ) {
+				search = "advanced";
+			}
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, num_devices, devices, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					foundPlatform = true;
+					break;
+				}
+			}
+		} else if(devType == acc_device_gpu) {
+			err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, num_devices, devices, &numDevices);
+        	if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				foundPlatform = true;
+				break;
+			}
+		} else if(devType == acc_device_host) {
+			err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_CPU, num_devices, devices, &numDevices);
+        	if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				foundPlatform = true;
+				break;
+			}
+		} else {
 			delete [] namestr;
-		}
-		if( !foundPlatform ) {
-			clPlatform = platforms[0];
+			platformName = NULL;
+			break;
 		}
 	}
-
-    cl_device_id devices[num_devices];
-    if(dev == acc_device_altera) {
-		err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ALL, num_devices, devices, NULL);
-	} else if(dev == acc_device_altera_emulator) {
-		err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ACCELERATOR, num_devices, devices, NULL);
-	} else if(dev == acc_device_xeonphi) {
-		err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ACCELERATOR, num_devices, devices, NULL);
-	} else if(dev == acc_device_host) {
-		err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_CPU, num_devices, devices, NULL);
-	} else  {
-		err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, num_devices, devices, NULL);
-	}
-    if (err != CL_SUCCESS) {
-		fprintf(stderr, "[ERROR in OpenCLDriver::init()] Failed to get device IDs for type %s, error = %d (%s)\n", HI_get_device_type_string(dev), err, opencl_error_code(err));
-		fprintf(stderr, "                                Current platform: %s\n",platformName);
+			
+    if ( !foundPlatform ) {
+		fprintf(stderr, "[ERROR in OpenCLDriver::init()] Failed to get device IDs for device type %s\n", HI_get_device_type_string(devType));
+        if (err != CL_SUCCESS) {
+            fprintf(stderr, "                                              OpenCL error (%d, %s)\n", err, opencl_error_code(err));
+		}
+		if(platformName != NULL) {
+            fprintf(stderr, "                                              Current platform: %s\n",platformName);
+		}
 		exit(1);
 	}
 	delete [] platforms;
@@ -434,12 +521,21 @@ HI_error_t OpenCLDriver::init(int threadID) {
     cl_command_queue s0, s1;
     cl_event e0, e1;
 	//for ( int i=0; i<HI_num_hostthreads; i++ ) {
+		//[DEBUG on Feb. 9, 2021] clCreateCommandQueue() is deprecated on OpenCL V2.0
+#if defined(CL_VERSION_2_0) 
+    	s0 = clCreateCommandQueueWithProperties(clContext, clDevice, NULL, &err);
+#else
     	s0 = clCreateCommandQueue(clContext, clDevice, 0, &err);
+#endif
     	if(err != CL_SUCCESS) {
         	fprintf(stderr, "[ERROR in OpenCLDriver::init()] failed to create OPENCL queue with error %d (%s)\n", err, opencl_error_code(err));
 			exit(1);
     	}
+#if defined(CL_VERSION_2_0)
+    	s1 = clCreateCommandQueueWithProperties(clContext, clDevice, NULL, &err);
+#else
     	s1 = clCreateCommandQueue(clContext, clDevice, 0, &err);
+#endif
     	if(err != CL_SUCCESS) {
         	fprintf(stderr, "[ERROR in OpenCLDriver::init()] failed to create OPENCL queue with error %d (%s)\n", err, opencl_error_code(err));
 			exit(1);
@@ -549,12 +645,20 @@ HI_error_t OpenCLDriver::createKernelArgMap(int threadID) {
     int thread_id = tconf->threadID;
     if( queueMap.count(0+thread_id*MAX_NUM_QUEUES_PER_THREAD) == 0 ) {
     	cl_command_queue s0, s1;
+#if defined(CL_VERSION_2_0)
+    	s0 = clCreateCommandQueueWithProperties(clContext, clDevice, NULL, &err);
+#else
     	s0 = clCreateCommandQueue(clContext, clDevice, 0, &err);
+#endif
     	if(err != CL_SUCCESS) {
         	fprintf(stderr, "[ERROR in OpenCLDriver::init()] failed to create OPENCL queue with error %d (%s)\n", err, opencl_error_code(err));
 			exit(1);
     	}
+#if defined(CL_VERSION_2_0)
+    	s1 = clCreateCommandQueueWithProperties(clContext, clDevice, NULL, &err);
+#else
     	s1 = clCreateCommandQueue(clContext, clDevice, 0, &err);
+#endif
     	if(err != CL_SUCCESS) {
         	fprintf(stderr, "[ERROR in OpenCLDriver::init()] failed to create OPENCL queue with error %d (%s)\n", err, opencl_error_code(err));
 			exit(1);
@@ -656,13 +760,14 @@ HI_error_t OpenCLDriver::HI_register_kernels(std::set<std::string> kernelNames, 
 int OpenCLDriver::HI_get_num_devices(acc_device_t devType, int threadID) {
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 2 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\t\tenter OpenCLDriver::HI_get_num_devices()\n");
+		fprintf(stderr, "[OPENARCRT-INFO]\t\tenter OpenCLDriver::HI_get_num_devices(devType = %s)\n", HI_get_device_type_string(devType));
 	}
 #endif
     cl_uint numDevices = 0;
-    if(devType == acc_device_gpu || devType == acc_device_xeonphi ||
+    if(devType == acc_device_gpu || devType == acc_device_nvidia || devType == acc_device_radeon ||
+		devType == acc_device_xeonphi || devType == acc_device_intelgpu ||
 		devType == acc_device_altera || devType == acc_device_altera_emulator || devType == acc_device_host ) {
-    	char *platformName;
+    	char *platformName = NULL;
         cl_platform_id platform;
         cl_int err = CL_SUCCESS;
 		cl_uint num_platforms = 0;
@@ -681,94 +786,177 @@ int OpenCLDriver::HI_get_num_devices(acc_device_t devType, int threadID) {
             fprintf(stderr, "[ERROR in OpenCLDriver::HI_get_num_devices()] Failed to get the list of platforms IDs available on this device\n");
 			exit(1);
         }
-		if( num_platforms == 1) {
-			platform = platforms[0];
-			size_t sz; 
-			err = clGetPlatformInfo(platform, CL_PLATFORM_NAME, 0, NULL, &sz);
-			if (err != CL_SUCCESS) {
-				fprintf(stderr, "[ERROR in OpenCLDriver::HI_get_num_devices()] Failed to get the platform name size\n");
+		bool foundPlatform = false;
+		for( unsigned i=0; i<num_platforms; i++ ) {
+  			size_t sz; 
+			platform = platforms[i];
+  			err = clGetPlatformInfo(platform, CL_PLATFORM_NAME, 0, NULL, &sz);
+        	if (err != CL_SUCCESS) {
+            	fprintf(stderr, "[ERROR in OpenCLDriver::HI_get_num_devices()] Failed to get the platform name size\n");
 				exit(1);
-			}
-			char* namestr = new char[sz];
-			err = clGetPlatformInfo(platform, CL_PLATFORM_NAME, sz, namestr, NULL);
-			if (err != CL_SUCCESS) {
-				fprintf(stderr, "[ERROR in OpenCLDriver::HI_get_num_devices()] Failed to get the platform name\n");
+        	}
+        	char* namestr = new char[sz];
+  			err = clGetPlatformInfo(platform, CL_PLATFORM_NAME, sz, namestr, NULL);
+        	if (err != CL_SUCCESS) {
+            	fprintf(stderr, "[ERROR in OpenCLDriver::HI_get_num_devices()] Failed to get the platform name\n");
 				exit(1);
-			}
+        	}
 			platformName = namestr;
-		} else {
-			bool foundPlatform = false;
-			for( unsigned i=0; i<num_platforms; i++ ) {
-  				size_t sz; 
-				platform = platforms[i];
-  				err = clGetPlatformInfo(platform, CL_PLATFORM_NAME, 0, NULL, &sz);
-        		if (err != CL_SUCCESS) {
-            		fprintf(stderr, "[ERROR in OpenCLDriver::HI_get_num_devices()] Failed to get the platform name size\n");
-					exit(1);
-        		}
-        		char* namestr = new char[sz];
-  				err = clGetPlatformInfo(platform, CL_PLATFORM_NAME, sz, namestr, NULL);
-        		if (err != CL_SUCCESS) {
-            		fprintf(stderr, "[ERROR in OpenCLDriver::HI_get_num_devices()] Failed to get the platform name\n");
-					exit(1);
-        		}
-				platformName = namestr;
-				std::string name = namestr;
-				std::transform(name.begin(), name.end(), name.begin(), tolower);
-				std::string search;
-        		if(devType == acc_device_altera) {
-					search = "fpga";
-			} else if(devType == acc_device_altera_emulator) {
-				        search = "emulation";
-        		} else if(devType == acc_device_xeonphi) {
-					search = "intel";
-				} else if(devType == acc_device_gpu) {
-					search = "nvidia";
+#ifdef PRINT_DEBUG
+			fprintf(stderr, "[DEBUG in OpenCLDriver::HI_get_num_devices()] Found OpenCL platform[%d]: %s\n",i , platformName);
+#endif
+			std::string name = namestr;
+			std::transform(name.begin(), name.end(), name.begin(), tolower);
+			std::string search;
+        	if(devType == acc_device_altera) {
+				search = "fpga";
+				if( name.find(search) == std::string::npos ) {
+					delete [] namestr;
+					continue;
 				} else {
-					search = "unknown";
-				}
-				if( name.find(search) != std::string::npos ) {
-					foundPlatform = true;
-					break;
-				} else if( devType == acc_device_gpu ) {
-					search = "advanced";
-					if( name.find(search) != std::string::npos ) {
+					err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
+        			if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
 						foundPlatform = true;
 						break;
 					}
 				}
+			} else if(devType == acc_device_altera_emulator) {
+				search = "emulation";
+				if( name.find(search) == std::string::npos ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
+        			if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
+						foundPlatform = true;
+						break;
+					}
+				}
+        	} else if( devType == acc_device_xeonphi ) {
+				search = "intel";
+				if( name.find(search) == std::string::npos ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ACCELERATOR, 0, NULL, &numDevices);
+        			if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
+						foundPlatform = true;
+						break;
+					}
+				}
+        	} else if( devType == acc_device_intelgpu ) {
+				search = "intel";
+				if( name.find(search) == std::string::npos ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
+        			if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
+						foundPlatform = true;
+						break;
+					}
+				}
+			} else if( devType == acc_device_nvidia ) {
+				search = "nvidia";
+				if( name.find(search) == std::string::npos ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
+        			if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
+						foundPlatform = true;
+						break;
+					}
+				}
+			} else if( devType == acc_device_radeon ) {
+				search = "amd";
+				if( name.find(search) == std::string::npos ) {
+					search = "advanced";
+				}
+				if( name.find(search) == std::string::npos ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
+        			if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
+						foundPlatform = true;
+						break;
+					}
+				}
+			} else if(devType == acc_device_gpu) {
+				err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					foundPlatform = true;
+					break;
+				}
+			} else if(devType == acc_device_host) {
+				err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, 0, NULL, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					foundPlatform = true;
+					break;
+				}
+			} else {
 				delete [] namestr;
+				platformName = NULL;
+				break;
 			}
-                        // [JL] Possible Bug. If we default to platform 0, we no longer have the platform name, as the varaible was deleted in the previous loop. 
-                        // It is only preserved if we succesfully found a platform (and hit the break before the delete). 
 			if( !foundPlatform ) {
-				platform = platforms[0];
+				numDevices = 0;
 			}
-		}
-        if(devType == acc_device_altera) {
-			err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
-        } else if(devType == acc_device_altera_emulator) {
-			err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
-        } else if(devType == acc_device_xeonphi) {
-			err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ACCELERATOR, 0, NULL, &numDevices);
-        } else if(devType == acc_device_host) {
-			err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, 0, NULL, &numDevices);
-		} else if(devType == acc_device_gpu) {
-			err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
-		} else {
-			numDevices = 0;
 		}
 			
-        if (err != CL_SUCCESS) {
-            fprintf(stderr, "[ERROR in OpenCLDriver::HI_get_num_devices()] Failed to get device IDs for type %s, error = %d (%s)\n", HI_get_device_type_string(devType), err, opencl_error_code(err));
-            fprintf(stderr, "                                              Current platform: %s\n",platformName);
+        if ( !foundPlatform ) {
+            fprintf(stderr, "[ERROR in OpenCLDriver::HI_get_num_devices()] Failed to get device IDs for device type %s\n", HI_get_device_type_string(devType));
+        	if (err != CL_SUCCESS) {
+            	fprintf(stderr, "                                              OpenCL error (%d, %s)\n", err, opencl_error_code(err));
+			}
+			if(platformName != NULL) {
+            	fprintf(stderr, "                                              Current platform: %s\n",platformName);
+			}
 			exit(1);
         }
 		delete [] platforms;
     }
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 2 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\t\texit OpenCLDriver::HI_get_num_devices(); number of devices: %d\n", numDevices);
+		fprintf(stderr, "[OPENARCRT-INFO]\t\texit OpenCLDriver::HI_get_num_devices(devType = %s); number of devices = %d\n", HI_get_device_type_string(devType), numDevices);
 	}
 #endif
     return (int) numDevices;
@@ -2538,7 +2726,11 @@ void OpenCLDriver::HI_set_async(int asyncId, int threadID) {
 
         if(it == queueMap.end()) {
             cl_command_queue queue;
+#if defined(CL_VERSION_2_0)
+    		queue = clCreateCommandQueueWithProperties(clContext, clDevice, NULL, &err);
+#else
             queue = clCreateCommandQueue(clContext, clDevice, 0, &err);
+#endif
             if(err != CL_SUCCESS) {
                 fprintf(stderr, "[ERROR in OpenCLDriver::HI_set_async()] failed to create OPENCL queue with error %d (%s)\n", err, opencl_error_code(err));
 				exit(1);
@@ -2983,7 +3175,7 @@ void OpenCLDriver::HI_wait_for_events(int async, int num_waits, int* waits, int 
             event_wait_list[num_events_in_wait_list++] = *getEvent(waits[i], tconf->threadID);
         }
         if (num_events_in_wait_list > 0) {
-#ifdef CL_VERSION_1_2
+#if defined(CL_VERSION_1_2)
             err = clEnqueueMarkerWithWaitList(queue, num_events_in_wait_list, event_wait_list, NULL);
 #else
             err = clEnqueueWaitForEvents(queue, num_events_in_wait_list, event_wait_list);

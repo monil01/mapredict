@@ -34,6 +34,9 @@ static const char *NVIDIA = "NVIDIA";
 static const char *RADEON = "RADEON";
 static const char *XEONPHI = "XEONPHI";
 static const char *ALTERA = "ALTERA";
+static const char *ALTERA_EMUL = "ALTERA_EMUL";
+static const char *HOST = "HOST";
+static const char *INTELGPU = "INTELGPU";
 
 devmap_t HostConf::devMap;
 //HI_kernelnames contain all the kernels used by any host thread, which does not distinguish target device types.
@@ -118,6 +121,8 @@ void HI_hostinit(int threadID) {
 			//Default behavior is changed to no-prepinning.
 			HI_prepin_host_memory = 0;
 		}
+		//[DEBUG on Feb. 5, 2021] explicitly reset the devMap not to have any garbage data.
+		HostConf::devMap.clear();
     	HI_hostinit_done = 1;
 		if( HI_prepin_host_memory == 1 ) {
 #ifdef _OPENARC_PROFILE_
@@ -294,29 +299,40 @@ void HostConf::setDefaultDevice() {
         envVarU = convertToUpper(envVar);
         if( strcmp(envVarU, NVIDIA) == 0 ) {
 			user_set_device_type_var = acc_device_nvidia;
-            acc_device_type_var = acc_device_gpu;
+            //acc_device_type_var = acc_device_gpu;
+            acc_device_type_var = acc_device_nvidia;
         } else if( strcmp(envVarU, RADEON) == 0 ) {
 			user_set_device_type_var = acc_device_radeon;
-            acc_device_type_var = acc_device_gpu;
+            //acc_device_type_var = acc_device_gpu;
+            acc_device_type_var = acc_device_radeon;
+        } else if( strcmp(envVarU, INTELGPU) == 0 ) {
+			user_set_device_type_var = acc_device_intelgpu;
+            //acc_device_type_var = acc_device_gpu;
+            acc_device_type_var = acc_device_intelgpu;
         } else if( strcmp(envVarU, "ACC_DEVICE_DEFAULT") == 0 ) {
 			user_set_device_type_var = acc_device_default;
 #if defined(OPENARC_ARCH) && OPENARC_ARCH == 3
         	acc_device_type_var = acc_device_altera;
 #elif defined(OPENARC_ARCH) && OPENARC_ARCH == 2
         	acc_device_type_var = acc_device_xeonphi;
+#elif defined(OPENARC_ARCH) && OPENARC_ARCH == 6
+        	acc_device_type_var = acc_device_default;
 #else
         	acc_device_type_var = acc_device_gpu;
 #endif
         } else if( strcmp(envVarU, ALTERA) == 0 ) {
 			user_set_device_type_var = acc_device_altera;
             acc_device_type_var = acc_device_altera;
+        } else if( strcmp(envVarU, ALTERA_EMUL) == 0 ) {
+			user_set_device_type_var = acc_device_altera_emulator;
+            acc_device_type_var = acc_device_altera_emulator;
         } else if( strcmp(envVarU, XEONPHI) == 0 ) {
 			user_set_device_type_var = acc_device_xeonphi;
             acc_device_type_var = acc_device_xeonphi;
         } else if( strcmp(envVarU, "ACC_DEVICE_NONE") == 0 ) {
 			user_set_device_type_var = acc_device_none;
             acc_device_type_var = acc_device_none;
-        } else if( strcmp(envVarU, "ACC_DEVICE_HOST") == 0 ) {
+        } else if( (strcmp(envVarU, "ACC_DEVICE_HOST") == 0) || (strcmp(envVarU, HOST) == 0) ) {
 			user_set_device_type_var = acc_device_host;
             acc_device_type_var = acc_device_host;
         } else if( strcmp(envVarU, "ACC_DEVICE_NOT_HOST") == 0 ) {
@@ -325,6 +341,8 @@ void HostConf::setDefaultDevice() {
         	acc_device_type_var = acc_device_altera;
 #elif defined(OPENARC_ARCH) && OPENARC_ARCH == 2
         	acc_device_type_var = acc_device_xeonphi;
+#elif defined(OPENARC_ARCH) && OPENARC_ARCH == 6
+        	acc_device_type_var = acc_device_default;
 #else
         	acc_device_type_var = acc_device_gpu;
 #endif
@@ -362,6 +380,7 @@ void HostConf::setDefaultDevNum() {
     if( (devtype == acc_device_nvidia) || (devtype == acc_device_not_host) ||
             (devtype == acc_device_default) || (devtype == acc_device_radeon) || 
             (devtype == acc_device_gpu) || (devtype == acc_device_xeonphi) ||
+            (devtype == acc_device_intelgpu) ||
 			(devtype == acc_device_altera) || (devtype == acc_device_altera_emulator) ) {
         acc_device_num_var = dev;
     } else if( devtype == acc_device_host ) {
@@ -418,7 +437,7 @@ void HostConf::createHostTables() {
 void HostConf::HI_init(int devNum) {
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 1 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\tenter HI_init(devType = %d, devNum = %d)\n", acc_device_type_var, devNum);
+		fprintf(stderr, "[OPENARCRT-INFO]\tenter HI_init(devType = %s, devNum = %d)\n", HI_get_device_type_string(acc_device_type_var), devNum);
 	}
 #endif
     if( HI_hostinit_done == 0 ) {
@@ -485,35 +504,40 @@ void HostConf::HI_init(int devNum) {
     }  
 #endif
     setTranslationType();
+//[DEBUG on March 4, 2021] Below checking is disable so that host CPU can be 
+//properly treated as a target device.
+/*
     if( acc_device_type_var == acc_device_host ) {
 		acc_num_devices = 1;
-/*
-        devnummap_t numDevMap;
-        Accelerator *dev = NULL;
-        numDevMap[0] = dev;
-#ifdef _THREAD_SAFETY
-		pthread_mutex_lock(&mutex_HI_init);
-#else
-#ifdef _OPENMP
-        #pragma omp critical (HI_init_critical)
-#endif
-#endif
-		{ //starts critical section.
-			//The current implementation does not support host as a target device.
-			HostConf::devMap[acc_device_type_var] = numDevMap;
-		} //ends critical section.
-#ifdef _THREAD_SAFETY
-		pthread_mutex_unlock(&mutex_HI_init);
-#endif
-*/
+//        devnummap_t numDevMap;
+//        Accelerator *dev = NULL;
+//        numDevMap[0] = dev;
+//#ifdef _THREAD_SAFETY
+//		pthread_mutex_lock(&mutex_HI_init);
+//#else
+//#ifdef _OPENMP
+//        #pragma omp critical (HI_init_critical)
+//#endif
+//#endif
+//		{ //starts critical section.
+//			//The current implementation does not support host as a target device.
+//			HostConf::devMap[acc_device_type_var] = numDevMap;
+//		} //ends critical section.
+//#ifdef _THREAD_SAFETY
+//		pthread_mutex_unlock(&mutex_HI_init);
+//#endif
         isOnAccDevice = 1;
         HI_init_done = 1;
-    } else if( acc_device_type_var != acc_device_none ) {
+*/
+//   } else if( acc_device_type_var != acc_device_none ) {
+	if( acc_device_type_var != acc_device_none ) {
 		//printf("init start with dev %d\n", acc_device_type_var);
         devnummap_t numDevMap;
 		acc_device_t ttDevType = acc_device_type_var;
 #if defined(OPENARC_ARCH) && OPENARC_ARCH == 6
-		ttDevType = acc_device_default;
+		//[DEBUG on April 1, 2021] We no longer change the device type to  acc_device_default type for Brisbane devices;
+		//instead, use whatever the user provides.
+		//ttDevType = acc_device_default;
 #endif
         int numDevices;
 #ifdef _THREAD_SAFETY
@@ -526,6 +550,7 @@ void HostConf::HI_init(int devNum) {
 		{ //starts critical section.
 			if( HostConf::devMap.count(ttDevType) > 0 ) {
 				numDevices = HostConf::devMap.at(ttDevType).size();
+				if( numDevices < 0 ) { numDevices = 0; }
 			} else {
 				numDevices = 0;
 			}
@@ -595,7 +620,9 @@ void HostConf::HI_init(int devNum) {
         	acc_set_device_num(acc_device_num_var, user_set_device_type_var, threadID);
 		}
 		//printf("init done for type %d\n", ttDevType);
-        isOnAccDevice = 1;
+		if( numDevices > 0 ) {
+        	isOnAccDevice = 1;
+		}
         HI_init_done = 1;
     } else if( acc_device_type_var == acc_device_none ) {
         isOnAccDevice = 0;
@@ -613,7 +640,7 @@ void HostConf::HI_init(int devNum) {
 
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 1 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\texit HI_init(devType = %d, devNum = %d)\n", acc_device_type_var, devNum);
+		fprintf(stderr, "[OPENARCRT-INFO]\texit HI_init(devType = %s, devNum = %d)\n", HI_get_device_type_string(acc_device_type_var), devNum);
 	}
 #endif
 }
@@ -1292,12 +1319,12 @@ void HI_tempMalloc1D_async( void** tempPtr, size_t count, acc_device_t devType, 
 void HI_tempFree( void** tempPtr, acc_device_t devType, int threadID) {
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 1 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\tenter HI_tempFree(devType = %d, thread ID = %d)\n", devType, threadID);
+		fprintf(stderr, "[OPENARCRT-INFO]\tenter HI_tempFree(devType = %s, thread ID = %d)\n", HI_get_device_type_string(devType), threadID);
 	}
 #endif
     HostConf_t * tconf = getHostConf(threadID);
 	if(tconf->device == NULL) {
-        fprintf(stderr, "[ERROR in HI_tempFree()] Not supported in the current device type %d; exit!\n", tconf->acc_device_type_var);
+        fprintf(stderr, "[ERROR in HI_tempFree()] Not supported in the current device type %s; exit!\n", HI_get_device_type_string(tconf->acc_device_type_var));
 		exit(1);
 	}
 #ifdef _OPENARC_PROFILE_
@@ -1311,10 +1338,10 @@ void HI_tempFree( void** tempPtr, acc_device_t devType, int threadID) {
         	if( tempMallocSize->count(*tempPtr) > 0 ) {
         		tconf->CDMemorySize -= (*tempMallocSize)[*tempPtr];
         	} else {
-				fprintf(stderr, "[OPENARCRT-INFO]\tHI_tempFree(devType = %d, thread ID = %d) does not know data size: case 1\n",devType, threadID);
+				fprintf(stderr, "[OPENARCRT-INFO]\tHI_tempFree(devType = %s, thread ID = %d) does not know data size: case 1\n",HI_get_device_type_string(devType), threadID);
 			}
         } else {
-			fprintf(stderr, "[OPENARCRT-INFO]\tHI_tempFree(devType = %d, thread ID = %d) does not know data size: case 2\n",devType, threadID);
+			fprintf(stderr, "[OPENARCRT-INFO]\tHI_tempFree(devType = %s, thread ID = %d) does not know data size: case 2\n",HI_get_device_type_string(devType), threadID);
 		}
 	} else {
 		tconf->HFreeCnt++;
@@ -1323,7 +1350,7 @@ void HI_tempFree( void** tempPtr, acc_device_t devType, int threadID) {
     tconf->device->HI_tempFree( tempPtr, devType, tconf->threadID);
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 1 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\texit HI_tempFree(devType = %d, thread ID = %d)\n", devType, threadID);
+		fprintf(stderr, "[OPENARCRT-INFO]\texit HI_tempFree(devType = %s, thread ID = %d)\n", HI_get_device_type_string(devType), threadID);
 	}
 #endif
 }
@@ -1335,7 +1362,7 @@ void HI_tempFree( void** tempPtr, acc_device_t devType, int threadID) {
 void HI_tempFree_async( void** tempPtr, acc_device_t devType, int asyncID, int threadID) {
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 1 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\tenter HI_tempFree_async(devType = %d, asyncID = %d, thread ID = %d)\n", devType, asyncID, threadID);
+		fprintf(stderr, "[OPENARCRT-INFO]\tenter HI_tempFree_async(devType = %s, asyncID = %d, thread ID = %d)\n", HI_get_device_type_string(devType), asyncID, threadID);
 	}
 #endif
     HostConf_t * tconf = getHostConf(threadID);
@@ -1354,10 +1381,10 @@ void HI_tempFree_async( void** tempPtr, acc_device_t devType, int asyncID, int t
         	if( tempMallocSize->count(*tempPtr) > 0 ) {
         		tconf->CDMemorySize -= (*tempMallocSize)[*tempPtr];
         	} else {
-				fprintf(stderr, "[OPENARCRT-INFO]\tHI_tempFree_async(devType = %d, asyncID = %d, thread ID = %d) does not know data size: case 1\n",devType, asyncID, threadID);
+				fprintf(stderr, "[OPENARCRT-INFO]\tHI_tempFree_async(devType = %s, asyncID = %d, thread ID = %d) does not know data size: case 1\n",HI_get_device_type_string(devType), asyncID, threadID);
 			}
         } else {
-			fprintf(stderr, "[OPENARCRT-INFO]\tHI_tempFree_async(devType = %d, asyncID = %d, thread ID = %d) does not know data size: case 2\n",devType, asyncID, threadID);
+			fprintf(stderr, "[OPENARCRT-INFO]\tHI_tempFree_async(devType = %s, asyncID = %d, thread ID = %d) does not know data size: case 2\n",HI_get_device_type_string(devType), asyncID, threadID);
 		}
 	} else {
 		tconf->HFreeCnt++;
@@ -1366,7 +1393,7 @@ void HI_tempFree_async( void** tempPtr, acc_device_t devType, int asyncID, int t
     tconf->device->HI_tempFree_async( tempPtr, devType, asyncID, tconf->threadID);
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 1 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\texit HI_tempFree_async(devType = %d, asyncID = %d, thread ID = %d)\n", devType, asyncID, threadID);
+		fprintf(stderr, "[OPENARCRT-INFO]\texit HI_tempFree_async(devType = %s, asyncID = %d, thread ID = %d)\n", HI_get_device_type_string(devType), asyncID, threadID);
 	}
 #endif
 }
@@ -2471,6 +2498,7 @@ const char* HI_get_device_type_string( acc_device_t devtype ) {
 		case acc_device_current: { str = "acc_device_current"; break; }
 		case acc_device_altera: { str = "acc_device_altera"; break; }
 		case acc_device_altera_emulator: { str = "acc_device_altera_emulator"; break; }
+		case acc_device_intelgpu: { str = "acc_device_intelgpu"; break; }
 		default: { str = "UNKNOWN TYPE"; break; }
 	}
 	return str.c_str();	

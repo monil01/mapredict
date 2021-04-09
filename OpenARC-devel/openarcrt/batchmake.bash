@@ -33,6 +33,6 @@ if [ "$mode" = "all" ] || [ "$mode" = "util" ]; then
 		make res
 	fi
 	make omphelp
-	gcc -o Timer Timer.c
+	make Timer
 	make clean
 fi

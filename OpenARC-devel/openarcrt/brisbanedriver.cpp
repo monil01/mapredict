@@ -4,6 +4,8 @@
 #include <brisbane/rt/LoaderCUDA.h>
 #include <brisbane/rt/Mem.h>
 
+#define BRISBANE_TASK_SUBMIT_MODE 1
+
 //Below structures contain Brisbane device IDs for a given device type.
 std::vector<int> BrisbaneDriver::NVIDIADeviceIDs;
 std::vector<int> BrisbaneDriver::AMDDeviceIDs;
@@ -376,7 +378,11 @@ HI_error_t BrisbaneDriver::HI_kernel_call(std::string kernel_name, size_t gridSi
 #endif
   if( nestingLevel == 0 ) {
     //brisbane_task_submit(task, brisbane_default, NULL, true);
+#if BRISBANE_TASK_SUBMIT_MODE == 0
     brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
+#else
+    brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
+#endif
 #ifdef _OPENARC_PROFILE_
 	tconf->BTaskCnt++;	
     if( HI_openarcrt_verbosity > 2 ) {
@@ -585,7 +591,11 @@ HI_error_t BrisbaneDriver::HI_memcpy(void *dst, const void *src, size_t count, H
 #endif
   		if( nestingLevel == 0 ) {
         	//brisbane_task_submit(task, brisbane_default, NULL, true);
+#if BRISBANE_TASK_SUBMIT_MODE == 2
+  			brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
+#else
   			brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
+#endif
 #ifdef _OPENARC_PROFILE_
 			tconf->BTaskCnt++;	
     	if( HI_openarcrt_verbosity > 2 ) {
@@ -618,7 +628,11 @@ HI_error_t BrisbaneDriver::HI_memcpy(void *dst, const void *src, size_t count, H
 #endif
   			if( nestingLevel == 0 ) {
         		//brisbane_task_submit(task, brisbane_default, NULL, true);
+#if BRISBANE_TASK_SUBMIT_MODE == 2
+  				brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
+#else
   				brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
+#endif
 #ifdef _OPENARC_PROFILE_
 				tconf->BTaskCnt++;	
     			if( HI_openarcrt_verbosity > 2 ) {
@@ -793,7 +807,7 @@ HI_error_t BrisbaneDriver::HI_memcpy2D_asyncS(void *dst, size_t dpitch, const vo
 void BrisbaneDriver::HI_tempFree( void** tempPtr, acc_device_t devType, int threadID) {
 #ifdef _OPENARC_PROFILE_
     if( HI_openarcrt_verbosity > 2 ) {
-        fprintf(stderr, "[OPENARCRT-INFO]\t\tenter BrisbaneDriver::HI_tempFree(tempPtr = %lx, devType = %d, thread ID = %d)\n",  (long unsigned int)(*tempPtr), devType, threadID);
+        fprintf(stderr, "[OPENARCRT-INFO]\t\tenter BrisbaneDriver::HI_tempFree(tempPtr = %lx, devType = %s, thread ID = %d)\n",  (long unsigned int)(*tempPtr), HI_get_device_type_string(devType), threadID);
     }
   	if( HI_openarcrt_verbosity > 4 ) {
   		fprintf(stderr, "[%s:%d][%s]\n", __FILE__, __LINE__, __func__);
@@ -868,7 +882,7 @@ void BrisbaneDriver::HI_tempFree( void** tempPtr, acc_device_t devType, int thre
 #endif
 #ifdef _OPENARC_PROFILE_
     if( HI_openarcrt_verbosity > 2 ) {
-        fprintf(stderr, "[OPENARCRT-INFO]\t\texit BrisbaneDriver::HI_tempFree(tempPtr = %lx, devType = %d, thread ID = %d)\n",  (long unsigned int)(*tempPtr), devType, threadID);
+        fprintf(stderr, "[OPENARCRT-INFO]\t\texit BrisbaneDriver::HI_tempFree(tempPtr = %lx, devType = %s, thread ID = %d)\n",  (long unsigned int)(*tempPtr), HI_get_device_type_string(devType), threadID);
     }
 #endif
 }
@@ -1176,7 +1190,7 @@ HI_error_t BrisbaneDriver::HI_free_unified( const void *hostPtr, int asyncID, in
 int BrisbaneDriver::HI_get_num_devices(acc_device_t devType, int threadID) {
 #ifdef _OPENARC_PROFILE_
     if( HI_openarcrt_verbosity > 2 ) {
-        fprintf(stderr, "[OPENARCRT-INFO]\t\tenter BrisbaneDriver::HI_get_num_devices()\n");
+        fprintf(stderr, "[OPENARCRT-INFO]\t\tenter BrisbaneDriver::HI_get_num_devices(devType = %s)\n", HI_get_device_type_string(devType));
     }
   	if( HI_openarcrt_verbosity > 4 ) {
   		fprintf(stderr, "[%s:%d][%s]\n", __FILE__, __LINE__, __func__);
@@ -1204,7 +1218,7 @@ int BrisbaneDriver::HI_get_num_devices(acc_device_t devType, int threadID) {
 
 #ifdef _OPENARC_PROFILE_
     if( HI_openarcrt_verbosity > 2 ) {
-        fprintf(stderr, "[OPENARCRT-INFO]\t\texit BrisbaneDriver::HI_get_num_devices()\n");
+        fprintf(stderr, "[OPENARCRT-INFO]\t\texit BrisbaneDriver::HI_get_num_devices(devType = %s)\n", HI_get_device_type_string(devType));
     }
 #endif
   return count;
@@ -1213,7 +1227,7 @@ int BrisbaneDriver::HI_get_num_devices(acc_device_t devType, int threadID) {
 int BrisbaneDriver::HI_get_num_devices_init(acc_device_t devType, int threadID) {
 #ifdef _OPENARC_PROFILE_
     if( HI_openarcrt_verbosity > 2 ) {
-        fprintf(stderr, "[OPENARCRT-INFO]\t\tenter BrisbaneDriver::HI_get_num_devices_init()\n");
+        fprintf(stderr, "[OPENARCRT-INFO]\t\tenter BrisbaneDriver::HI_get_num_devices_init(devType = %s)\n", HI_get_device_type_string(devType));
     }
   	if( HI_openarcrt_verbosity > 4 ) {
   		fprintf(stderr, "[%s:%d][%s]\n", __FILE__, __LINE__, __func__);
@@ -1227,31 +1241,35 @@ int BrisbaneDriver::HI_get_num_devices_init(acc_device_t devType, int threadID) 
   err = brisbane_device_count(&ndevs);
   if (err != BRISBANE_OK) fprintf(stderr, "[%s:%d][%s] error[%d]\n", __FILE__, __LINE__, __func__, err);
   int defaultType = brisbane_default;
+  int defaultTypeFound = 0;
   for(int i=0; i<ndevs; i++) {
   	int type;
   	size_t size;
     err = brisbane_device_info(i, brisbane_type, &type, &size);  
-  	if (err != BRISBANE_OK) fprintf(stderr, "[%s:%d][%s] error[%d]\n", __FILE__, __LINE__, __func__, err);
-    if( i==0 ) {
-      defaultType = type;
-    }
-    if( type == defaultType ) {
-      DefaultDeviceIDs.push_back(i);
-    }
-    if( type == brisbane_nvidia ) {
-      NVIDIADeviceIDs.push_back(i);
-      GPUDeviceIDs.push_back(i);
-    } else if( type == brisbane_amd ) {
-      AMDDeviceIDs.push_back(i);
-      GPUDeviceIDs.push_back(i);
-    } else if( type == brisbane_gpu ) {
-      GPUDeviceIDs.push_back(i);
-    } else if( type == brisbane_cpu ) {
-      CPUDeviceIDs.push_back(i);
-    } else if( type == brisbane_fpga ) {
-      FPGADeviceIDs.push_back(i);
-    } else if( type == brisbane_phi ) {
-      PhiDeviceIDs.push_back(i);
+  	if (err != BRISBANE_OK) { fprintf(stderr, "[%s:%d][%s] error[%d]\n", __FILE__, __LINE__, __func__, err); }
+    else {
+	  if( defaultTypeFound==0 ) {
+        defaultType = type;
+        defaultTypeFound = 1;
+      }
+      if( type == defaultType ) {
+        DefaultDeviceIDs.push_back(i);
+      }
+      if( type == brisbane_nvidia ) {
+        NVIDIADeviceIDs.push_back(i);
+        GPUDeviceIDs.push_back(i);
+      } else if( type == brisbane_amd ) {
+        AMDDeviceIDs.push_back(i);
+        GPUDeviceIDs.push_back(i);
+      } else if( type == brisbane_gpu ) {
+        GPUDeviceIDs.push_back(i);
+      } else if( type == brisbane_cpu ) {
+        CPUDeviceIDs.push_back(i);
+      } else if( type == brisbane_fpga ) {
+        FPGADeviceIDs.push_back(i);
+      } else if( type == brisbane_phi ) {
+        PhiDeviceIDs.push_back(i);
+      }
     }
   }
 
@@ -1265,7 +1283,7 @@ int BrisbaneDriver::HI_get_num_devices_init(acc_device_t devType, int threadID) 
 
 #ifdef _OPENARC_PROFILE_
     if( HI_openarcrt_verbosity > 2 ) {
-        fprintf(stderr, "[OPENARCRT-INFO]\t\texit BrisbaneDriver::HI_get_num_devices_init()\n");
+        fprintf(stderr, "[OPENARCRT-INFO]\t\texit BrisbaneDriver::HI_get_num_devices_init(devType = %s)\n", HI_get_device_type_string(devType));
     }
 #endif
   return count;
@@ -1423,7 +1441,11 @@ HI_error_t BrisbaneDriver::HI_bind_tex(std::string texName,  HI_datatype_t type,
     void* tmp = malloc(size);
     brisbane_task_h2d(task, (*((brisbane_mem*) &tHandle)), 0, size, tmp);
   	if( nestingLevel == 0 ) {
+#if BRISBANE_TASK_SUBMIT_MODE == 2
+    	brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
+#else
     	brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
+#endif
 #ifdef _OPENARC_PROFILE_
 		tconf->BTaskCnt++;	
     	if( HI_openarcrt_verbosity > 2 ) {
@@ -1464,7 +1486,11 @@ HI_error_t BrisbaneDriver::HI_bind_tex(std::string texName,  HI_datatype_t type,
   brisbane_task_custom(task, 0xdeadcafe, params, params_size);
   if( nestingLevel == 0 ) {
     //brisbane_task_submit(task, brisbane_default, NULL, true);
+#if BRISBANE_TASK_SUBMIT_MODE == 2
+    brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
+#else
     brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
+#endif
 #ifdef _OPENARC_PROFILE_
 	tconf->BTaskCnt++;	
     if( HI_openarcrt_verbosity > 2 ) {
@@ -1639,7 +1665,13 @@ void BrisbaneDriver::HI_exit_subregion(const char *label, int threadID) {
     }
 #endif
   			HostConf_t *tconf = getHostConf(threadID);
+#if BRISBANE_TASK_SUBMIT_MODE == 0
     		brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, true);
+#elif BRISBANE_TASK_SUBMIT_MODE == 1
+    		brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, (brisbane_task_kernel_cmd_only(task) != BRISBANE_OK));
+#else
+    		brisbane_task_submit(task, HI_getBrisbaneDeviceID(tconf->acc_device_type_var,tconf->user_set_device_type_var, tconf->acc_device_num_var), NULL, false);
+#endif
 #ifdef _OPENARC_PROFILE_
 			tconf->BTaskCnt++;	
 #endif

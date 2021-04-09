@@ -3877,8 +3877,8 @@ public class ACC2OPENCLTranslator extends ACC2GPUTranslator {
     	if( rAnnot == null ) {
     		if( !kernelGenOnly ) {
     			PrintTools.println("[WARNING for ACC2OPENCLTranslator.extractComputeRegion()] kernel configuraion insertion" +
-    					" point is not found; original compute region will be used instead.\nEnclosing procedure: " + 
-    					cProc.getSymbolName() + "\n", 0);
+    					" point ("+ iKey+ ") is not found; original compute region will be used instead.\nEnclosing procedure: " + 
+    					cProc.getSymbolName() + "\nCurrent Compute region\n" + region + "\n", 0);
     		}
     		confRefStmt = region;
     	} else {

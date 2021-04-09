@@ -4815,8 +4815,8 @@ public class ACC2CUDATranslator extends ACC2GPUTranslator {
 			}
 			if( rAnnot == null ) {
 				PrintTools.println("[WARNING for ACC2CUDATranslator.extractComputeRegion()] kernel configuraion insertion" +
-						" point is not found; original compute region will be used instead.\nEnclosing procedure: " + 
-						cProc.getSymbolName() + "\n", 0);
+						" point (" + iKey + ") is not found; original compute region will be used instead.\nEnclosing procedure: " + 
+						cProc.getSymbolName() + "\nCurrent Compute region\n" + region + "\n", 0);
 				confRefStmt = region;
 			} else {
 				confRefStmt = (Statement)rAnnot.getAnnotatable();

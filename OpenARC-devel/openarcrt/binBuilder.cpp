@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <string.h>
 #include <algorithm>
 
 #if !defined(OPENARC_ARCH) || OPENARC_ARCH == 0 || OPENARC_ARCH == 6
@@ -20,7 +21,39 @@
 
 #include <sstream>
 
+#include "openacc.h"
+
 #define MAX_SOURCE_SIZE (0x100000)
+
+static const char *omp_num_threads_env = "OMP_NUM_THREADS";
+static const char *acc_device_type_env = "ACC_DEVICE_TYPE";
+static const char *acc_device_num_env = "ACC_DEVICE_NUM";
+static const char *omp_device_num_env = "OMP_DEFAULT_DEVICE";
+static const char *outputType = "OPENARC_ARCH";
+static const char *openarcrt_verbosity_env = "OPENARCRT_VERBOSITY";
+static const char *openarcrt_max_mempool_size_env = "OPENARCRT_MAXMEMPOOLSIZE";
+static const char *openarcrt_unifiedmemory_env = "OPENARCRT_UNIFIEDMEM";
+static const char *openarcrt_prepinhostmemory_env = "OPENARCRT_PREPINHOSTMEM";
+static const char *openarcrt_memoryalignment_env = "OPENARCRT_MEMORYALIGNMENT";
+static const char *NVIDIA = "NVIDIA";
+static const char *RADEON = "RADEON";
+static const char *XEONPHI = "XEONPHI";
+static const char *ALTERA = "ALTERA";
+static const char *ALTERA_EMUL = "ALTERA_EMUL";
+static const char *HOST = "HOST";
+static const char *INTELGPU = "INTELGPU";
+
+static acc_device_t user_set_device_type_var = acc_device_default;
+static acc_device_t acc_device_type_var = acc_device_default;
+
+//Function to convert input string to uppercases.
+static char *convertToUpper(char *str) {
+    char *newstr, *p;
+    p = newstr = strdup(str);
+    //while((*p++=toupper(*p)));
+    while((*p=toupper(*p))) {p++;} //Changed to unambiguous way
+    return newstr;
+}
 
 char * deblank(char *str) {
 	char *out = str, *put = str; 
@@ -33,6 +66,100 @@ char * deblank(char *str) {
 	return out; 
 }   
 
+const char* get_device_type_string( acc_device_t devtype ) {
+    static std::string str = "";
+    switch ( devtype ) {
+        case acc_device_none: { str = "acc_device_none"; break; }
+        case acc_device_default: { str = "acc_device_default"; break; }
+        case acc_device_host: { str = "acc_device_host"; break; }
+        case acc_device_not_host: { str = "acc_device_not_host"; break; }
+        case acc_device_nvidia: { str = "acc_device_nvidia"; break; }
+        case acc_device_radeon: { str = "acc_device_radeon"; break; }
+        case acc_device_gpu: { str = "acc_device_gpu"; break; }
+        case acc_device_xeonphi: { str = "acc_device_xeonphi"; break; }
+        case acc_device_current: { str = "acc_device_current"; break; }
+        case acc_device_altera: { str = "acc_device_altera"; break; }
+        case acc_device_altera_emulator: { str = "acc_device_altera_emulator"; break; }
+        case acc_device_intelgpu: { str = "acc_device_intelgpu"; break; }
+        default: { str = "UNKNOWN TYPE"; break; }
+    }    
+    return str.c_str(); 
+}
+
+void setDefaultDevice() {
+    char * envVar;
+    char * envVarU;
+    envVar = getenv(acc_device_type_env);
+    if( envVar == NULL ) {
+		user_set_device_type_var = acc_device_default;
+#if defined(OPENARC_ARCH) && OPENARC_ARCH == 3
+        acc_device_type_var = acc_device_altera;
+#elif defined(OPENARC_ARCH) && OPENARC_ARCH == 2
+        acc_device_type_var = acc_device_xeonphi;
+#elif defined(OPENARC_ARCH) && OPENARC_ARCH == 6
+        acc_device_type_var = acc_device_default;
+#else
+        acc_device_type_var = acc_device_gpu;
+#endif
+    } else {
+        envVarU = convertToUpper(envVar);
+        if( strcmp(envVarU, NVIDIA) == 0 ) {
+			user_set_device_type_var = acc_device_nvidia;
+            //acc_device_type_var = acc_device_gpu;
+            acc_device_type_var = acc_device_nvidia;
+        } else if( strcmp(envVarU, RADEON) == 0 ) {
+			user_set_device_type_var = acc_device_radeon;
+            //acc_device_type_var = acc_device_gpu;
+            acc_device_type_var = acc_device_radeon;
+        } else if( strcmp(envVarU, INTELGPU) == 0 ) {
+			user_set_device_type_var = acc_device_intelgpu;
+            //acc_device_type_var = acc_device_gpu;
+            acc_device_type_var = acc_device_intelgpu;
+        } else if( strcmp(envVarU, "ACC_DEVICE_DEFAULT") == 0 ) {
+			user_set_device_type_var = acc_device_default;
+#if defined(OPENARC_ARCH) && OPENARC_ARCH == 3
+        	acc_device_type_var = acc_device_altera;
+#elif defined(OPENARC_ARCH) && OPENARC_ARCH == 2
+        	acc_device_type_var = acc_device_xeonphi;
+#elif defined(OPENARC_ARCH) && OPENARC_ARCH == 6
+        	acc_device_type_var = acc_device_default;
+#else
+        	acc_device_type_var = acc_device_gpu;
+#endif
+        } else if( strcmp(envVarU, ALTERA) == 0 ) {
+			user_set_device_type_var = acc_device_altera;
+            acc_device_type_var = acc_device_altera;
+        } else if( strcmp(envVarU, ALTERA_EMUL) == 0 ) {
+			user_set_device_type_var = acc_device_altera_emulator;
+            acc_device_type_var = acc_device_altera_emulator;
+        } else if( strcmp(envVarU, XEONPHI) == 0 ) {
+			user_set_device_type_var = acc_device_xeonphi;
+            acc_device_type_var = acc_device_xeonphi;
+        } else if( strcmp(envVarU, "ACC_DEVICE_NONE") == 0 ) {
+			user_set_device_type_var = acc_device_none;
+            acc_device_type_var = acc_device_none;
+        } else if( (strcmp(envVarU, "ACC_DEVICE_HOST") == 0) || (strcmp(envVarU, HOST) == 0) ) {
+			user_set_device_type_var = acc_device_host;
+            acc_device_type_var = acc_device_host;
+        } else if( strcmp(envVarU, "ACC_DEVICE_NOT_HOST") == 0 ) {
+			user_set_device_type_var = acc_device_not_host;
+#if defined(OPENARC_ARCH) && OPENARC_ARCH == 3
+        	acc_device_type_var = acc_device_altera;
+#elif defined(OPENARC_ARCH) && OPENARC_ARCH == 2
+        	acc_device_type_var = acc_device_xeonphi;
+#elif defined(OPENARC_ARCH) && OPENARC_ARCH == 6
+        	acc_device_type_var = acc_device_default;
+#else
+        	acc_device_type_var = acc_device_gpu;
+#endif
+        } else {
+			user_set_device_type_var = acc_device_none;
+            acc_device_type_var = acc_device_none;
+        }
+        free(envVarU);
+    }
+}
+
 int main (int argc, char * argv[]){
 	std::string fileNameBase;
 	if( argc == 2 ) {
@@ -40,6 +167,7 @@ int main (int argc, char * argv[]){
 	} else {
 		fileNameBase = "openarc_kernel";
 	}
+	setDefaultDevice();
 #if !defined(OPENARC_ARCH) || OPENARC_ARCH == 0 || OPENARC_ARCH == 6
 	//Generate ptx files for .cu, only if nvcc is found on the system
 	if (system("which nvcc")==0){
@@ -110,100 +238,241 @@ int main (int argc, char * argv[]){
         fprintf(stderr, "[ERROR] Failed to get the list of platforms IDs available on this device\n");
         exit(1);
     }
-
-    if( num_platforms == 1) {
-        size_t sz;
-        clPlatform = platforms[0];
-        err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, 0, NULL, &sz);
+	cl_device_id *devices;
+	bool foundPlatform = false;
+	for( unsigned i=0; i<num_platforms; i++ ) {
+  		size_t sz; 
+		clPlatform = platforms[i];
+  		err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, 0, NULL, &sz);
         if (err != CL_SUCCESS) {
             fprintf(stderr, "[ERROR] Failed to get the platform name size\n");
-            exit(1);
+			exit(1);
         }
         char* namestr = new char[sz];
-        err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, sz, namestr, NULL);
+  		err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, sz, namestr, NULL);
         if (err != CL_SUCCESS) {
             fprintf(stderr, "[ERROR] Failed to get the platform name\n");
-            exit(1);
+			exit(1);
         }
-        platformName = namestr;
-        fprintf(stderr, "[INFO] Platform: %s\n", platformName);
-    } else {
-        bool foundPlatform = false;
-        for( unsigned i=0; i<num_platforms; i++ ) {
-            size_t sz;
-            clPlatform = platforms[i];
-            err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, 0, NULL, &sz);
-            if (err != CL_SUCCESS) {
-                fprintf(stderr, "[ERROR] Failed to get the platform name size\n");
-                exit(1);
-            }
-            char* namestr = new char[sz];
-            err = clGetPlatformInfo(clPlatform, CL_PLATFORM_NAME, sz, namestr, NULL);
-            if (err != CL_SUCCESS) {
-                fprintf(stderr, "[ERROR] Failed to get the platform name\n");
-                exit(1);
-            }
-            platformName = namestr;
-        	fprintf(stderr, "[INFO] Platform[%d]: %s\n",i, platformName);
-            std::string name = namestr;
-            std::transform(name.begin(), name.end(), name.begin(), tolower);
-            std::string search;
-#if OPENARC_ARCH == 3
-            search = "fpga";
-#elif OPENARC_ARCH == 30
-            search = "emulator";
-#elif OPENARC_ARCH == 2
-            search = "intel";
-#else
-            search = "nvidia";
+		platformName = namestr;
+#ifdef PRINT_DEBUG
+		fprintf(stderr, "[DEBUG] Found OpenCL platform[%d]: %s\n",i , platformName);
 #endif
-            if( name.find(search) != std::string::npos ) {
-                foundPlatform = true;
-                break;
-            } else if( search.compare("nvidia") ) {
-                search = "advanced";
-                if( name.find(search) != std::string::npos ) {
-                    foundPlatform = true;
-                    break;
-                }
-            }
-            delete [] namestr;
-        }
-        if( !foundPlatform ) {
-            clPlatform = platforms[0];
-        }
-    }
-
-#if OPENARC_ARCH == 3 || OPENARC_ARCH == 30
-	err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
-#elif OPENARC_ARCH == 2
-	err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ACCELERATOR, 0, NULL, &numDevices);
-#else
-	err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
-#endif
-
-	if (err != CL_SUCCESS) {
-#if OPENARC_ARCH == 3
-		fprintf(stderr, "[ERROR in clGetDeviceIDs()] Failed to get device IDs  for type acc_device_altera. \n");
-#elif OPENARC_ARCH == 30
-		fprintf(stderr, "[ERROR in clGetDeviceIDs()] Failed to get device IDs  for type acc_device_altera_emulator. \n");
-#elif OPENARC_ARCH == 2
-		fprintf(stderr, "[ERROR in clGetDeviceIDs()] Failed to get device IDs  for type acc_device_xeonphi. \n");
-#else
-		fprintf(stderr, "[ERROR in clGetDeviceIDs()] Failed to get device IDs  for type acc_device_gpu. \n");
-#endif
+		std::string name = namestr;
+		std::transform(name.begin(), name.end(), name.begin(), tolower);
+		std::string search;
+        if(acc_device_type_var == acc_device_altera) {
+			search = "fpga";
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					devices = (cl_device_id *)malloc(numDevices * sizeof(cl_device_id));
+					err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ALL, numDevices, devices, NULL);
+					if( err != CL_SUCCESS ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
+						foundPlatform = true;
+						break;
+					}
+				}
+			}
+		} else if(acc_device_type_var == acc_device_altera_emulator) {
+			search = "emulation";
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					devices = (cl_device_id *)malloc(numDevices * sizeof(cl_device_id));
+					err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ALL, numDevices, devices, NULL);
+        			if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
+						foundPlatform = true;
+						break;
+					}
+				}
+			}
+        } else if( acc_device_type_var == acc_device_xeonphi ) {
+			search = "intel";
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ACCELERATOR, 0, NULL, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					devices = (cl_device_id *)malloc(numDevices * sizeof(cl_device_id));
+					err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ACCELERATOR, numDevices, devices, NULL);
+        			if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
+						foundPlatform = true;
+						break;
+					}
+				}
+			}
+        } else if( acc_device_type_var == acc_device_intelgpu ) {
+			search = "intel";
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					devices = (cl_device_id *)malloc(numDevices * sizeof(cl_device_id));
+					err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, numDevices, devices, NULL);
+        			if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
+						foundPlatform = true;
+						break;
+					}
+				}
+			}
+		} else if( acc_device_type_var == acc_device_nvidia ) {
+			search = "nvidia";
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					devices = (cl_device_id *)malloc(numDevices * sizeof(cl_device_id));
+					err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, numDevices, devices, NULL);
+        			if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
+						foundPlatform = true;
+						break;
+					}
+				}
+			}
+		} else if( acc_device_type_var == acc_device_radeon ) {
+			search = "amd";
+			if( name.find(search) == std::string::npos ) {
+				search = "advanced";
+			}
+			if( name.find(search) == std::string::npos ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					devices = (cl_device_id *)malloc(numDevices * sizeof(cl_device_id));
+					err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, numDevices, devices, NULL);
+        			if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+						delete [] namestr;
+						platformName = NULL;
+						continue;
+					} else {
+						foundPlatform = true;
+						break;
+					}
+				}
+			}
+		} else if(acc_device_type_var == acc_device_gpu) {
+			err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, 0, NULL, &numDevices);
+        	if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				devices = (cl_device_id *)malloc(numDevices * sizeof(cl_device_id));
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, numDevices, devices, NULL);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					foundPlatform = true;
+					break;
+				}
+			}
+		} else if(acc_device_type_var == acc_device_host) {
+			err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_CPU, 0, NULL, &numDevices);
+        	if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+				delete [] namestr;
+				platformName = NULL;
+				continue;
+			} else {
+				devices = (cl_device_id *)malloc(numDevices * sizeof(cl_device_id));
+				err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_CPU, numDevices, devices, NULL);
+        		if ( (err != CL_SUCCESS) || (numDevices <= 0) ) {
+					delete [] namestr;
+					platformName = NULL;
+					continue;
+				} else {
+					foundPlatform = true;
+					break;
+				}
+			}
+		} else {
+			delete [] namestr;
+			platformName = NULL;
+			break;
+		}
 	}
-	
-	
-	cl_device_id devices[numDevices];
-#if OPENARC_ARCH == 3
-	err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ALL, numDevices, devices, NULL);
-#elif OPENARC_ARCH == 2
-	err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_ACCELERATOR, numDevices, devices, NULL);
-#else
-	err = clGetDeviceIDs(clPlatform, CL_DEVICE_TYPE_GPU, numDevices, devices, NULL);
-#endif
-	
+			
+    if ( !foundPlatform ) {
+		fprintf(stderr, "[ERROR] Failed to get device IDs for device type %s\n", get_device_type_string(acc_device_type_var));
+        if (err != CL_SUCCESS) {
+            fprintf(stderr, "                                              OpenCL error (%d)\n", err);
+		}
+		if(platformName != NULL) {
+            fprintf(stderr, "                                              Current platform: %s\n",platformName);
+		}
+		exit(1);
+	} else {
+		if(platformName != NULL) {
+            fprintf(stderr, "[INFO] Current platform: %s\n       Target device type: %s\n",platformName, get_device_type_string(acc_device_type_var));
+		}
+	}
+	delete [] platforms;
+
 	for(int i=0; i< numDevices; i++) {
 		clDevice = devices[i];
 		
@@ -214,7 +483,7 @@ int main (int argc, char * argv[]){
 		const char *filename = outFile.c_str();
 		fp = fopen(filename, "r");
 		if (!fp) {
-			fprintf(stderr, "[INFO: in OpenCL binary creation] Failed to read the kernel file %s, so skipping binary generation for OpenCL devices %d\n", filename, i);
+			fprintf(stderr, "[INFO in OpenCL binary creation] Failed to read the kernel file %s, so skipping binary generation for OpenCL devices %d\n", filename, i);
 			exit(1);
 		}
 		source_str = (char*)malloc(MAX_SOURCE_SIZE);

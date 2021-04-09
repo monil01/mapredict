@@ -381,14 +381,15 @@ int HipDriver::HI_get_num_devices(acc_device_t devType, int threadID) {
     err = hipInit(0);
     if (err != hipSuccess) printf("[%s:%d][%s] error[%d]\n", __FILE__, __LINE__, __func__, err);
 
-    if( devType == acc_device_gpu ) {
+    if( (devType == acc_device_gpu) || (devType == acc_device_radeon) ||
+		(devType == acc_device_nvidia) ) {
     	err = hipGetDeviceCount(&numDevices);
     	if (err != hipSuccess) printf("[%s:%d][%s] error[%d]\n", __FILE__, __LINE__, __func__, err);
     } else {
         numDevices = 0; 
     }  
-    printf("[%s:%d][%s] count[%d]\n", __FILE__, __LINE__, __func__, numDevices);
 #ifdef _OPENARC_PROFILE_
+    printf("[%s:%d][%s] count[%d]\n", __FILE__, __LINE__, __func__, numDevices);
     if( HI_openarcrt_verbosity > 2 ) {
         fprintf(stderr, "[OPENARCRT-INFO]\t\texit HipDriver::HI_get_num_devices()\n");
     }    

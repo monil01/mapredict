@@ -1,6 +1,9 @@
 #ifndef _LULESH_H_
 #define _LULESH_H_
 
+#define USE_SINGLE_PRECISION
+#define DISABLE_EXIT
+
 #if !defined(USE_MPI)
 # error "You should specify USE_MPI=0 or USE_MPI=1 on the compile line"
 #endif
@@ -45,16 +48,24 @@ typedef double       real8 ;
 typedef long double  real10 ;  // 10 bytes on x86
 
 typedef int    Index_t ; // array subscript and loop index
+#ifdef USE_SINGLE_PRECISION
+typedef real4  Real_t ;  // floating point representation
+#else
 typedef real8  Real_t ;  // floating point representation
+#endif
 typedef int    Int_t ;   // integer representation
 
 enum { VolumeError = -1, QStopError = -2 } ;
 
+#ifdef USE_SINGLE_PRECISION
+inline real4  SQRT(real4  arg) { return sqrtf(arg) ; }
+inline real4  CBRT(real4  arg) { return cbrtf(arg) ; }
+inline real4  FABS(real4  arg) { return fabsf(arg) ; }
+#else
 inline real8  SQRT(real8  arg) { return sqrt(arg) ; }
-
 inline real8  CBRT(real8  arg) { return cbrt(arg) ; }
-
 inline real8  FABS(real8  arg) { return fabs(arg) ; }
+#endif
 
 // Stuff needed for boundary conditions
 // 2 BCs on each of 6 hexahedral faces (12 bits)

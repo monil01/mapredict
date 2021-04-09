@@ -1910,8 +1910,20 @@ public abstract class ACC2GPUTranslator {
 		int kernelCnt = 0;
 		//Find an optimal point to insert kernel-configuration-related statements.
 		for( ACCAnnotation cAnnot : cRegionAnnots ) {
-			String GPUKernelName = cProc.getName().toString() + "_kernel" + kernelCnt++;
 			Annotatable at = cAnnot.getAnnotatable();
+			ARCAnnotation kernelInfoAnnot = at.getAnnotation(ARCAnnotation.class, "kernelid");
+			//[DEBUG on April 1, 2021] GPU kernel name generation scheme is changed to use 
+			//the internal kernelid value.
+			//String GPUKernelName = cProc.getName().toString() + "_kernel" + kernelCnt++;
+			IntegerLiteral kernelId = null;
+			if( kernelInfoAnnot != null ) {
+				kernelId = kernelInfoAnnot.get("kernelid");
+			} else {
+				Tools.exit("[Internal ERROR in ACC2GPUTranslator.convComputeRegionsToGPUKernels()] can't find kernelid internal variable; exit!" +
+						"\nOpenACC annotation: " + cAnnot +
+						"\nEnclosing Procedure: " + cProc.getSymbolName() + "\n");
+			}
+			String GPUKernelName = cProc.getName().toString() + "_kernel" + kernelId;
 			String kernelType = "kernels";
 			if( at.containsAnnotation(ACCAnnotation.class, "parallel") ) {
 				kernelType = "parallel";
@@ -2062,10 +2074,22 @@ public abstract class ACC2GPUTranslator {
 		//Perform actual compute-region to GPU kernel conversion.
 		kernelCnt = 0;
 		for( ACCAnnotation pAnnot : parallelRegionAnnots ) {
-			String GPUKernelName = cProc.getName().toString() + "_kernel" + kernelCnt++;
 			Annotatable at = pAnnot.getAnnotatable();
 			Statement computeStmt = (Statement)at;
 			CompoundStatement pComputeStmt = (CompoundStatement)computeStmt.getParent();
+			//[DEBUG on April 1, 2021] GPU kernel name generation scheme is changed to use 
+			//the internal kernelid value.
+			//String GPUKernelName = cProc.getName().toString() + "_kernel" + kernelCnt++;
+			ARCAnnotation kernelInfoAnnot = at.getAnnotation(ARCAnnotation.class, "kernelid");
+			IntegerLiteral kernelId = null;
+			if( kernelInfoAnnot != null ) {
+				kernelId = kernelInfoAnnot.get("kernelid");
+			} else {
+				Tools.exit("[Internal ERROR in ACC2GPUTranslator.convComputeRegionsToGPUKernels()] can't find kernelid internal variable; exit!" +
+						"\nOpenACC annotation: " + pAnnot +
+						"\nEnclosing Procedure: " + cProc.getSymbolName() + "\n");
+			}
+			String GPUKernelName = cProc.getName().toString() + "_kernel" + kernelId;
 			//DEBUG: if ACCAnnotation key, parallel or kernels, is set to "false", GPU translation
 			//will be skipped.
 			if( pAnnot.get("parallel").equals("false") ) {
@@ -2328,10 +2352,22 @@ public abstract class ACC2GPUTranslator {
 			}
 		}
 		for( ACCAnnotation kAnnot : kernelsRegionAnnots ) {
-			String GPUKernelName = cProc.getName().toString() + "_kernel" + kernelCnt++;
 			Annotatable at = kAnnot.getAnnotatable();
 			Statement computeStmt = (Statement)at;
 			CompoundStatement pComputeStmt = (CompoundStatement)computeStmt.getParent();
+			//[DEBUG on April 1, 2021] GPU kernel name generation scheme is changed to use 
+			//the internal kernelid value.
+			//String GPUKernelName = cProc.getName().toString() + "_kernel" + kernelCnt++;
+			ARCAnnotation kernelInfoAnnot = at.getAnnotation(ARCAnnotation.class, "kernelid");
+			IntegerLiteral kernelId = null;
+			if( kernelInfoAnnot != null ) {
+				kernelId = kernelInfoAnnot.get("kernelid");
+			} else {
+				Tools.exit("[Internal ERROR in ACC2GPUTranslator.convComputeRegionsToGPUKernels()] can't find kernelid internal variable; exit!" +
+						"\nOpenACC annotation: " + kAnnot +
+						"\nEnclosing Procedure: " + cProc.getSymbolName() + "\n");
+			}
+			String GPUKernelName = cProc.getName().toString() + "_kernel" + kernelId;
 			//DEBUG: if ACCAnnotation key, parallel or kernels, is set to "false", GPU translation
 			//will be skipped.
 			if( kAnnot.get("kernels").equals("false") ) {

@@ -16,8 +16,24 @@ typedef enum {
     acc_device_xeonphi = 7,
     acc_device_current = 8,
     acc_device_altera = 9,
-    acc_device_altera_emulator = 10
+    acc_device_altera_emulator = 10,
+	acc_device_intelgpu = 11
 } acc_device_t;
+
+/////////////////////////////////////////////////////////////////////////////////////
+// List of values of the ACC_DEVICE_TYPE environment variable supported by OpenARC //
+/////////////////////////////////////////////////////////////////////////////////////
+//	NVIDIA
+//	RADEON
+//	XEONPHI
+//	ALTERA
+//	ALTERA_EMUL
+//	HOST
+//	INTELGPU	
+//	ACC_DEVICE_NONE
+//	ACC_DEVICE_HOST
+//	ACC_DEVICE_NOT_HOST
+//	ACC_DEVICE_DEFAULT
 
 typedef enum {
     acc_mem_fence_local = 1,

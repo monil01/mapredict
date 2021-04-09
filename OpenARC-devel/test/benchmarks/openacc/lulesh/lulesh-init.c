@@ -659,7 +659,11 @@ CreateRegionIndexSets(Int_t nr, Int_t balance)
     //Determine the relative weights of all the regions.
     for (i=0 ; i<m_numReg ; ++i) {
       m_regElemSize[i] = 0;
+#ifdef USE_SINGLE_PRECISION
+      costDenominator += powf((i+1), balance);  //Total cost of all regions
+#else
       costDenominator += pow((i+1), balance);  //Total cost of all regions
+#endif
       regBinEnd[i] = costDenominator;  //Chance of hitting a given region is (regBinEnd[i] - regBinEdn[i-1])/costDenominator
     }
     //Until all elements are assigned

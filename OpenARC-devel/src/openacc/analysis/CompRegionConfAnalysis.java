@@ -695,11 +695,13 @@ public class CompRegionConfAnalysis extends AnalysisPass {
 						for( Expression dim : gangConfList ) {
 							tGangConfList.add(dim.clone());
 						}
-					} else if( tGangdim != gangdim ) {
+					//[DEBUG on Feb. 18, 2021] fixed the below comparision expression.
+					//} else if( tGangdim != gangdim ) {
+					} else if( (tGangdim == null) || (gangdim == null) || (!tGangdim.equals(gangdim)) ) {
 						Procedure pProc = IRTools.getParentProcedure(at);
 						Tools.exit("[ERROR] if seq kernel loop contains multiple inner gang loops, each gang loop should have the" +
 								" same dimension; exit\nEnclosing procedure: " + pProc.getSymbolName() + "\nOpenACC annotation: " 
-								+ cAnnot +"\n" );
+								+ cAnnot +"\n" + "Compute region\n" + at);
 					} else {
 						int i = 0;
 						for( Expression dim : gangConfList ) {
@@ -747,7 +749,9 @@ public class CompRegionConfAnalysis extends AnalysisPass {
 						for( Expression dim : workerConfList ) {
 							tWorkerConfList.add(dim.clone());
 						}
-					} else if( tworkerdim != workerdim ) {
+					//[DEBUG on Feb. 18, 2021] fixed the below comparision expression.
+					//} else if( tworkerdim != workerdim ) {
+					} else if( (tworkerdim == null) || (workerdim == null) || (!tworkerdim.equals(workerdim)) ) {
 						Procedure pProc = IRTools.getParentProcedure(at);
 						Tools.exit("[ERROR] if seq kernel loop contains multiple inner worker loops, each worker loop should have the" +
 								" same dimension; exit\nEnclosing procedure: " + pProc.getSymbolName() + "\nOpenACC annotation: " 

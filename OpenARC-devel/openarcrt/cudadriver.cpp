@@ -537,7 +537,7 @@ int CudaDriver::HI_get_num_devices(acc_device_t devType, int threadID) {
 #endif
     //cudaGetDeviceCount(&numDevices);
     cuInit(0);
-	if( devType == acc_device_gpu ) {
+	if( (devType == acc_device_gpu) || (devType == acc_device_nvidia) ) {
     	cuDeviceGetCount(&numDevices);
 	} else {
 		numDevices = 0;
@@ -1686,7 +1686,7 @@ void CudaDriver::HI_tempMalloc1D_async( void** tempPtr, size_t count, acc_device
 void CudaDriver::HI_tempFree( void** tempPtr, acc_device_t devType, int threadID) {
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 2 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\t\tenter CudaDriver::HI_tempFree(tempPtr = %lx, devType = %d, thread ID = %d)\n",  (long unsigned int)(*tempPtr), devType, threadID);
+		fprintf(stderr, "[OPENARCRT-INFO]\t\tenter CudaDriver::HI_tempFree(tempPtr = %lx, devType = %s, thread ID = %d)\n",  (long unsigned int)(*tempPtr), HI_get_device_type_string(devType), threadID);
 	}
 #endif
     HostConf_t * tconf = getHostConf(threadID);
@@ -1748,7 +1748,7 @@ void CudaDriver::HI_tempFree( void** tempPtr, acc_device_t devType, int threadID
 #endif
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 2 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\t\texit CudaDriver::HI_tempFree(tempPtr = %lx, devType = %d, thread ID = %d)\n",  (long unsigned int)(*tempPtr), devType, threadID);
+		fprintf(stderr, "[OPENARCRT-INFO]\t\texit CudaDriver::HI_tempFree(tempPtr = %lx, devType = %s, thread ID = %d)\n",  (long unsigned int)(*tempPtr), HI_get_device_type_string(devType), threadID);
 	}
 #endif
 }
@@ -2019,7 +2019,7 @@ void CudaDriver::HI_tempMalloc1D_async( void** tempPtr, size_t count, acc_device
 void CudaDriver::HI_tempFree( void** tempPtr, acc_device_t devType, int threadID) {
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 2 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\t\tenter CudaDriver::HI_tempFree(tempPtr = %lx, devType = %d, thread ID = %d)\n",  (long unsigned int)(*tempPtr), devType, threadID);
+		fprintf(stderr, "[OPENARCRT-INFO]\t\tenter CudaDriver::HI_tempFree(tempPtr = %lx, devType = %s, thread ID = %d)\n",  (long unsigned int)(*tempPtr), HI_get_device_type_string(devType), threadID);
 	}
 #endif
     HostConf_t * tconf = getHostConf(threadID);
@@ -2050,7 +2050,7 @@ void CudaDriver::HI_tempFree( void** tempPtr, acc_device_t devType, int threadID
     					HI_unpin_host_memory(*tempPtr, tconf->threadID);
 					}
 				} else {
-					fprintf(stderr, "[OPENARCRT-WARNING in CudaDriver::HI_tempFree(devType = %d, thread ID = %d)] no tempMallocSize mapping found for tempPtr (%lx)\n", devType, threadID, (long unsigned int)(*tempPtr));
+					fprintf(stderr, "[OPENARCRT-WARNING in CudaDriver::HI_tempFree(devType = %s, thread ID = %d)] no tempMallocSize mapping found for tempPtr (%lx)\n", HI_get_device_type_string(devType), threadID, (long unsigned int)(*tempPtr));
 				}
 			} else {
 				size_t size = tempMallocSize->at((const void *)*tempPtr);
@@ -2082,7 +2082,7 @@ void CudaDriver::HI_tempFree( void** tempPtr, acc_device_t devType, int threadID
 #endif
 #ifdef _OPENARC_PROFILE_
 	if( HI_openarcrt_verbosity > 2 ) {
-		fprintf(stderr, "[OPENARCRT-INFO]\t\texit CudaDriver::HI_tempFree(tempPtr = %lx, devType = %d, thread ID = %d)\n",  (long unsigned int)(*tempPtr), devType, threadID);
+		fprintf(stderr, "[OPENARCRT-INFO]\t\texit CudaDriver::HI_tempFree(tempPtr = %lx, devType = %s, thread ID = %d)\n",  (long unsigned int)(*tempPtr), HI_get_device_type_string(devType), threadID);
 	}
 #endif
 }
@@ -3049,21 +3049,25 @@ HI_error_t CudaDriver::HI_bind_tex(std::string texName,  HI_datatype_t type, con
         fprintf(stderr, "[ERROR in CudaDriver::HI_bind_tex()] failed to find CUDA texture '%s' with error %d (%s)\n", texName.c_str(), err, cuda_error_code(err));
 		exit(1);
     }
+	//[DEBUG on Feb. 10, 2021] Deprecated on CUDA V11
     err = cuTexRefSetAddress(0, cuTexref, (CUdeviceptr)devPtr, size);
     if(err != CUDA_SUCCESS) {
         fprintf(stderr, "[ERROR in CudaDriver::HI_bind_tex()] failed to set address for CUDA texture '%s' with error %d (%s)\n", texName.c_str(), err, cuda_error_code(err));
 		exit(1);
     }
+	//[DEBUG on Feb. 10, 2021] Deprecated on CUDA V11
     err = cuTexRefSetAddressMode(cuTexref, 0, CU_TR_ADDRESS_MODE_WRAP);
     if(err != CUDA_SUCCESS) {
         fprintf(stderr, "[ERROR in CudaDriver::HI_bind_tex()] failed to set address mode for CUDA texture '%s' with error %d (%s)\n", texName.c_str(), err, cuda_error_code(err));
 		exit(1);
     }
+	//[DEBUG on Feb. 10, 2021] Deprecated on CUDA V11
     err = cuTexRefSetFilterMode(cuTexref, CU_TR_FILTER_MODE_LINEAR);
     if(err != CUDA_SUCCESS) {
         fprintf(stderr, "[ERROR in CudaDriver::HI_bind_tex()] failed to set filter mode for CUDA texture '%s' with error %d (%s)\n", texName.c_str(), err, cuda_error_code(err));
 		exit(1);
     }
+	//[DEBUG on Feb. 10, 2021] Deprecated on CUDA V11
     err = cuTexRefSetFlags(cuTexref, CU_TRSF_NORMALIZED_COORDINATES);
     if(err != CUDA_SUCCESS) {
         fprintf(stderr, "[ERROR in CudaDriver::HI_bind_tex()] failed to set flags for CUDA texture '%s' with error %d (%s)\n", texName.c_str(), err, cuda_error_code(err));
@@ -3071,8 +3075,10 @@ HI_error_t CudaDriver::HI_bind_tex(std::string texName,  HI_datatype_t type, con
     }
 
     if(type == HI_int) {
+		//[DEBUG on Feb. 10, 2021] Deprecated on CUDA V11
         err = cuTexRefSetFormat(cuTexref, CU_AD_FORMAT_SIGNED_INT32, 1);
     } else if (type == HI_float) {
+		//[DEBUG on Feb. 10, 2021] Deprecated on CUDA V11
         err = cuTexRefSetFormat(cuTexref, CU_AD_FORMAT_FLOAT, 1);
     } else {
         fprintf(stderr, "[ERROR in CudaDriver::HI_bind_tex()] Unsupported format for CUDA texture '%s' (NVIDIA CUDA GPU)\n", texName.c_str());
