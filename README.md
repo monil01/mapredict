@@ -74,8 +74,6 @@
 + Source code lulesh with annotation :[master branch of the submodule: applications/memory_research_ornl/aspen_model_generation/lulesh_full_nodal]
 ```
 
-#### 5. Data for ICS21
-    5.1 ICS21 submission data is available at [applications/memory_research_ornl/data_paper/Data_for_ICS21.xlsx].
 
 
   
