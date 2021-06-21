@@ -7,8 +7,10 @@
 
 
 ```diff
++ The source for the main model is in the model_parser directory.
 + New: MAPredict now does the total nodal prediction of LULESH. > 90% accuracy in Intel micro-architecutres.
 ```
+
 
 
 #### 1. Overview
